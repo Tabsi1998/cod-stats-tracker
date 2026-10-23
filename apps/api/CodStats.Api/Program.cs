@@ -1,0 +1,80 @@
+using CodStats.Api;
+using CodStats.Api.Auth;
+using CodStats.Api.Data;
+using CodStats.Api.Endpoints;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+var config = builder.Configuration;
+
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = SignatureVerifier.MaxBodyBytes);
+
+builder.Services.AddDbContext<AppDb>(options => options
+    .UseNpgsql(config.GetConnectionString("Database")
+        ?? throw new InvalidOperationException("ConnectionStrings:Database is not set"))
+    .UseSnakeCaseNamingConvention());
+
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<SignatureVerifier>();
+builder.Services.AddHostedService<NonceCleanup>();
+builder.Services.Configure<LeaderboardOptions>(config.GetSection("Leaderboards"));
+builder.Services.Configure<RateLimitOptions>(config.GetSection("RateLimits"));
+builder.Services.AddCodStatsRateLimits();
+builder.Services.AddProblemDetails();
+builder.Services.AddOpenApi();
+
+// Behind Caddy in Docker the client address arrives in X-Forwarded-For.
+var trustForwarded = config.GetValue<bool>("TrustForwardedHeaders");
+if (trustForwarded)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
+
+var app = builder.Build();
+
+if (config.GetValue("Database:MigrateOnStartup", true))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<AppDb>().Database.MigrateAsync();
+}
+
+if (trustForwarded)
+{
+    app.UseForwardedHeaders();
+}
+app.UseExceptionHandler();
+
+// Signed requests are verified after model binding has read the body, so the body must be readable twice.
+app.Use((context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/v1"))
+    {
+        context.Request.EnableBuffering(SignatureVerifier.MaxBodyBytes, SignatureVerifier.MaxBodyBytes + 1);
+    }
+    return next(context);
+});
+app.UseStatusCodePages();
+app.UseRateLimiter();
+app.UseWhen(context => context.Request.Path.StartsWithSegments(DeviceAuthentication.Prefix),
+    branch => branch.UseMiddleware<DeviceAuthentication>());
+
+app.MapOpenApi();
+app.MapGet("/health", async (AppDb db, CancellationToken cancel) =>
+    await db.Database.CanConnectAsync(cancel) ? Results.Ok(new { status = "ok" }) : Results.StatusCode(503))
+    .ExcludeFromDescription();
+
+var api = app.MapGroup("/api/v1");
+api.MapDeviceEndpoints();
+api.MapMeEndpoints();
+api.MapPublicEndpoints();
+
+await app.RunAsync();
+
+/// <summary>Entry point, visible to the integration tests.</summary>
+public partial class Program;

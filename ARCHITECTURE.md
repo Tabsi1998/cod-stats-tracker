@@ -100,8 +100,9 @@ Die genaue Beschreibung liefert OpenAPI unter `/openapi/v1.json`.
 |---|---|
 | `apps/api` | ASP.NET Core API, EF Core, Migrationen |
 | `apps/web` | React-Webseite (Phase 3) |
-| `apps/desktop` | WPF-Client (Phase 4/5) |
+| `apps/desktop/CodStats.Desktop` | WPF-Client: `Identity/` (Geräteschlüssel), `Storage/` (SQLite), `Sync/` (signierte API, Sync-Schleife), `Recognition/` (Spielprozess; Bilderkennung folgt), `Ui/` (Tray, Dashboard, Fenster) |
 | `shared/contracts` | DTOs, Spiel-Enums, Request-Signatur, Statistikregeln |
-| `tests/api` | API-Tests gegen echtes PostgreSQL (Testcontainers) |
+| `tests/api` | API-Tests gegen echtes PostgreSQL (Testcontainers) und Tests der gemeinsamen Regeln |
+| `tests/desktop` | Client-Tests: SQLite, Identität, Sync gegen nachgebauten Server |
 | `tests/capture-fixtures` | Echte Spielbilder für Erkennungstests (nicht öffentlich) |
 | `deploy` | Docker Compose, Caddy, `.env.example` |

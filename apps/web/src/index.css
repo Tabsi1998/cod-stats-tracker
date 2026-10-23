@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: oklch(0.17 0.01 260);
+  --color-surface: oklch(0.21 0.012 260);
+  --color-raised: oklch(0.25 0.014 260);
+  --color-line: oklch(0.32 0.015 260);
+  --color-text: oklch(0.95 0.005 260);
+  --color-muted: oklch(0.7 0.012 260);
+  --color-accent: oklch(0.8 0.16 85);
+  --color-win: oklch(0.75 0.15 150);
+  --color-loss: oklch(0.68 0.17 25);
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

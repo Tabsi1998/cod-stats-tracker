@@ -1,0 +1,17 @@
+# Development: only PostgreSQL, on port 5433 so it does not clash with a local installation.
+name: codstats-dev
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: codstats
+      POSTGRES_USER: codstats
+      POSTGRES_PASSWORD: codstats-dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - dev-data:/var/lib/postgresql/data
+
+volumes:
+  dev-data:

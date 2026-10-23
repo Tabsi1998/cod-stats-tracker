@@ -15,11 +15,15 @@ Statistik-Tracker für CoD MW4 Multiplayer und Warzone: Windows-Client (Bilderke
 | Zweck | Befehl |
 |---|---|
 | Alles prüfen | `python scripts/local_check.py` |
-| Nur API | `python scripts/local_check.py --only api` |
+| Nur .NET | `python scripts/local_check.py --only dotnet` |
+| Client-EXE bauen | `python scripts/local_check.py --only desktop` → `.local-testing/publish/win-x64/CodStats.exe` |
+| Ganzer Stack lokal | `cd deploy && docker compose --env-file .env up -d --build` (siehe README) |
 | API starten | `docker compose -f deploy/docker-compose.dev.yml up -d` dann `dotnet run --project apps/api/CodStats.Api` |
 | Migration anlegen | `dotnet tool restore` dann `dotnet ef migrations add <Name> --project apps/api/CodStats.Api` |
 
 ## Fallen
 
 - API-Tests brauchen laufendes Docker (Testcontainers startet PostgreSQL).
+- Der Client schreibt nach `%LOCALAPPDATA%\CodStats` und setzt `HKCU\...\Run\CodStats` (Autostart). Beim Testen daran denken.
+- WPF + WinForms (nur für das Tray-Symbol): `System.Windows.Forms`/`System.Drawing` sind als globale Usings entfernt.
 - Signatur-Format ist in `RequestSigning.cs` festgelegt. Client und Server nutzen dieselbe Datei; Änderungen brechen alle installierten Clients → neue Version `COD-STATS-V2`.

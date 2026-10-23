@@ -1,0 +1,34 @@
+<Window x:Class="CodStats.Desktop.Ui.ConsentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="COD Stats einrichten" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Style="{StaticResource DarkWindow}" Icon="/Assets/app.ico">
+    <StackPanel Margin="24">
+        <TextBlock Text="Willkommen bei COD Stats" FontSize="20" FontWeight="Bold" />
+        <TextBlock Margin="0,8,0,16" TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                   Text="Der Client läuft im Hintergrund, erkennt Call of Duty und liest am Matchende deine eigenen Werte vom Bildschirm. Bitte lies kurz, was dabei passiert." />
+
+        <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap" Text="• Nur Einzelbilder des Spielfensters, nur im Arbeitsspeicher, sofort verworfen. Keine Aufnahme, keine Screenshots an den Server." />
+                <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="• Kein Zugriff auf den Spielspeicher, keine Eingriffe ins Spiel." />
+                <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="• Übertragen werden nur deine Matchwerte und dein Anzeigename, signiert mit einem Schlüssel, der nur auf diesem PC liegt." />
+                <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="• Activision bestätigt solche Werkzeuge nicht ausdrücklich. Nutzung auf eigenes Risiko." />
+            </StackPanel>
+        </Border>
+
+        <CheckBox x:Name="Capture" Content="Ich erlaube die Erfassung meiner Matches und die Übertragung an den Server." />
+        <CheckBox x:Name="Publish" Content="Mein Profil darf öffentlich auf der Webseite erscheinen (jederzeit änderbar)." />
+        <CheckBox x:Name="Autostart" Content="Mit Windows starten (im Tray, unauffällig)" IsChecked="True" />
+
+        <TextBlock Style="{StaticResource Label}" Text="SERVERADRESSE" Margin="0,14,0,4" />
+        <TextBox x:Name="Server" />
+
+        <TextBlock x:Name="Error" Foreground="{StaticResource Loss}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Abbrechen" IsCancel="True" Margin="0,0,8,0" />
+            <Button x:Name="Accept" Content="Zustimmen und starten" Style="{StaticResource Primary}" IsDefault="True" Click="OnAccept" />
+        </StackPanel>
+    </StackPanel>
+</Window>

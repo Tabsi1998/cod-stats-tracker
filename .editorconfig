@@ -19,3 +19,7 @@ csharp_style_namespace_declarations = file_scoped:warning
 dotnet_sort_system_directives_first = true
 csharp_style_var_for_built_in_types = true
 csharp_style_var_when_type_is_apparent = true
+
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

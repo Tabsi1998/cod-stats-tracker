@@ -5,13 +5,13 @@ GitHub Actions is the second, independent confirmation. This is the first.
 
 Groups:
     repository  Gitleaks over the history and over uncommitted and new files
-    api         locked restore, format, build, tests (need Docker), vulnerable NuGet packages
-    web         npm ci, lint, type check, tests, build (once apps/web exists)
-    desktop     build and tests of the Windows client (once apps/desktop exists, Windows only)
+    dotnet      locked restore, format, build, all .NET tests (API tests need Docker), vulnerable NuGet packages
+    web         npm ci, lint, type check, tests, build, npm audit
+    desktop     self-contained publish of the Windows client (Windows only)
 
 Usage:
     python scripts/local_check.py                every group
-    python scripts/local_check.py --only api     some groups
+    python scripts/local_check.py --only dotnet  some groups
     python scripts/local_check.py --list         the steps, without running them
 
 Results go to .local-testing/, which Git ignores.
@@ -41,7 +41,6 @@ from typing import Callable, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SOLUTION = "cod-stats-tracker.slnx"
-API = ROOT / "apps" / "api"
 WEB = ROOT / "apps" / "web"
 DESKTOP = ROOT / "apps" / "desktop"
 
@@ -60,10 +59,13 @@ GITLEAKS_BUILDS = {
     ),
 }
 
-# Fewer tests than this means tests silently stopped being discovered.
-MIN_API_TESTS = 30
+# Fewer tests than this means tests silently stopped being discovered. The Windows client's tests run on
+# Windows only, so Linux (the CI runner with Docker) runs the API and contract tests alone.
+MIN_DOTNET_TESTS = 70
+MIN_DOTNET_TESTS_LINUX = 62
+API_TESTS = "tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj"
 
-GROUPS = ("repository", "api", "web", "desktop")
+GROUPS = ("repository", "dotnet", "web", "desktop")
 PASS, FAIL, SKIP = "passed", "failed", "skipped"
 
 # Variables whose names look like credentials never reach code under test.
@@ -279,11 +281,9 @@ def repository_steps() -> list[Step]:
     ]
 
 
-# API (and the shared contracts it builds with).
+# .NET: contracts, API, Windows client and their tests, all in one solution.
 
 def dotnet(context: Context) -> str:
-    if not API.exists():
-        raise StepSkipped("apps/api does not exist yet")
     found = context.tool("dotnet")
     if not found:
         raise StepFailed("dotnet is not on PATH. Install the .NET 10 SDK")
@@ -306,14 +306,16 @@ def trx_counts(text: str) -> tuple[int, int]:
     return int(counters.get("executed", "0")), int(counters.get("failed", "0"))
 
 
-def api_tests(context: Context) -> str:
+def dotnet_tests(context: Context) -> str:
     binary = dotnet(context)
     if not docker_running(context):
         raise StepFailed("Docker is not running. The API tests start PostgreSQL with Testcontainers; start Docker Desktop")
-    results = STATE / "api-tests"
+    results = STATE / "dotnet-tests"
     shutil.rmtree(results, ignore_errors=True)
-    context.require([binary, "test", SOLUTION, "--no-build", "--configuration", "Release",
-                     "--logger", "trx;LogFileName=api.trx", "--results-directory", results],
+    windows = platform.system() == "Windows"
+    minimum = MIN_DOTNET_TESTS if windows else MIN_DOTNET_TESTS_LINUX
+    context.require([binary, "test", SOLUTION if windows else API_TESTS, "--no-build", "--configuration", "Release",
+                     "--logger", "trx", "--results-directory", results],
                     what="tests failed; the output above names them")
     executed = failed = 0
     for trx in results.rglob("*.trx"):
@@ -322,8 +324,8 @@ def api_tests(context: Context) -> str:
         failed += broken
     if failed:
         raise StepFailed(f"{failed} test(s) failed")
-    if executed < MIN_API_TESTS:
-        raise StepFailed(f"only {executed} tests ran, expected at least {MIN_API_TESTS}; were tests lost?")
+    if executed < minimum:
+        raise StepFailed(f"only {executed} tests ran, expected at least {minimum}; were tests lost?")
     return f"{executed} tests"
 
 
@@ -340,19 +342,19 @@ def nuget_vulnerabilities(context: Context) -> str:
     return ""
 
 
-def api_steps() -> list[Step]:
+def dotnet_steps() -> list[Step]:
     return [
-        Step("api", "restore", "Locked restore",
+        Step("dotnet", "restore", "Locked restore",
              lambda c: c.require([dotnet(c), "restore", SOLUTION, "--locked-mode"],
                                  what="restore failed; if a package changed on purpose run dotnet restore --force-evaluate")),
-        Step("api", "format", "Formatting (dotnet format --verify-no-changes)",
+        Step("dotnet", "format", "Formatting (dotnet format --verify-no-changes)",
              lambda c: c.require([dotnet(c), "format", SOLUTION, "--verify-no-changes", "--no-restore"],
                                  what="code is not formatted; run dotnet format " + SOLUTION), needs=("restore",)),
-        Step("api", "build", "Build (warnings are errors)",
+        Step("dotnet", "build", "Build (warnings are errors)",
              lambda c: c.require([dotnet(c), "build", SOLUTION, "--no-restore", "--configuration", "Release",
                                   "-warnaserror"], what="the build failed"), needs=("restore",)),
-        Step("api", "tests", "Tests against PostgreSQL", api_tests, needs=("build",)),
-        Step("api", "nuget-audit", "No vulnerable NuGet packages", nuget_vulnerabilities, needs=("restore",)),
+        Step("dotnet", "tests", "All .NET tests (API against PostgreSQL)", dotnet_tests, needs=("build",)),
+        Step("dotnet", "nuget-audit", "No vulnerable NuGet packages", nuget_vulnerabilities, needs=("restore",)),
     ]
 
 
@@ -389,20 +391,27 @@ def web_steps() -> list[Step]:
 
 # Desktop.
 
-def desktop_build(context: Context) -> None:
-    if not DESKTOP.exists():
-        raise StepSkipped("apps/desktop does not exist yet")
+def desktop_publish(context: Context) -> str:
     if platform.system() != "Windows":
         raise StepSkipped("the Windows client builds on Windows only")
-    raise StepSkipped("desktop steps arrive with the Windows client")
+    target = STATE / "publish" / "win-x64"
+    shutil.rmtree(target, ignore_errors=True)
+    context.require([dotnet(context), "publish", DESKTOP / "CodStats.Desktop" / "CodStats.Desktop.csproj",
+                     "--configuration", "Release", "--runtime", "win-x64", "--self-contained", "true",
+                     "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true", "-p:EnableCompressionInSingleFile=true",
+                     "--output", target], what="the self-contained publish failed")
+    exe = target / "CodStats.exe"
+    if not exe.exists():
+        raise StepFailed("CodStats.exe is missing in the publish output")
+    return f"{exe.stat().st_size // (1024 * 1024)} MB: {exe}"
 
 
 def desktop_steps() -> list[Step]:
-    return [Step("desktop", "desktop-build", "Build and tests of the Windows client", desktop_build)]
+    return [Step("desktop", "desktop-publish", "Self-contained CodStats.exe (win-x64)", desktop_publish)]
 
 
 def plan(groups: set[str]) -> list[Step]:
-    builders = {"repository": repository_steps, "api": api_steps, "web": web_steps, "desktop": desktop_steps}
+    builders = {"repository": repository_steps, "dotnet": dotnet_steps, "web": web_steps, "desktop": desktop_steps}
     return [step for group in GROUPS if group in groups for step in builders[group]()]
 
 
