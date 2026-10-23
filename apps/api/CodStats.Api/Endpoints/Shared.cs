@@ -23,7 +23,7 @@ public static class Mapping
         ProfileId = profileId,
         Game = upload.Game,
         Mode = upload.Mode,
-        PlayedAt = upload.PlayedAt.ToUniversalTime(),
+        PlayedAt = Seconds(upload.PlayedAt),
         Kills = upload.Kills,
         Deaths = upload.Deaths,
         Assists = upload.Assists,
@@ -37,6 +37,13 @@ public static class Mapping
         UploadedAt = now,
         UpdatedAt = now,
     };
+
+    /// <summary>
+    /// Match times in whole seconds, UTC. PostgreSQL keeps microseconds and .NET ticks, so finer values would make a
+    /// repeated upload look like a different match.
+    /// </summary>
+    public static DateTimeOffset Seconds(DateTimeOffset value) =>
+        DateTimeOffset.FromUnixTimeSeconds(value.ToUnixTimeSeconds());
 
     public static bool SameValues(Match a, Match b) =>
         a.Game == b.Game && a.Mode == b.Mode && a.PlayedAt == b.PlayedAt && a.Kills == b.Kills && a.Deaths == b.Deaths

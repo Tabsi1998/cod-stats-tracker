@@ -173,7 +173,7 @@ public static class MeEndpoints
         }
 
         match.Mode = body.Mode;
-        match.PlayedAt = body.PlayedAt;
+        match.PlayedAt = Mapping.Seconds(body.PlayedAt);
         match.Kills = body.Kills;
         match.Deaths = body.Deaths;
         match.Assists = body.Assists;
