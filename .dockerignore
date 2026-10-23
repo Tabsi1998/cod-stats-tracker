@@ -1,0 +1,9 @@
+.git
+.local-testing
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/TestResults
+deploy/.env
+tests/capture-fixtures
