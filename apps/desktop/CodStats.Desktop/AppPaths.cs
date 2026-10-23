@@ -12,5 +12,8 @@ public sealed record AppPaths(string Root)
     public string Identity => Path.Combine(Root, "identity.json");
     public string Database => Path.Combine(Root, "matches.db");
 
+    /// <summary>Recognition profiles the player or an update placed here replace the built-in ones.</summary>
+    public string Profiles => Path.Combine(Root, "profiles");
+
     public void Ensure() => Directory.CreateDirectory(Root);
 }

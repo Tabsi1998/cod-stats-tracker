@@ -41,7 +41,7 @@ public sealed class Tray : IDisposable
             Visible = true,
         };
         icon.DoubleClick += (_, _) => app.ShowDashboard();
-        ShowTracker(app.Watcher.State);
+        ShowTracker(app.Tracker);
         ShowSync(app.Sync.Status);
     }
 

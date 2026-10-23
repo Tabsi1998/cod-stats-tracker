@@ -20,18 +20,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         refresh = () => Dispatcher.BeginInvoke(Refresh);
         app.DataChanged += refresh;
-        app.Watcher.StateChanged += OnTracker;
+
         app.Sync.StatusChanged += OnSync;
         Closed += (_, _) =>
         {
             app.DataChanged -= refresh;
-            app.Watcher.StateChanged -= OnTracker;
             app.Sync.StatusChanged -= OnSync;
         };
         Loaded += (_, _) => Refresh();
     }
 
-    private void OnTracker(TrackerState state) => Dispatcher.BeginInvoke(Refresh);
     private void OnSync(SyncStatus status) => Dispatcher.BeginInvoke(Refresh);
 
     private GameGroup Group => TabWarzone.IsChecked == true ? GameGroup.Warzone : TabAll.IsChecked == true ? GameGroup.All : GameGroup.Mw4;
@@ -61,7 +59,8 @@ public partial class MainWindow : Window
         PlayerName.Text = settings.DisplayName ?? "Spielername noch unbekannt";
         IdentityChip.Visibility = settings.NameConfirmed ? Visibility.Collapsed : Visibility.Visible;
         IdentityText.Text = settings.DisplayName is null ? "Spieleridentität unsicher" : "Name nicht bestätigt, wird nicht veröffentlicht";
-        TrackerText.Text = TrackerStateText.Of(app.Watcher.State);
+        TrackerText.Text = TrackerStateText.Of(app.Tracker);
+        RecognitionNote.Visibility = app.Recognition.HasProfiles ? Visibility.Collapsed : Visibility.Visible;
         SyncText.Text = app.Sync.Status.Text + (app.Sync.Status.LastSuccess is { } last ? $" (zuletzt {last:HH:mm})" : "");
 
         var filter = Filter();

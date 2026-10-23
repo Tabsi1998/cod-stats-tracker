@@ -84,6 +84,24 @@ Fehlende Werte sind `null`, nie `0`.
 
 Warzone mit `placement = 1` muss `result = win` sein, sonst `loss`.
 
+## Erkennung (Client)
+
+```
+GameWatcher (Prozessname, alle 5 s) ──CoD läuft──▶ RecognitionLoop (alle 2 s)
+   WindowCapture (Windows Graphics Capture, nur Arbeitsspeicher)
+   → ScreenReader (Profile: Anker-Text erkennen, dann Felder per Windows-OCR lesen)
+   → MatchStateMachine (Idle → Playing → Collecting → Recorded)
+   → MatchStore (SQLite): sicher = auto (wird hochgeladen), sonst pending (Spieler prüft)
+```
+
+- **Profile sind Daten** (`*.json`), keine Programmlogik: Bildschirmart, Spiel, Seitenverhältnis, Anker-Bereiche mit Schlüsselwörtern, Feld-Bereiche (relativ 0..1), Wörter für Sieg/Niederlage. Geladen aus `profiles/` neben der EXE und `%LOCALAPPDATA%\CodStats\profiles` (überschreibt gleiche `id`). Format: [docs/erkennungsprofile.md](docs/erkennungsprofile.md).
+- **Noch keine Spielprofile:** sie entstehen aus echten Screenshots (`tests/capture-fixtures`). Profile mit `verified: false` laufen, liefern aber nie „sichere“ Matches.
+- **Ein Bild entscheidet nie:** ein Ergebnis wird 3× gelesen, Werte per Mehrheit bestimmt. „Sicher“ (≥ 0,85) nur, wenn Matchbeginn gesehen, Spiel bekannt, Lesungen einig und Plausibilitätsregeln erfüllt.
+- **Tab-Scoreboard mitten im Match zählt nicht.** Es wird nur gemerkt; endet ein Match ohne Ergebnisbildschirm, wird der letzte Stand als `pending` zur Prüfung abgelegt.
+- **Duplikate:** nach einem erfassten Match werden Ergebnisbildschirme ignoriert, bis ein neues Match beginnt; zusätzlich prüfen SQLite (gleiches Ergebnis ±3 Min.) und Server.
+- **Eigener Name:** gilt erst als bestätigt, wenn derselbe Name sauber in 3 verschiedenen Matches gelesen wurde und kein zweiter Name genauso oft vorkommt. Ein von Hand bestätigter Name bleibt.
+- **Windows-OCR** liefert keine Wort-Konfidenz; die Qualität kommt aus sauberem Parsen (Ziffern-Verwechsler wie O/0 senken sie) und der Übereinstimmung mehrerer Bilder.
+
 ## API-Überblick (`/api/v1`)
 
 Gerät (signiert): `POST devices/register`, `POST devices/recover`, `GET me`, `PUT me/display-name`, `PATCH me/privacy`, `GET me/stats`, `GET me/matches`, `POST me/matches/batch`, `PATCH me/matches/{id}`, `GET me/sync-status`, `POST me/recovery-key`, `GET me/export`, `DELETE me/data`.
@@ -100,7 +118,7 @@ Die genaue Beschreibung liefert OpenAPI unter `/openapi/v1.json`.
 |---|---|
 | `apps/api` | ASP.NET Core API, EF Core, Migrationen |
 | `apps/web` | React-Webseite (Phase 3) |
-| `apps/desktop/CodStats.Desktop` | WPF-Client: `Identity/` (Geräteschlüssel), `Storage/` (SQLite), `Sync/` (signierte API, Sync-Schleife), `Recognition/` (Spielprozess; Bilderkennung folgt), `Ui/` (Tray, Dashboard, Fenster) |
+| `apps/desktop/CodStats.Desktop` | WPF-Client: `Identity/` (Geräteschlüssel), `Storage/` (SQLite), `Sync/` (signierte API, Sync-Schleife), `Capture/` (Fensteraufnahme, OCR), `Recognition/` (Profile, Zustandsautomat, Namensprüfung), `Ui/` (Tray, Dashboard, Fenster) |
 | `shared/contracts` | DTOs, Spiel-Enums, Request-Signatur, Statistikregeln |
 | `tests/api` | API-Tests gegen echtes PostgreSQL (Testcontainers) und Tests der gemeinsamen Regeln |
 | `tests/desktop` | Client-Tests: SQLite, Identität, Sync gegen nachgebauten Server |

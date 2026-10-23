@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using CodStats.Desktop.Identity;
@@ -26,6 +27,10 @@ public partial class App : Application
     public MatchStore Store { get; private set; } = null!;
     public SyncService Sync { get; private set; } = null!;
     public GameWatcher Watcher { get; } = new();
+    public RecognitionLoop Recognition { get; private set; } = null!;
+
+    /// <summary>What the tracker is doing right now, from the process watcher or, while the game runs, the recognition.</summary>
+    public TrackerState Tracker { get; private set; } = TrackerState.WaitingForGame;
 
     public static new App Current => (App)Application.Current;
 
@@ -57,8 +62,29 @@ public partial class App : Application
         Store.Initialise();
         Sync = new SyncService(Store, Identity, CreateClient, Paths.Identity);
 
+        var profiles = ProfileStore.Load([Path.Combine(AppContext.BaseDirectory, "profiles"), Paths.Profiles]);
+        Recognition = new RecognitionLoop(profiles, Store, Watcher.ProcessNames,
+            state => Dispatcher.BeginInvoke(() => SetTracker(state)),
+            (_, _) => Dispatcher.BeginInvoke(async () =>
+            {
+                DataChanged?.Invoke();
+                await SyncNowAsync();
+            }),
+            name => Dispatcher.BeginInvoke(() => AdoptRecognisedName(name)));
+
         tray = new Tray(this);
-        Watcher.StateChanged += state => Dispatcher.BeginInvoke(() => tray.ShowTracker(state));
+        Watcher.StateChanged += state => Dispatcher.BeginInvoke(async () =>
+        {
+            SetTracker(state);
+            if (state == TrackerState.GameRunning)
+            {
+                Recognition.Start();
+            }
+            else
+            {
+                await Recognition.StopAsync();
+            }
+        });
         Sync.StatusChanged += status => Dispatcher.BeginInvoke(() => tray.ShowSync(status));
         Watcher.SetEnabled(Settings.TrackingEnabled);
         Watcher.Start();
@@ -99,11 +125,31 @@ public partial class App : Application
         Settings.Save(Paths);
         Autostart.Apply(Settings.StartWithWindows);
         Watcher.SetEnabled(Settings.TrackingEnabled);
-        tray?.ShowTracker(Watcher.State);
+        SetTracker(Watcher.State);
         DataChanged?.Invoke();
     }
 
     public void NotifyDataChanged() => DataChanged?.Invoke();
+
+    private void SetTracker(TrackerState state)
+    {
+        Tracker = state;
+        tray?.ShowTracker(state);
+        DataChanged?.Invoke();
+    }
+
+    /// <summary>A name the recognition read in several matches. A name the player confirmed by hand stays.</summary>
+    private void AdoptRecognisedName(string name)
+    {
+        if (Settings.NameConfirmed)
+        {
+            return;
+        }
+        Settings.DisplayName = name;
+        Settings.NameConfirmed = true;
+        SaveSettings();
+        _ = SyncNowAsync();
+    }
 
     public void ShowDashboard()
     {
@@ -139,6 +185,7 @@ public partial class App : Application
     {
         tray?.Dispose();
         Watcher.Dispose();
+        Recognition.Dispose();
         Shutdown();
     }
 
