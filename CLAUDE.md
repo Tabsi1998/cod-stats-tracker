@@ -19,6 +19,7 @@ Statistik-Tracker für CoD MW4 Multiplayer und Warzone: Windows-Client (Bilderke
 | Client-EXE bauen | `python scripts/local_check.py --only desktop` → `.local-testing/publish/win-x64/CodStats.exe` |
 | Release-Probelauf | `python scripts/local_check.py --release --version 0.1.0` → Installer, ZIP, SHA256SUMS in `.local-testing/release` |
 | Release | Tag `v0.1.0` pushen → GitHub baut Entwurfs-Release; Fabian veröffentlicht |
+| Server einrichten / aktualisieren | `./install.sh --domain …` einmal, dann `./update.sh` (Linux; Backup, Rollback eingebaut) |
 | Ganzer Stack lokal | `cd deploy && docker compose --env-file .env up -d --build` (siehe README) |
 | API starten | `docker compose -f deploy/docker-compose.dev.yml up -d` dann `dotnet run --project apps/api/CodStats.Api` |
 | Migration anlegen | `dotnet tool restore` dann `dotnet ef migrations add <Name> --project apps/api/CodStats.Api` |

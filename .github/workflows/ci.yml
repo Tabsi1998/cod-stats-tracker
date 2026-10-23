@@ -61,36 +61,41 @@ jobs:
       - run: python scripts/local_check.py --only desktop
 
   stack:
-    name: Docker stack end to end
+    name: Server scripts and Docker stack end to end
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-      - name: Start the stack
-        working-directory: deploy
-        run: |
-          cat > .env <<'EOF'
-          SITE_ADDRESS=http://localhost
-          HTTP_PORT=8080
-          HTTPS_PORT=8443
-          POSTGRES_PASSWORD=ci-only-password
-          LEADERBOARD_MIN_MATCHES=3
-          EOF
-          docker compose --env-file .env up -d --build --wait --wait-timeout 300 || true
-          for i in $(seq 1 60); do
-            curl -fs http://localhost:8080/health && break
-            sleep 2
-          done
+      - name: Shellcheck
+        run: shellcheck -x install.sh update.sh backup.sh restore.sh start.sh stop.sh scripts/server-common.sh
+      - name: install.sh (local mode, as on a fresh server)
+        run: ./install.sh --local
       - name: End-to-end checks
         run: dotnet run --project tests/e2e/CodStats.E2E -- http://localhost:8080
+      - name: backup.sh
+        run: |
+          ./backup.sh
+          test -s "$(ls -1t backups/*.dump | head -n 1)"
+      - name: update.sh (rebuild and restart, with backup first)
+        run: |
+          ./update.sh --skip-pull
+          test "$(ls -1 backups/*.dump | wc -l)" -ge 2
+          curl -fs http://localhost:8080/health
+      - name: stop.sh and start.sh
+        run: |
+          ./stop.sh
+          ./start.sh
+          curl -fs http://localhost:8080/health
+      - name: install.sh refuses a second installation
+        run: "! ./install.sh --local"
       - name: Logs
         if: always()
         working-directory: deploy
-        run: docker compose --env-file .env logs --no-color
-      - name: Stop
+        run: docker compose --env-file .env logs --no-color || true
+      - name: Remove
         if: always()
         working-directory: deploy
-        run: docker compose --env-file .env down -v
+        run: docker compose --env-file .env down -v || true
