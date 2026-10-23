@@ -32,7 +32,7 @@
 
             <Border x:Name="RecognitionNote" Style="{StaticResource Card}" Margin="0,14,0,0" Background="#1F2633">
                 <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}"
-                           Text="Die automatische Spielerkennung ist noch nicht eingebaut. Sie braucht echte Bilder aus MW4 und Warzone. Bis dahin kannst du Matches mit „Match nachtragen“ selbst eintragen." />
+                           Text="Für MW4 und Warzone gibt es noch keine Erkennungsprofile. Sie entstehen aus echten Spielbildern. Bis dahin kannst du Matches mit „Match nachtragen“ selbst eintragen; unsichere Erkennungen landen hier zur Prüfung." />
             </Border>
 
             <!-- Filters -->

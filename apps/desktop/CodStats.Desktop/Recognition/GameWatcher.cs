@@ -12,6 +12,7 @@ public enum TrackerState
     MatchRunning,
     Evaluating,
     Uncertain,
+    RecognitionUnavailable,
 }
 
 public static class TrackerStateText
@@ -25,7 +26,8 @@ public static class TrackerStateText
         TrackerState.WarzoneDetected => "Warzone erkannt",
         TrackerState.MatchRunning => "Match läuft",
         TrackerState.Evaluating => "Ergebnis wird ausgewertet",
-        TrackerState.Uncertain => "Erkennung unsicher",
+        TrackerState.Uncertain => "Erkennung unsicher, bitte Match prüfen",
+        TrackerState.RecognitionUnavailable => "Call of Duty läuft, Erkennung noch nicht verfügbar",
         _ => state.ToString(),
     };
 }
@@ -33,7 +35,7 @@ public static class TrackerStateText
 /// <summary>
 /// Notices when Call of Duty starts and stops by looking at process names every few seconds. That is all it does
 /// while no game runs: no capture, no window access. Which mode runs (MW4 or Warzone) needs the screen and is
-/// decided by the recognition, which is not built yet.
+/// decided by the <see cref="RecognitionLoop"/>, which this watcher starts and stops.
 /// </summary>
 public sealed class GameWatcher : IDisposable
 {
@@ -53,6 +55,8 @@ public sealed class GameWatcher : IDisposable
     }
 
     public TrackerState State { get; private set; } = TrackerState.WaitingForGame;
+
+    public IReadOnlyList<string> ProcessNames => processNames;
 
     public event Action<TrackerState>? StateChanged;
 
