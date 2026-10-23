@@ -43,10 +43,10 @@ Webseite: http://localhost:8080 · API-Beschreibung: http://localhost:8080/opena
 **2. Windows-Client bauen und starten**
 
 ```bash
-python scripts/local_check.py --only desktop
+python scripts/local_check.py --release --version 0.1.0
 ```
 
-Dann `.local-testing/publish/win-x64/CodStats.exe` starten. Beim ersten Start:
+Dann `.local-testing/release/CodStats-Setup-win-x64.exe` installieren (ohne Adminrechte) oder direkt `.local-testing/publish/win-x64/CodStats.exe` starten. Beim ersten Start:
 
 - Serveradresse `http://localhost:8080` eintragen (für echte Server immer `https://`)
 - Zustimmen, optional „Profil öffentlich“ anhaken

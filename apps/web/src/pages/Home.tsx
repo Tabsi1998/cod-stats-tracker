@@ -60,7 +60,7 @@ export function Home() {
             synchronisiert deine Matches automatisch.
           </p>
           <a
-            href="/downloads/CodStatsSetup.exe"
+            href="/downloads/CodStats-Setup-win-x64.exe"
             className="inline-block rounded-lg bg-accent px-4 py-2 font-medium text-bg hover:brightness-110"
           >
             Für Windows herunterladen

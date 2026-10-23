@@ -9,7 +9,15 @@
 
 Caddy holt das HTTPS-Zertifikat automatisch. Die API spielt Datenbank-Migrationen beim Start selbst ein.
 
-Den Windows-Installer zum Download legst du später nach `/srv/downloads/` im Web-Container (kommt mit dem Installer, Phase 6).
+## Windows-Client zum Download anbieten
+
+Die Webseite verlinkt `/downloads/CodStats-Setup-win-x64.exe`. Installer aus dem GitHub-Release holen und in den Web-Container legen:
+
+```bash
+docker compose cp CodStats-Setup-win-x64.exe web:/srv/downloads/CodStats-Setup-win-x64.exe
+```
+
+Nach einem `--build` des Web-Containers muss die Datei erneut hinein (sie ist nicht Teil des Images).
 
 ## Updates
 
