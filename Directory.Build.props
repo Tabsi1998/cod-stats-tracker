@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- CA1707: underscores in test names; CA1848/CA1873: LoggerMessage everywhere is noise at this size;
+         CA1515: public types in an app are fine; CA2007: no ConfigureAwait in ASP.NET Core and WPF. -->
+    <NoWarn>$(NoWarn);CA1707;CA1848;CA1873;CA1515;CA2007</NoWarn>
+  </PropertyGroup>
+</Project>

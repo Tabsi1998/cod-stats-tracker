@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/api/">
+    <Project Path="apps/api/CodStats.Api/CodStats.Api.csproj" />
+  </Folder>
+  <Folder Name="/apps/desktop/">
+    <Project Path="apps/desktop/CodStats.Desktop/CodStats.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/shared/" />
+  <Folder Name="/shared/contracts/">
+    <Project Path="shared/contracts/CodStats.Contracts/CodStats.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/api/">
+    <Project Path="tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/desktop/">
+    <Project Path="tests/desktop/CodStats.Desktop.Tests/CodStats.Desktop.Tests.csproj" />
+  </Folder>
+</Solution>
