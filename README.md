@@ -99,7 +99,7 @@ cd apps/web && npm install && npm run dev
 
 ## Eigener Server
 
-Repo klonen, einmal `./install.sh --domain deine-domain.at`, danach bei jeder neuen Version `./update.sh`. Details: [deploy/BETRIEB.md](deploy/BETRIEB.md).
+Repo klonen, einmal `./install.sh` (fragt, ob HTTPS ein eigener Reverse Proxy macht oder dieser Server selbst), danach bei jeder neuen Version `./update.sh`. Details: [deploy/BETRIEB.md](deploy/BETRIEB.md).
 
 ## Doku
 

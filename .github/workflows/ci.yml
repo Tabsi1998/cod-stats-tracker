@@ -71,10 +71,18 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Shellcheck
         run: shellcheck -x -S warning install.sh update.sh backup.sh restore.sh start.sh stop.sh scripts/server-common.sh
-      - name: install.sh (local mode, as on a fresh server)
-        run: ./install.sh --local
+      - name: install.sh behind a reverse proxy (Fabian's setup), as on a fresh server
+        run: ./install.sh --behind-proxy --port 8080
       - name: End-to-end checks
         run: dotnet run --project tests/e2e/CodStats.E2E -- http://localhost:8080
+      - name: Real client addresses reach the rate limit through the proxy
+        run: |
+          # Registration allows 10 per hour and address. Address A uses them up, B must still get through.
+          register() { curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H "X-Forwarded-For: $1" -d '{}' http://localhost:8080/api/v1/devices/register; }
+          for i in $(seq 1 10); do code=$(register 203.0.113.10); test "$code" != 429 || { echo "A limited too early ($i)"; exit 1; }; done
+          test "$(register 203.0.113.10)" = 429 || { echo "A was not limited after 10"; exit 1; }
+          test "$(register 203.0.113.20)" != 429 || { echo "B shares A's limit: client address is lost"; exit 1; }
+          echo "ok: separate limits per client address"
       - name: backup.sh
         run: |
           ./backup.sh

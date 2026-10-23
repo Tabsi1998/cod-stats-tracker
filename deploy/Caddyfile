@@ -1,3 +1,13 @@
+{
+	servers {
+		# Requests from these addresses may name the real client in X-Forwarded-For: your own reverse proxy.
+		# Without this every visitor would carry the proxy's address and share one rate limit.
+		trusted_proxies static {$TRUSTED_PROXIES:private_ranges}
+		client_ip_headers X-Forwarded-For
+	}
+}
+
+# A domain (Caddy fetches the certificate) or ":80" behind your own reverse proxy that handles HTTPS.
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
@@ -12,7 +22,10 @@
 
 	@api path /api/* /openapi/* /health
 	handle @api {
-		reverse_proxy api:8080
+		reverse_proxy api:8080 {
+			# Exactly one address for the API: the real client, as Caddy determined it above.
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	# Client downloads (Windows installer) are placed in /srv/downloads.
