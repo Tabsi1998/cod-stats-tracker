@@ -1,0 +1,84 @@
+<Window x:Class="CodStats.Desktop.Ui.MatchEntryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Match" Width="420" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}" Icon="/Assets/app.ico">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="Heading" FontSize="16" FontWeight="Bold" />
+        <TextBlock x:Name="Hint" Margin="0,4,0,12" TextWrapping="Wrap" Foreground="{StaticResource Muted}" />
+
+        <TextBlock Style="{StaticResource Label}" Text="SPIEL" />
+        <ComboBox x:Name="GameBox" Margin="0,4,0,10" SelectionChanged="OnGameChanged">
+            <ComboBoxItem Content="MW4 Multiplayer" Tag="mw4_mp" IsSelected="True" />
+            <ComboBoxItem Content="Warzone Battle Royale" Tag="wz_br" />
+            <ComboBoxItem Content="Warzone Resurgence" Tag="wz_resurgence" />
+        </ComboBox>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Label}" Text="KILLS" />
+                <TextBox x:Name="Kills" Margin="0,4,0,10" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Style="{StaticResource Label}" Text="DEATHS" />
+                <TextBox x:Name="Deaths" Margin="0,4,0,10" />
+            </StackPanel>
+            <StackPanel Grid.Column="4">
+                <TextBlock Style="{StaticResource Label}" Text="ASSISTS" />
+                <TextBox x:Name="Assists" Margin="0,4,0,10" />
+            </StackPanel>
+        </Grid>
+
+        <StackPanel x:Name="Mw4Fields">
+            <TextBlock Style="{StaticResource Label}" Text="ERGEBNIS" />
+            <ComboBox x:Name="ResultBox" Margin="0,4,0,10">
+                <ComboBoxItem Content="Sieg" Tag="win" IsSelected="True" />
+                <ComboBoxItem Content="Niederlage" Tag="loss" />
+                <ComboBoxItem Content="Unentschieden" Tag="draw" />
+                <ComboBoxItem Content="Unbekannt" />
+            </ComboBox>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="MODUS" />
+                    <TextBox x:Name="Mode" Margin="0,4,0,10" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Label}" Text="MAP" />
+                    <TextBox x:Name="Map" Margin="0,4,0,10" />
+                </StackPanel>
+            </Grid>
+            <TextBlock Style="{StaticResource Label}" Text="SCORE" />
+            <TextBox x:Name="Score" Margin="0,4,0,10" />
+        </StackPanel>
+
+        <StackPanel x:Name="WarzoneFields" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource Label}" Text="PLATZIERUNG (1 = SIEG)" />
+            <TextBox x:Name="Placement" Margin="0,4,0,10" />
+        </StackPanel>
+
+        <TextBlock Style="{StaticResource Label}" Text="ZEITPUNKT" />
+        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+            <DatePicker x:Name="Day" Width="140" />
+            <TextBox x:Name="Time" Width="70" Margin="8,0,0,0" ToolTip="hh:mm" />
+        </StackPanel>
+
+        <TextBlock x:Name="Error" Foreground="{StaticResource Loss}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Abbrechen" IsCancel="True" Margin="0,0,8,0" />
+            <Button Content="Speichern" Style="{StaticResource Primary}" IsDefault="True" Click="OnSave" />
+        </StackPanel>
+    </StackPanel>
+</Window>

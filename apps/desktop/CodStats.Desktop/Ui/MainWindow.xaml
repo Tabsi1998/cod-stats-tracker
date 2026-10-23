@@ -1,0 +1,121 @@
+<Window x:Class="CodStats.Desktop.Ui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:CodStats.Desktop.Ui"
+        Title="COD Stats" Width="900" Height="660" MinWidth="720" MinHeight="520"
+        WindowStartupLocation="CenterScreen" Style="{StaticResource DarkWindow}" Icon="/Assets/app.ico">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <!-- Header: who, what the tracker does, sync state -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="PlayerName" FontSize="22" FontWeight="Bold" />
+                        <Border x:Name="IdentityChip" Margin="10,4,0,0" CornerRadius="10" Padding="8,2" Background="#3A2E12" VerticalAlignment="Center">
+                            <TextBlock x:Name="IdentityText" FontSize="11" Foreground="{StaticResource Accent}" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Margin="0,4,0,0" Foreground="{StaticResource Muted}">
+                        <Run x:Name="TrackerText" /> · <Run x:Name="SyncText" />
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Content="Match nachtragen" Click="OnAddMatch" Margin="0,0,8,0" />
+                    <Button Content="Synchronisieren" Click="OnSync" Margin="0,0,8,0" />
+                    <Button Content="Einstellungen" Click="OnSettings" />
+                </StackPanel>
+            </Grid>
+
+            <Border x:Name="RecognitionNote" Style="{StaticResource Card}" Margin="0,14,0,0" Background="#1F2633">
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                           Text="Die automatische Spielerkennung ist noch nicht eingebaut. Sie braucht echte Bilder aus MW4 und Warzone. Bis dahin kannst du Matches mit „Match nachtragen“ selbst eintragen." />
+            </Border>
+
+            <!-- Filters -->
+            <WrapPanel Margin="0,16,0,0">
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="7" Padding="3" Margin="0,0,10,6">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="TabMw4" Style="{StaticResource Tab}" Content="MW4" GroupName="game" IsChecked="True" Checked="OnFilter" />
+                        <RadioButton x:Name="TabWarzone" Style="{StaticResource Tab}" Content="Warzone" GroupName="game" Checked="OnFilter" />
+                        <RadioButton x:Name="TabAll" Style="{StaticResource Tab}" Content="Übersicht" GroupName="game" Checked="OnFilter" />
+                    </StackPanel>
+                </Border>
+                <ComboBox x:Name="Period" Width="170" Margin="0,0,10,6" VerticalContentAlignment="Center" SelectionChanged="OnFilter">
+                    <ComboBoxItem Content="Gesamt" IsSelected="True" />
+                    <ComboBoxItem Content="Letzte 10 Matches" Tag="last:10" />
+                    <ComboBoxItem Content="Letzte 25 Matches" Tag="last:25" />
+                    <ComboBoxItem Content="Letzte 50 Matches" Tag="last:50" />
+                    <ComboBoxItem Content="Letzte 100 Matches" Tag="last:100" />
+                    <ComboBoxItem Content="Letzte 7 Tage" Tag="days:7" />
+                    <ComboBoxItem Content="Letzte 30 Tage" Tag="days:30" />
+                    <ComboBoxItem Content="Zeitraum …" Tag="range" />
+                </ComboBox>
+                <StackPanel x:Name="RangePanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,0,0,6">
+                    <DatePicker x:Name="From" Width="120" SelectedDateChanged="OnFilter" />
+                    <TextBlock Text="bis" Margin="8,0" VerticalAlignment="Center" />
+                    <DatePicker x:Name="To" Width="120" SelectedDateChanged="OnFilter" />
+                </StackPanel>
+            </WrapPanel>
+
+            <Border x:Name="CombinedNote" Visibility="Collapsed" BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,4,0,0">
+                <TextBlock Text="Übersicht: MW4 und Warzone zusammengerechnet." />
+            </Border>
+
+            <!-- Stat cards -->
+            <UniformGrid x:Name="Cards" Columns="3" Margin="-5,10,-5,0" />
+
+            <!-- Charts -->
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="K/D-ENTWICKLUNG" />
+                        <ui:MiniChart x:Name="KdChart" Height="110" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="KILLS PRO MATCH" />
+                        <ui:MiniChart x:Name="KillsChart" Bars="True" Height="110" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="WINRATE-ENTWICKLUNG" />
+                    <ui:MiniChart x:Name="WinChart" Height="70" Margin="0,8,0,0" Stroke="{StaticResource Win}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Recent matches -->
+            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="LETZTE MATCHES (DOPPELKLICK ZUM KORRIGIEREN)" />
+                    <ListView x:Name="Recent" Margin="0,8,0,0" Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}"
+                              MouseDoubleClick="OnEditMatch" MaxHeight="260">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Zeitpunkt" Width="130" DisplayMemberBinding="{Binding When}" />
+                                <GridViewColumn Header="Spiel" Width="150" DisplayMemberBinding="{Binding Game}" />
+                                <GridViewColumn Header="K" Width="45" DisplayMemberBinding="{Binding Kills}" />
+                                <GridViewColumn Header="D" Width="45" DisplayMemberBinding="{Binding Deaths}" />
+                                <GridViewColumn Header="Platz" Width="50" DisplayMemberBinding="{Binding Placement}" />
+                                <GridViewColumn Header="Ergebnis" Width="90" DisplayMemberBinding="{Binding Result}" />
+                                <GridViewColumn Header="Status" Width="200" DisplayMemberBinding="{Binding State}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBlock x:Name="Empty" Text="Noch keine Matches erfasst." Foreground="{StaticResource Muted}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Window>
