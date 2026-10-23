@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local
+.local-testing/
+.env
+deploy/.env
+*.db
+*.db-shm
+*.db-wal
+
+# Real game captures stay local until reviewed (other players' names are visible)
+tests/capture-fixtures/**/*.png
+tests/capture-fixtures/**/*.jpg
+!tests/capture-fixtures/README.md
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,8 @@
+title = "cod-stats-tracker"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders in example configuration"
+paths = ['''deploy/\.env\.example''']
