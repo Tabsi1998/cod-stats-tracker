@@ -4,6 +4,7 @@
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY_DIR="$ROOT_DIR/deploy"
 ENV_FILE="$DEPLOY_DIR/.env"
+# shellcheck disable=SC2034  # used by the scripts that source this file
 BACKUP_DIR="$ROOT_DIR/backups"
 RUN_DIR="$ROOT_DIR/run"
 

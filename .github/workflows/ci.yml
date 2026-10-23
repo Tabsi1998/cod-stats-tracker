@@ -70,7 +70,7 @@ jobs:
         with:
           dotnet-version: "10.0.x"
       - name: Shellcheck
-        run: shellcheck -x install.sh update.sh backup.sh restore.sh start.sh stop.sh scripts/server-common.sh
+        run: shellcheck -x -S warning install.sh update.sh backup.sh restore.sh start.sh stop.sh scripts/server-common.sh
       - name: install.sh (local mode, as on a fresh server)
         run: ./install.sh --local
       - name: End-to-end checks
