@@ -97,6 +97,22 @@ public partial class App : Application
         {
             ShowDashboard();
         }
+        else
+        {
+            TrimMemory();
+        }
+    }
+
+    /// <summary>
+    /// Back in the tray: hand startup and window memory back to Windows. The tracker only waits for the game
+    /// now, so there is no reason to hold on to it.
+    /// </summary>
+    public static void TrimMemory()
+    {
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        using var self = System.Diagnostics.Process.GetCurrentProcess();
+        NativeMethods.EmptyWorkingSet(self.Handle);
     }
 
     public ApiClient CreateClient() =>

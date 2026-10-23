@@ -26,6 +26,8 @@ public partial class MainWindow : Window
         {
             app.DataChanged -= refresh;
             app.Sync.StatusChanged -= OnSync;
+            // The dashboard is closed, not hidden: its memory can go back once it is gone.
+            Dispatcher.BeginInvoke(App.TrimMemory, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         };
         Loaded += (_, _) => Refresh();
     }
