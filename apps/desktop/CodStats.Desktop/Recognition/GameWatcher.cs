@@ -50,7 +50,8 @@ public sealed class GameWatcher : IDisposable
     public GameWatcher(IReadOnlyList<string>? processNames = null, Func<IEnumerable<string>>? runningProcesses = null)
     {
         this.processNames = processNames ?? DefaultProcessNames;
-        this.runningProcesses = runningProcesses ?? (() => Process.GetProcesses().Select(p => { using (p) { return p.ProcessName; } }));
+        // Asking for the few known names is far cheaper than listing every process every five seconds.
+        this.runningProcesses = runningProcesses ?? (() => this.processNames.Where(IsRunning));
         timer = new System.Threading.Timer(_ => Poll(), null, Timeout.Infinite, Timeout.Infinite);
     }
 
@@ -90,6 +91,16 @@ public sealed class GameWatcher : IDisposable
         {
             return false;
         }
+    }
+
+    private static bool IsRunning(string name)
+    {
+        var found = Process.GetProcessesByName(name);
+        foreach (var process in found)
+        {
+            process.Dispose();
+        }
+        return found.Length > 0;
     }
 
     public void Dispose() => timer.Dispose();

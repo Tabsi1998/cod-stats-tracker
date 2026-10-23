@@ -391,6 +391,8 @@ def web_steps() -> list[Step]:
 
 # Desktop.
 
+# Not compressed on purpose: a compressed single file unpacks itself into memory at every start (260 MB instead of
+# 95 MB working set). The installer compresses the download instead.
 def desktop_publish(context: Context) -> str:
     if platform.system() != "Windows":
         raise StepSkipped("the Windows client builds on Windows only")
@@ -398,7 +400,7 @@ def desktop_publish(context: Context) -> str:
     shutil.rmtree(target, ignore_errors=True)
     context.require([dotnet(context), "publish", DESKTOP / "CodStats.Desktop" / "CodStats.Desktop.csproj",
                      "--configuration", "Release", "--runtime", "win-x64", "--self-contained", "true",
-                     "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true", "-p:EnableCompressionInSingleFile=true",
+                     "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
                      "--output", target], what="the self-contained publish failed")
     exe = target / "CodStats.exe"
     if not exe.exists():
