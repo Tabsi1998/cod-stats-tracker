@@ -398,10 +398,18 @@ def desktop_publish(context: Context) -> str:
         raise StepSkipped("the Windows client builds on Windows only")
     target = STATE / "publish" / "win-x64"
     shutil.rmtree(target, ignore_errors=True)
-    context.require([dotnet(context), "publish", DESKTOP / "CodStats.Desktop" / "CodStats.Desktop.csproj",
-                     "--configuration", "Release", "--runtime", "win-x64", "--self-contained", "true",
-                     "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
-                     "--output", target], what="the self-contained publish failed")
+    # A self-contained publish adds the ILLink package to the lock files of the client and the contracts. Those
+    # files must stay as the plain restore writes them (the Linux CI and the API image restore in locked mode),
+    # so they are put back afterwards.
+    locks = {path: path.read_bytes() for path in ROOT.glob("**/packages.lock.json") if ".local-testing" not in path.parts}
+    try:
+        context.require([dotnet(context), "publish", DESKTOP / "CodStats.Desktop" / "CodStats.Desktop.csproj",
+                         "--configuration", "Release", "--runtime", "win-x64", "--self-contained", "true",
+                         "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
+                         "--output", target], what="the self-contained publish failed")
+    finally:
+        for path, content in locks.items():
+            path.write_bytes(content)
     exe = target / "CodStats.exe"
     if not exe.exists():
         raise StepFailed("CodStats.exe is missing in the publish output")
