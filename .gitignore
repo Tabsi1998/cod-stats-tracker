@@ -29,3 +29,7 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Server runtime
+backups/
+run/

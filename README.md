@@ -20,6 +20,14 @@ Voraussetzung: Docker Desktop läuft, .NET SDK 10 ist installiert.
 
 **1. Server und Webseite starten**
 
+Auf Linux (oder WSL):
+
+```bash
+./install.sh --local
+```
+
+Unter Windows mit Docker Desktop (die Skripte brauchen Linux):
+
 ```bash
 cd deploy
 cp .env.example .env
@@ -88,6 +96,10 @@ Webseite mit Hot Reload (leitet `/api` an Port 5080 weiter):
 ```bash
 cd apps/web && npm install && npm run dev
 ```
+
+## Eigener Server
+
+Repo klonen, einmal `./install.sh --domain deine-domain.at`, danach bei jeder neuen Version `./update.sh`. Details: [deploy/BETRIEB.md](deploy/BETRIEB.md).
 
 ## Doku
 
