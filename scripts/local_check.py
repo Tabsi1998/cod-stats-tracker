@@ -59,8 +59,11 @@ GITLEAKS_BUILDS = {
     ),
 }
 
-# Fewer tests than this means tests silently stopped being discovered.
+# Fewer tests than this means tests silently stopped being discovered. The Windows client's tests run on
+# Windows only, so Linux (the CI runner with Docker) runs the API and contract tests alone.
 MIN_DOTNET_TESTS = 70
+MIN_DOTNET_TESTS_LINUX = 62
+API_TESTS = "tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj"
 
 GROUPS = ("repository", "dotnet", "web", "desktop")
 PASS, FAIL, SKIP = "passed", "failed", "skipped"
@@ -309,7 +312,9 @@ def dotnet_tests(context: Context) -> str:
         raise StepFailed("Docker is not running. The API tests start PostgreSQL with Testcontainers; start Docker Desktop")
     results = STATE / "dotnet-tests"
     shutil.rmtree(results, ignore_errors=True)
-    context.require([binary, "test", SOLUTION, "--no-build", "--configuration", "Release",
+    windows = platform.system() == "Windows"
+    minimum = MIN_DOTNET_TESTS if windows else MIN_DOTNET_TESTS_LINUX
+    context.require([binary, "test", SOLUTION if windows else API_TESTS, "--no-build", "--configuration", "Release",
                      "--logger", "trx", "--results-directory", results],
                     what="tests failed; the output above names them")
     executed = failed = 0
@@ -319,8 +324,8 @@ def dotnet_tests(context: Context) -> str:
         failed += broken
     if failed:
         raise StepFailed(f"{failed} test(s) failed")
-    if executed < MIN_DOTNET_TESTS:
-        raise StepFailed(f"only {executed} tests ran, expected at least {MIN_DOTNET_TESTS}; were tests lost?")
+    if executed < minimum:
+        raise StepFailed(f"only {executed} tests ran, expected at least {minimum}; were tests lost?")
     return f"{executed} tests"
 
 

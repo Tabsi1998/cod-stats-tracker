@@ -17,4 +17,7 @@
   <Folder Name="/tests/desktop/">
     <Project Path="tests/desktop/CodStats.Desktop.Tests/CodStats.Desktop.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/e2e/">
+    <Project Path="tests/e2e/CodStats.E2E/CodStats.E2E.csproj" />
+  </Folder>
 </Solution>

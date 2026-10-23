@@ -4,6 +4,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- Lets the Windows client build on the Linux CI runner; it still runs on Windows only. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- CA1707: underscores in test names; CA1848/CA1873: LoggerMessage everywhere is noise at this size;

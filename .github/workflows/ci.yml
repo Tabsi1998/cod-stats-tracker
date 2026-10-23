@@ -1,0 +1,96 @@
+# Second, independent confirmation after scripts/local_check.py. Runs the same checks on clean machines:
+# Linux has Docker for the PostgreSQL tests and the full stack, Windows builds and tests the client.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  checks:
+    name: Repository, .NET (with PostgreSQL), web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/local_check.py --only repository,dotnet,web
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-check-linux
+          path: .local-testing/local-check.*
+          if-no-files-found: ignore
+
+  windows-client:
+    name: Windows client (tests, self-contained EXE)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: dotnet test tests/desktop/CodStats.Desktop.Tests --configuration Release
+      - run: python scripts/local_check.py --only desktop
+
+  stack:
+    name: Docker stack end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Start the stack
+        working-directory: deploy
+        run: |
+          cat > .env <<'EOF'
+          SITE_ADDRESS=http://localhost
+          HTTP_PORT=8080
+          HTTPS_PORT=8443
+          POSTGRES_PASSWORD=ci-only-password
+          LEADERBOARD_MIN_MATCHES=3
+          EOF
+          docker compose --env-file .env up -d --build --wait --wait-timeout 300 || true
+          for i in $(seq 1 60); do
+            curl -fs http://localhost:8080/health && break
+            sleep 2
+          done
+      - name: End-to-end checks
+        run: dotnet run --project tests/e2e/CodStats.E2E -- http://localhost:8080
+      - name: Logs
+        if: always()
+        working-directory: deploy
+        run: docker compose --env-file .env logs --no-color
+      - name: Stop
+        if: always()
+        working-directory: deploy
+        run: docker compose --env-file .env down -v
