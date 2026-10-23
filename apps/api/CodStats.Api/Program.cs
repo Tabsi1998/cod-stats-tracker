@@ -20,7 +20,8 @@ builder.Services.AddScoped<SignatureVerifier>();
 builder.Services.AddScoped<DeviceAuthenticationFilter>();
 builder.Services.AddHostedService<NonceCleanup>();
 builder.Services.Configure<LeaderboardOptions>(config.GetSection("Leaderboards"));
-builder.Services.AddCodStatsRateLimits(config.GetSection("RateLimits").Get<RateLimitOptions>() ?? new RateLimitOptions());
+builder.Services.Configure<RateLimitOptions>(config.GetSection("RateLimits"));
+builder.Services.AddCodStatsRateLimits();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
@@ -49,6 +50,16 @@ if (trustForwarded)
     app.UseForwardedHeaders();
 }
 app.UseExceptionHandler();
+
+// Signed requests are verified after model binding has read the body, so the body must be readable twice.
+app.Use((context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/v1"))
+    {
+        context.Request.EnableBuffering(SignatureVerifier.MaxBodyBytes, SignatureVerifier.MaxBodyBytes + 1);
+    }
+    return next(context);
+});
 app.UseStatusCodePages();
 app.UseRateLimiter();
 

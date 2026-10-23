@@ -80,7 +80,10 @@ public sealed class SignatureVerifier(AppDb db, TimeProvider clock)
 
     private static async Task<byte[]?> ReadBodyAsync(HttpRequest request, CancellationToken cancellationToken)
     {
-        request.EnableBuffering(MaxBodyBytes, MaxBodyBytes + 1);
+        if (!request.Body.CanSeek)
+        {
+            throw new InvalidOperationException("request body is not buffered; the buffering middleware must run first");
+        }
         request.Body.Position = 0;
         using var buffer = new MemoryStream();
         var chunk = new byte[16 * 1024];

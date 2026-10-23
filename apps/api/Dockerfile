@@ -4,7 +4,7 @@ WORKDIR /src
 COPY Directory.Build.props .editorconfig ./
 COPY shared/contracts/CodStats.Contracts/ shared/contracts/CodStats.Contracts/
 COPY apps/api/CodStats.Api/ apps/api/CodStats.Api/
-RUN dotnet publish apps/api/CodStats.Api/CodStats.Api.csproj -c Release -o /app --locked-mode
+RUN dotnet publish apps/api/CodStats.Api/CodStats.Api.csproj -c Release -o /app -p:RestoreLockedMode=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
