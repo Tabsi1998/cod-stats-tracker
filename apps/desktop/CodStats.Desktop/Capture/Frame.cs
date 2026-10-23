@@ -18,6 +18,8 @@ public sealed class Frame : IDisposable
         Width = width;
         Height = height;
         pixels = ArrayPool<byte>.Shared.Rent(width * height * 4);
+        // The shared pool may hand out an array someone else returned without clearing it.
+        Pixels.Clear();
     }
 
     public int Width { get; }
