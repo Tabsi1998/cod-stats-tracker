@@ -13,9 +13,8 @@ public static class MeEndpoints
 
     public static void MapMeEndpoints(this RouteGroupBuilder api)
     {
-        var me = api.MapGroup("/me").WithTags("Own profile (signed)")
-            .AddEndpointFilter<DeviceAuthenticationFilter>()
-            .RequireRateLimiting(RateLimits.Device);
+        // Authentication happens in the DeviceAuthentication middleware for everything under /api/v1/me.
+        var me = api.MapGroup("/me").WithTags("Own profile (signed)").RequireRateLimiting(RateLimits.Device);
 
         me.MapGet("", GetMe);
         me.MapPut("/display-name", SetDisplayName);

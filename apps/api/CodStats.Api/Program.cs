@@ -17,7 +17,6 @@ builder.Services.AddDbContext<AppDb>(options => options
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<SignatureVerifier>();
-builder.Services.AddScoped<DeviceAuthenticationFilter>();
 builder.Services.AddHostedService<NonceCleanup>();
 builder.Services.Configure<LeaderboardOptions>(config.GetSection("Leaderboards"));
 builder.Services.Configure<RateLimitOptions>(config.GetSection("RateLimits"));
@@ -62,6 +61,8 @@ app.Use((context, next) =>
 });
 app.UseStatusCodePages();
 app.UseRateLimiter();
+app.UseWhen(context => context.Request.Path.StartsWithSegments(DeviceAuthentication.Prefix),
+    branch => branch.UseMiddleware<DeviceAuthentication>());
 
 app.MapOpenApi();
 app.MapGet("/health", async (AppDb db, CancellationToken cancel) =>
