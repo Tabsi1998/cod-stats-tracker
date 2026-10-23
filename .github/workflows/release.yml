@@ -1,0 +1,59 @@
+# Builds the Windows client release when a tag v* is pushed: installer, portable ZIP, SHA256SUMS.
+# The release is created as a draft; Fabian publishes it by hand after a look.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build without publishing, e.g. 0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  windows-client:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then v="${GITHUB_REF_NAME#v}"; else v="${{ inputs.version }}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - run: dotnet test tests/desktop/CodStats.Desktop.Tests --configuration Release
+      - run: python scripts/local_check.py --only desktop --release --version ${{ steps.version.outputs.version }}
+      - name: Release notes from CHANGELOG.md
+        shell: bash
+        run: |
+          python - "${{ steps.version.outputs.version }}" > notes.md <<'EOF'
+          import re, sys
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          match = re.search(rf"^## \[{re.escape(sys.argv[1])}\][^\n]*\n(.*?)(?=^## \[|\Z)", text, re.S | re.M)
+          print(match.group(1).strip() if match else "Siehe CHANGELOG.md")
+          EOF
+      - uses: actions/upload-artifact@v5
+        with:
+          name: codstats-${{ steps.version.outputs.version }}
+          path: .local-testing/release/*
+      - name: Draft release
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "COD Stats $GITHUB_REF_NAME" --notes-file notes.md .local-testing/release/*

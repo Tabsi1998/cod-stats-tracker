@@ -8,10 +8,12 @@ Groups:
     dotnet      locked restore, format, build, all .NET tests (API tests need Docker), vulnerable NuGet packages
     web         npm ci, lint, type check, tests, build, npm audit
     desktop     self-contained publish of the Windows client (Windows only)
+    release     installer (Inno Setup 6), portable ZIP and SHA256SUMS from the published client; only with --release
 
 Usage:
     python scripts/local_check.py                every group
     python scripts/local_check.py --only dotnet  some groups
+    python scripts/local_check.py --release      also build installer, ZIP and checksums (nothing is published)
     python scripts/local_check.py --list         the steps, without running them
 
 Results go to .local-testing/, which Git ignores.
@@ -65,7 +67,10 @@ MIN_DOTNET_TESTS = 70
 MIN_DOTNET_TESTS_LINUX = 62
 API_TESTS = "tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj"
 
-GROUPS = ("repository", "dotnet", "web", "desktop")
+GROUPS = ("repository", "dotnet", "web", "desktop", "release")
+DEFAULT_GROUPS = ("repository", "dotnet", "web", "desktop")
+PUBLISH_DIR = STATE / "publish" / "win-x64"
+RELEASE_DIR = STATE / "release"
 PASS, FAIL, SKIP = "passed", "failed", "skipped"
 
 # Variables whose names look like credentials never reach code under test.
@@ -117,6 +122,7 @@ def clean_environment(source: dict[str, str]) -> tuple[dict[str, str], list[str]
 class Context:
     env: dict[str, str]
     log: io.TextIOBase
+    version: str = "0.0.0-local"
     passed: set[str] = field(default_factory=set)
 
     def tool(self, name: str) -> str | None:
@@ -396,7 +402,7 @@ def web_steps() -> list[Step]:
 def desktop_publish(context: Context) -> str:
     if platform.system() != "Windows":
         raise StepSkipped("the Windows client builds on Windows only")
-    target = STATE / "publish" / "win-x64"
+    target = PUBLISH_DIR
     shutil.rmtree(target, ignore_errors=True)
     # A self-contained publish adds the ILLink package to the lock files of the client and the contracts. Those
     # files must stay as the plain restore writes them (the Linux CI and the API image restore in locked mode),
@@ -406,7 +412,8 @@ def desktop_publish(context: Context) -> str:
         context.require([dotnet(context), "publish", DESKTOP / "CodStats.Desktop" / "CodStats.Desktop.csproj",
                          "--configuration", "Release", "--runtime", "win-x64", "--self-contained", "true",
                          "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
-                         "--output", target], what="the self-contained publish failed")
+                         f"-p:Version={context.version.split('-')[0]}", "--output", target],
+                        what="the self-contained publish failed")
     finally:
         for path, content in locks.items():
             path.write_bytes(content)
@@ -420,8 +427,66 @@ def desktop_steps() -> list[Step]:
     return [Step("desktop", "desktop-publish", "Self-contained CodStats.exe (win-x64)", desktop_publish)]
 
 
+# Release (dry run: builds the files a release would carry, publishes nothing).
+
+def inno_setup(environ: dict[str, str]) -> str | None:
+    """Inno Setup 6, installed for all users or, as winget does, for one."""
+    on_path = shutil.which("ISCC", path=environ.get("PATH"))
+    if on_path:
+        return on_path
+    bases = [environ.get("ProgramFiles(x86)"), environ.get("ProgramFiles")]
+    if environ.get("LOCALAPPDATA"):
+        bases.append(str(Path(environ["LOCALAPPDATA"]) / "Programs"))
+    for base in bases:
+        if base and (Path(base) / "Inno Setup 6" / "ISCC.exe").is_file():
+            return str(Path(base) / "Inno Setup 6" / "ISCC.exe")
+    return None
+
+
+def installer(context: Context) -> str:
+    iscc = inno_setup(context.env)
+    if iscc is None:
+        raise StepFailed("Inno Setup 6 is not installed: winget install JRSoftware.InnoSetup")
+    RELEASE_DIR.mkdir(parents=True, exist_ok=True)
+    context.require([iscc, "/Q", f"/DAppVersion={context.version}", f"/DPayloadDir={PUBLISH_DIR}",
+                     f"/DOutputDir={RELEASE_DIR}", ROOT / "installer" / "codstats.iss"], what="the installer did not build")
+    setup = RELEASE_DIR / "CodStats-Setup-win-x64.exe"
+    return f"{setup.stat().st_size // (1024 * 1024)} MB: {setup}"
+
+
+def portable_zip(context: Context) -> str:
+    RELEASE_DIR.mkdir(parents=True, exist_ok=True)
+    target = RELEASE_DIR / "CodStats-portable-win-x64.zip"
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
+        for file in sorted(PUBLISH_DIR.rglob("*")):
+            if file.is_file() and file.suffix != ".pdb":
+                bundle.write(file, file.relative_to(PUBLISH_DIR))
+    return f"{target.stat().st_size // (1024 * 1024)} MB"
+
+
+def checksums(context: Context) -> str:
+    lines = [f"{hashlib.sha256(file.read_bytes()).hexdigest()}  {file.name}"
+             for file in sorted(RELEASE_DIR.iterdir()) if file.is_file() and file.name != "SHA256SUMS"]
+    (RELEASE_DIR / "SHA256SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return f"{len(lines)} file(s)"
+
+
+def release_steps() -> list[Step]:
+    return [
+        Step("release", "installer", "Installer (Inno Setup)", installer, needs=("desktop-publish",)),
+        Step("release", "portable", "Portable ZIP", portable_zip, needs=("desktop-publish",)),
+        Step("release", "checksums", "SHA256SUMS", checksums, needs=("installer", "portable")),
+    ]
+
+
+def default_version(changelog: str) -> str:
+    """The newest released version in the changelog, or a local placeholder."""
+    found = re.search(r"^## \[(\d+\.\d+\.\d+[^\]]*)\]", changelog, re.MULTILINE)
+    return found.group(1) if found else "0.0.0-local"
+
+
 def plan(groups: set[str]) -> list[Step]:
-    builders = {"repository": repository_steps, "dotnet": dotnet_steps, "web": web_steps, "desktop": desktop_steps}
+    builders = {"repository": repository_steps, "dotnet": dotnet_steps, "release": release_steps, "web": web_steps, "desktop": desktop_steps}
     return [step for group in GROUPS if group in groups for step in builders[group]()]
 
 
@@ -444,15 +509,19 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description="Run every check of this repository on this computer.")
     parser.add_argument("--only", help="comma-separated groups: " + ", ".join(GROUPS))
+    parser.add_argument("--release", action="store_true", help="add installer, ZIP and checksums; nothing is published")
+    parser.add_argument("--version", help="the version the release dry run builds, for example 0.1.0")
     parser.add_argument("--list", action="store_true", help="show the steps without running them")
     arguments = parser.parse_args(argv)
 
-    groups = set(GROUPS)
+    groups = set(DEFAULT_GROUPS)
     if arguments.only:
         groups = {group.strip() for group in arguments.only.split(",") if group.strip()}
         unknown = sorted(groups - set(GROUPS))
         if unknown:
             parser.error("unknown group(s): " + ", ".join(unknown))
+    if arguments.release:
+        groups |= {"desktop", "release"}
     steps = plan(groups)
 
     if arguments.list:
@@ -469,7 +538,8 @@ def main(argv: list[str] | None = None) -> int:
     STATE.mkdir(exist_ok=True)
     started = time.monotonic()
     with (STATE / "local-check.log").open("w", encoding="utf-8") as log:
-        results = execute(steps, Context(env=env, log=log))
+        version = arguments.version or default_version((ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
+        results = execute(steps, Context(env=env, log=log, version=version))
     seconds = time.monotonic() - started
 
     report = {"groups": sorted(groups), "seconds": round(seconds, 1),
