@@ -59,7 +59,9 @@ var warzone = await anonymous.GetFromJsonAsync<StatsResponse>($"api/v1/public/pl
 Check(warzone!.Wins == 1, "Warzone win from placement 1");
 
 var board = await anonymous.GetFromJsonAsync<LeaderboardResponse>("api/v1/public/leaderboards?game=mw4&metric=kd");
-Check(board!.Entries.Any(e => e.PlayerId == first.ProfileId), $"leaderboard lists the player (minimum {board.MinMatches} matches)");
+// The player has 3 MW4 matches: listed when the server's minimum allows it, absent otherwise.
+var listed = board!.Entries.Any(e => e.PlayerId == first.ProfileId);
+Check(listed == (board.MinMatches <= 3), $"leaderboard respects the minimum of {board.MinMatches} matches (listed: {listed})");
 
 var text = await anonymous.GetStringAsync($"api/v1/public/players/{first.ProfileId}/matches");
 Check(!text.Contains(first.DeviceId!.Value.ToString(), StringComparison.OrdinalIgnoreCase) && !text.Contains("confidence", StringComparison.OrdinalIgnoreCase),
