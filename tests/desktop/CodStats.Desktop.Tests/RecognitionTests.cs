@@ -443,6 +443,19 @@ public class ResultTimingTests
     }
 }
 
+public class SameNameTests
+{
+    [Theory]
+    [InlineData("[TLS]Tabsi98", "[TLS]Tabsi98", true)]
+    [InlineData("[TLSITabsi98", "[TLS]Tabsi98", true)]   // "]" read as "I" at 1080p
+    [InlineData("[TLS] Tabsi98", "Tabsi98", true)]
+    [InlineData("Tabsi98", "Tabsi99", false)]
+    [InlineData("[TLS]Tabsi98", "[TLS]Day", false)]
+    [InlineData("Day", "Holiday", false)]
+    public void Banner_and_table_names_match_despite_misread_tags(string banner, string table, bool same) =>
+        Assert.Equal(same, ScreenReader.SameName(banner, table));
+}
+
 public class ScoreboardTests
 {
     private static readonly DateTimeOffset Start = DateTimeOffset.UtcNow.AddHours(-1);

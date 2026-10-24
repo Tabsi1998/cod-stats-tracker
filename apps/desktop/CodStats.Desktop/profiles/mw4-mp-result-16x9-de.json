@@ -49,6 +49,13 @@
         "VICTORY",
         "DEFEAT",
         "DRAW"
+      ],
+      "noneOf": [
+        "RUNDENSIEG",
+        "RUNDENNIEDERLAGE",
+        "RUNDENUNENTSCHIEDEN",
+        "ROUND WIN",
+        "ROUND LOSS"
       ]
     }
   ],

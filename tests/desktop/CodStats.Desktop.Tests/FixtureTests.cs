@@ -48,6 +48,10 @@ public class FixtureTests
         {
             return; // Image only on the PC it was captured on.
         }
+        if (width > BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth)
+        {
+            return; // Scaling a capture up says nothing about a real higher resolution.
+        }
         var expected = JsonDocument.Parse(expectedJson).RootElement;
         var profiles = ProfileStore.Load([Path.Combine(Root, "apps", "desktop", "CodStats.Desktop", "profiles")]);
         var ocr = WindowsOcr.Create()!;

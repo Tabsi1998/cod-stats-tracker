@@ -42,6 +42,12 @@ public sealed record Region(double X, double Y, double Width, double Height)
 public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf)
 {
     public IReadOnlyList<Region> More { get; init; } = [];
+
+    /// <summary>
+    /// Words that rule the screen out even when <see cref="AnyOf"/> matches: "RUNDENSIEG" ends a round, not the
+    /// match, yet contains "SIEG".
+    /// </summary>
+    public IReadOnlyList<string> NoneOf { get; init; } = [];
 }
 
 public sealed record FieldSpec(Region Region)
