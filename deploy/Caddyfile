@@ -35,6 +35,13 @@
 		file_server
 	}
 
+	# Built files carry their content hash in the name and never change; the start page must always be fresh,
+	# or an open browser keeps asking for files an update removed.
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@page not path /assets/* /api/* /openapi/* /health /downloads/*
+	header @page Cache-Control "no-cache"
+
 	handle {
 		root * /srv
 		try_files {path} /index.html
