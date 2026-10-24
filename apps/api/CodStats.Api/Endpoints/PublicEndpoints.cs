@@ -68,7 +68,7 @@ public static class PublicEndpoints
         var previous = await db.NameHistory.AsNoTracking()
             .Where(n => n.ProfileId == id && n.Name != profile.DisplayName)
             .OrderByDescending(n => n.LastSeenAt).Select(n => n.Name).ToListAsync(cancel);
-        var matches = db.Matches.Where(m => m.ProfileId == id);
+        var matches = db.Matches.Shown().Where(m => m.ProfileId == id);
         var count = await matches.CountAsync(cancel);
         var last = await matches.MaxAsync(m => (DateTimeOffset?)m.PlayedAt, cancel);
         return Results.Ok(new PlayerProfile(profile.Id, profile.DisplayName!, previous, profile.CreatedAt, count, last));
@@ -84,7 +84,7 @@ public static class PublicEndpoints
         {
             return Results.Problem(detail: problem, statusCode: 400);
         }
-        return Results.Ok(await Statistics.ForProfile(db, id, filter, clock.GetUtcNow(), cancel));
+        return Results.Ok(await Statistics.ForProfile(db, id, filter, clock.GetUtcNow(), shownOnly: true, cancel));
     }
 
     private static async Task<IResult> GetPlayerMatches(Guid id, AppDb db, string? game, int? offset, int? limit, CancellationToken cancel)
@@ -99,7 +99,7 @@ public static class PublicEndpoints
         }
         var (skip, take) = QueryFilters.Paging(offset, limit);
         var games = group.Members();
-        var query = db.Matches.AsNoTracking().Where(m => m.ProfileId == id && games.Contains(m.Game));
+        var query = db.Matches.Shown().AsNoTracking().Where(m => m.ProfileId == id && games.Contains(m.Game));
         var total = await query.CountAsync(cancel);
         var items = await query.OrderByDescending(m => m.PlayedAt).ThenByDescending(m => m.Id).Skip(skip).Take(take).ToListAsync(cancel);
         return Results.Ok(new Page<PublicMatch>(items.Select(Mapping.ToPublic).ToList(), total, skip, take));
@@ -112,7 +112,7 @@ public static class PublicEndpoints
         {
             return Results.NotFound();
         }
-        var match = await db.Matches.AsNoTracking().SingleOrDefaultAsync(m => m.Id == matchId && m.ProfileId == id, cancel);
+        var match = await db.Matches.Shown().AsNoTracking().SingleOrDefaultAsync(m => m.Id == matchId && m.ProfileId == id, cancel);
         return match is null ? Results.NotFound() : Results.Ok(Mapping.ToPublic(match));
     }
 
@@ -136,7 +136,7 @@ public static class PublicEndpoints
         var minimum = Math.Max(options.Value.MinMatches, minMatches ?? 0);
         var games = group.Members();
 
-        var matches = db.Matches.AsNoTracking().Where(m => games.Contains(m.Game));
+        var matches = db.Matches.Shown().AsNoTracking().Where(m => games.Contains(m.Game));
         if (!string.IsNullOrWhiteSpace(mode))
         {
             // Case-insensitive, with wildcards taken literally: modes are read in capitals, corrections may not be.
@@ -187,7 +187,7 @@ public static class PublicEndpoints
     {
         var visible = db.Profiles.Visible().Select(p => p.Id);
         var players = await visible.CountAsync(cancel);
-        var matches = db.Matches.Where(m => visible.Contains(m.ProfileId));
+        var matches = db.Matches.Shown().Where(m => visible.Contains(m.ProfileId));
         var count = await matches.CountAsync(cancel);
         var kills = await matches.SumAsync(m => (long)(m.Kills ?? 0), cancel);
         var last = await matches.MaxAsync(m => (DateTimeOffset?)m.PlayedAt, cancel);
@@ -200,10 +200,10 @@ public static class PublicEndpoints
         {
             p.Id,
             p.DisplayName,
-            Matches = db.Matches.Count(m => m.ProfileId == p.Id),
-            KdKills = db.Matches.Where(m => m.ProfileId == p.Id && m.Kills != null && m.Deaths != null).Sum(m => m.Kills!.Value),
-            KdDeaths = db.Matches.Where(m => m.ProfileId == p.Id && m.Kills != null && m.Deaths != null).Sum(m => m.Deaths!.Value),
-            Last = db.Matches.Where(m => m.ProfileId == p.Id).Max(m => (DateTimeOffset?)m.PlayedAt),
+            Matches = db.Matches.Count(m => m.ProfileId == p.Id && m.IsPublic),
+            KdKills = db.Matches.Where(m => m.ProfileId == p.Id && m.IsPublic && m.Kills != null && m.Deaths != null).Sum(m => m.Kills!.Value),
+            KdDeaths = db.Matches.Where(m => m.ProfileId == p.Id && m.IsPublic && m.Kills != null && m.Deaths != null).Sum(m => m.Deaths!.Value),
+            Last = db.Matches.Where(m => m.ProfileId == p.Id && m.IsPublic).Max(m => (DateTimeOffset?)m.PlayedAt),
         }).ToListAsync(cancel);
         return rows.Select(r => new PlayerSummary(r.Id, r.DisplayName!, r.Matches, StatsCalculator.KdRatio(r.KdKills, r.KdDeaths), r.Last)).ToList();
     }

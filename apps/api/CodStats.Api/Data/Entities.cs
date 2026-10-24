@@ -61,6 +61,12 @@ public sealed class Match
     public string? Map { get; set; }
     public int? Score { get; set; }
     public MatchStatus Status { get; set; }
+
+    /// <summary>
+    /// Shown on the website. Set from the profile's choice when the match arrives; switching the profile to public
+    /// shows all its matches, switching it off keeps the ones already shown and hides only what comes after.
+    /// </summary>
+    public bool IsPublic { get; set; }
     public int? Eliminations { get; set; }
     public int? TeamScore { get; set; }
     public int? EnemyScore { get; set; }

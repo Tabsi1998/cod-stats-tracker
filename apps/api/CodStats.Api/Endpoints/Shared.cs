@@ -7,20 +7,24 @@ namespace CodStats.Api.Endpoints;
 
 public static class Visibility
 {
-    /// <summary>A profile is public only when the player allowed it and confirmed the name.</summary>
-    public static bool IsVisible(Profile profile) =>
-        profile.IsPublic && profile.NameStatus == NameStatus.Confirmed && profile.DisplayName is not null;
-
+    /// <summary>
+    /// A profile is shown when its name is confirmed and it is public, or it was public once and still has matches
+    /// shown from that time.
+    /// </summary>
     public static IQueryable<Profile> Visible(this IQueryable<Profile> profiles) =>
-        profiles.Where(p => p.IsPublic && p.NameStatus == NameStatus.Confirmed && p.DisplayName != null);
+        profiles.Where(p => p.NameStatus == NameStatus.Confirmed && p.DisplayName != null && (p.IsPublic || p.Matches.Any(m => m.IsPublic)));
+
+    /// <summary>Matches the website may show.</summary>
+    public static IQueryable<Match> Shown(this IQueryable<Match> matches) => matches.Where(m => m.IsPublic);
 }
 
 public static class Mapping
 {
-    public static Match ToEntity(MatchUpload upload, Guid profileId, DateTimeOffset now) => new()
+    public static Match ToEntity(MatchUpload upload, Guid profileId, bool isPublic, DateTimeOffset now) => new()
     {
         Id = upload.Id,
         ProfileId = profileId,
+        IsPublic = isPublic,
         Game = upload.Game,
         Mode = upload.Mode,
         PlayedAt = Seconds(upload.PlayedAt),
@@ -85,10 +89,13 @@ public static class Statistics
     /// <summary>Upper bound of matches a statistic reads; far beyond what one player records in a season.</summary>
     private const int MaxMatches = 20_000;
 
-    public static async Task<StatsResponse> ForProfile(AppDb db, Guid profileId, StatsFilter filter, DateTimeOffset now, CancellationToken cancel)
+    /// <param name="shownOnly">For the website: only the matches it may show. The player's own view has all.</param>
+    public static async Task<StatsResponse> ForProfile(AppDb db, Guid profileId, StatsFilter filter, DateTimeOffset now, bool shownOnly,
+        CancellationToken cancel)
     {
         var games = filter.Game.Members();
-        var matches = await db.Matches.AsNoTracking()
+        var source = shownOnly ? db.Matches.Shown() : db.Matches;
+        var matches = await source.AsNoTracking()
             .Where(m => m.ProfileId == profileId && games.Contains(m.Game))
             .OrderByDescending(m => m.PlayedAt).Take(MaxMatches)
             .Select(m => new MatchFacts(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement,

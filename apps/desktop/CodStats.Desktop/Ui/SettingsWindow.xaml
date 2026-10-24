@@ -14,6 +14,8 @@
                        Text="Solange die automatische Erkennung fehlt, trägst du deinen Namen hier einmal ein. Ohne Bestätigung wird dein Profil nicht veröffentlicht." />
 
             <CheckBox x:Name="Publish" Content="Profil öffentlich auf der Webseite zeigen" />
+            <TextBlock Margin="22,2,0,0" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12"
+                       Text="Einschalten zeigt alle deine Matches. Ausschalten lässt bereits gezeigte Matches stehen und zeigt nur neue nicht mehr. Ganz entfernen: „Alle Daten löschen“." />
             <CheckBox x:Name="Tracking" Content="Tracking aktiv" />
             <CheckBox x:Name="Autostart" Content="Mit Windows starten (im Tray)" />
 

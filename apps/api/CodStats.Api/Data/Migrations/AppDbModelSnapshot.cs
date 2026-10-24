@@ -100,6 +100,10 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("game");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_public");
+
                     b.Property<int?>("Kills")
                         .HasColumnType("integer")
                         .HasColumnName("kills");
