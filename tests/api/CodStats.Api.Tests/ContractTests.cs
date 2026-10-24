@@ -161,7 +161,7 @@ public class MatchRuleTests
         Valid() with { Confidence = 1.5 },
         Valid() with { PlayedAt = Now.AddHours(1) },
         Valid() with { PlayedAt = Now.AddDays(-200) },
-        Valid() with { Placement = 3 },
+        Valid() with { Placement = 0 }, // free-for-all places start at 1
         Valid() with { ReviewStatus = ReviewStatus.Pending },
         Valid() with { Mode = new string('x', 65) },
         Valid() with { Map = "a\u0000b" },
