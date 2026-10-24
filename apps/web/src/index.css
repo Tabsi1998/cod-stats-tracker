@@ -25,11 +25,8 @@
 
   /* Roles, as in the game: own team / win cyan, enemy / loss orange, you yellow, left slate. */
   --color-win: oklch(0.84 0.14 205);
-  --color-win-deep: oklch(0.42 0.09 215);
   --color-loss: oklch(0.72 0.17 45);
-  --color-loss-deep: oklch(0.4 0.1 40);
   --color-you: oklch(0.88 0.16 98);
-  --color-you-deep: oklch(0.42 0.08 95);
   --color-left: oklch(0.66 0.03 265);
   --color-draw: oklch(0.8 0.02 240);
 

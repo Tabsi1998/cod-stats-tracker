@@ -88,21 +88,6 @@ export function Bracket({
   )
 }
 
-/** A panel for supporting content: a raised plate with one hairline, no rounded card. */
-export function Panel({ children, className = '', title, action }: { children: ReactNode; className?: string; title?: string; action?: ReactNode }) {
-  return (
-    <section className={`border-t border-line bg-surface/60 ${className}`}>
-      {(title || action) && (
-        <div className="flex items-baseline justify-between gap-4 px-4 pt-4 sm:px-5">
-          {title && <h2 className="display text-xl font-bold tracking-wide">{title}</h2>}
-          {action}
-        </div>
-      )}
-      <div className="p-4 sm:p-5">{children}</div>
-    </section>
-  )
-}
-
 export function Segmented<T extends string>({
   value,
   options,
