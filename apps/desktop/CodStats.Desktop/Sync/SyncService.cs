@@ -57,9 +57,19 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
             }
 
             var me = await api.MeAsync(cancel);
+            string? notice = null;
             if (wish.DisplayName is { } name && (me.DisplayName != name || me.NameStatus != WishedStatus(wish)))
             {
-                me = await api.SetDisplayNameAsync(name, WishedStatus(wish), cancel);
+                try
+                {
+                    me = await api.SetDisplayNameAsync(name, WishedStatus(wish), cancel);
+                }
+                catch (ApiException error) when (error.Status == HttpStatusCode.Conflict)
+                {
+                    // Matches still go up; the profile just stays without that name until the player takes the
+                    // existing profile over.
+                    notice = $"Der Name „{name}“ gehört schon einem anderen Profil. Ist es deins, übernimm es in den Einstellungen mit dem Wiederherstellungsschlüssel.";
+                }
             }
             if (me.IsPublic != wish.IsPublic)
             {
@@ -69,7 +79,7 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
 
             await UploadAll(api, cancel);
             await SendCorrections(api, cancel);
-            return Report(SyncPhase.Done, null, success: true);
+            return Report(SyncPhase.Done, notice, success: true);
         }
         catch (ApiException error) when (error.Status == HttpStatusCode.Unauthorized && identity.IsRegistered)
         {

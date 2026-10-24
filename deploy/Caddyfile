@@ -32,6 +32,8 @@
 	handle /downloads/* {
 		root * /srv
 		header Content-Disposition attachment
+		# Always ask the server: an installer cached from before an update installs the old version.
+		header Cache-Control "no-cache"
 		file_server
 	}
 

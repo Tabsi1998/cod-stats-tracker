@@ -94,7 +94,8 @@ begin
   if CurUninstallStep <> usPostUninstall then
     Exit;
   RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'CodStats');
-  // Silent uninstalls answer No: local data is only deleted when somebody says so.
-  if SuppressibleMsgBox(ExpandConstant('{cm:RemoveDataPrompt}'), mbConfirmation, MB_YESNO, IDNO) = IDYES then
+  // Silent uninstalls answer No, and No is the default: local data is only deleted when somebody says so. For an
+  // update nobody needs to uninstall at all; installing over the old version keeps everything.
+  if SuppressibleMsgBox(ExpandConstant('{cm:RemoveDataPrompt}'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES then
     DelTree(ExpandConstant('{localappdata}\CodStats'), True, True, True);
 end;

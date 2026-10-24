@@ -5,6 +5,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Geändert
+- Ein bestätigter Spielername gehört genau einem Profil (exakte Schreibweise; „Tabsi98“ und „TAbsi98“ sind wie im Spiel zwei Spieler): Ein zweites Profil (anderer PC, Neuinstallation mit gelöschten Daten) bekommt den Namen nicht, der Client verweist auf den Wiederherstellungsschlüssel. Bereits doppelte Namen: das ältere Profil behält ihn.
+- Windows-Client: Beim Deinstallieren ist „Daten behalten“ die Vorauswahl; der Client zeigt seine Version in der Titelleiste.
+- Download des Installers wird nie zwischengespeichert (sonst konnte nach einem Update die alte Version kommen).
 - Windows-Client: Die Serveradresse ist fest https://codstats.tabelander.co.at und lässt sich nicht mehr einstellen (Einrichtung und Einstellungen ohne Adressfeld).
 
 ## [0.2.1] - 2026-10-24
