@@ -4,6 +4,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-24
+
 ### Geändert
 - Windows-Client: Serveradresse ist standardmäßig https://codstats.tabelander.co.at (änderbar beim Einrichten und in den Einstellungen).
 
@@ -31,5 +33,6 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Tabsi1998/cod-stats-tracker/releases/tag/v0.1.0
