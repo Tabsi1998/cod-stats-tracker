@@ -93,7 +93,7 @@ public partial class MainWindow : Window
             Kills = Texts.Count(m.Kills),
             Deaths = Texts.Count(m.Deaths),
             Placement = Texts.Count(m.Placement),
-            Result = Texts.Result(m.Result),
+            Result = m.Status == MatchStatus.Left ? "Verlassen" : Texts.Result(m.Result),
             State = Texts.State(m),
         }).ToList();
         Empty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
