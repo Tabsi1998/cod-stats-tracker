@@ -13,6 +13,13 @@ export const formatPercent = (value: number | null | undefined) =>
   value == null ? dash : `${new Intl.NumberFormat('de-AT', { maximumFractionDigits: 1 }).format(value * 100)} %`
 export const formatDate = (iso: string | null | undefined) => (iso ? date.format(new Date(iso)) : dash)
 export const formatDay = (iso: string) => day.format(new Date(iso))
+const time = new Intl.DateTimeFormat('de-AT', { hour: '2-digit', minute: '2-digit' })
+
+/** Axis labels: the day, or the time of day when all points fall on the same day (otherwise every label reads the same). */
+export function axisLabel(isoTimes: string[]): (iso: string) => string {
+  const days = new Set(isoTimes.map((iso) => formatDay(iso)))
+  return days.size <= 1 ? (iso) => time.format(new Date(iso)) : formatDay
+}
 
 export const groupLabels: Record<GameGroup, string> = {
   mw4: 'MW4',

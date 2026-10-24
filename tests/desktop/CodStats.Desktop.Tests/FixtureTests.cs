@@ -16,15 +16,24 @@ public class FixtureTests
 {
     private static readonly string Root = FindRoot();
 
-    public static TheoryData<string, string> Fixtures()
+    /// <summary>
+    /// Every capture also scaled down to 2560x1440 and 1920x1080: same layout, smaller text. A downscaled 4K image is
+    /// not exactly what the game renders at that size, but it shows where small text stops being readable.
+    /// </summary>
+    private static readonly int[] Widths = [3840, 2560, 1920];
+
+    public static TheoryData<string, string, int> Fixtures()
     {
-        var data = new TheoryData<string, string>();
+        var data = new TheoryData<string, string, int>();
         foreach (var expected in Directory.EnumerateFiles(Path.Combine(Root, "tests", "capture-fixtures"), "expected.json", SearchOption.AllDirectories))
         {
             using var document = JsonDocument.Parse(File.ReadAllText(expected));
             foreach (var entry in document.RootElement.EnumerateObject().Where(e => !e.Name.StartsWith('_')))
             {
-                data.Add(Path.GetRelativePath(Root, Path.Combine(Path.GetDirectoryName(expected)!, entry.Name)), entry.Value.GetRawText());
+                foreach (var width in Widths)
+                {
+                    data.Add(Path.GetRelativePath(Root, Path.Combine(Path.GetDirectoryName(expected)!, entry.Name)), entry.Value.GetRawText(), width);
+                }
             }
         }
         return data;
@@ -32,17 +41,21 @@ public class FixtureTests
 
     [Theory]
     [MemberData(nameof(Fixtures))]
-    public async Task Profiles_read_real_captures(string image, string expectedJson)
+    public async Task Profiles_read_real_captures(string image, string expectedJson, int width)
     {
         var path = Path.Combine(Root, image);
         if (!File.Exists(path))
         {
             return; // Image only on the PC it was captured on.
         }
+        if (width > BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth)
+        {
+            return; // Scaling a capture up says nothing about a real higher resolution.
+        }
         var expected = JsonDocument.Parse(expectedJson).RootElement;
         var profiles = ProfileStore.Load([Path.Combine(Root, "apps", "desktop", "CodStats.Desktop", "profiles")]);
         var ocr = WindowsOcr.Create()!;
-        using var frame = Load(path);
+        using var frame = Load(path, width);
 
         var observation = await new ScreenReader(profiles, ocr).ReadAsync(frame, DateTimeOffset.Now, CancellationToken.None);
 
@@ -84,10 +97,16 @@ public class FixtureTests
         _ => screen.ToString().ToLowerInvariant(),
     };
 
-    private static Frame Load(string path)
+    private static Frame Load(string path, int width)
     {
         var decoder = BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-        var source = new FormatConvertedBitmap(decoder.Frames[0], PixelFormats.Bgra32, null, 0);
+        BitmapSource image = decoder.Frames[0];
+        if (image.PixelWidth != width)
+        {
+            var scale = (double)width / image.PixelWidth;
+            image = new TransformedBitmap(image, new ScaleTransform(scale, scale));
+        }
+        var source = new FormatConvertedBitmap(image, PixelFormats.Bgra32, null, 0);
         var frame = new Frame(source.PixelWidth, source.PixelHeight);
         var pixels = new byte[frame.Pixels.Length];
         source.CopyPixels(pixels, source.PixelWidth * 4, 0);

@@ -52,9 +52,11 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
             {
                 own = new FieldReading(await reader.ReadAsync(frame, ownSpec.Region, cancel), profile.Verified ? 1.0 : 0.5);
             }
-            if (profile.OwnRow is { } row && own is not null)
+            if (profile.OwnRow is { } row && own is not null
+                && await ReadOwnRowAsync(frame, row, own, fields, profile.Verified ? 1.0 : 0.5, cancel) is { } tableName)
             {
-                await ReadOwnRowAsync(frame, row, own, fields, profile.Verified ? 1.0 : 0.5, cancel);
+                // The table spells the name more reliably than the banner (where "]" can come out as "I").
+                own = own with { Text = tableName };
             }
             if (profile.Labelled is { } labelled)
             {
@@ -72,26 +74,23 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
     /// columns. A value is only taken where both meet; if the name is not found exactly once or a heading is
     /// missing, the field stays empty: a neighbour's or another column's value is never taken.
     /// </summary>
-    private async Task ReadOwnRowAsync(Frame frame, OwnRowSpec row, FieldReading own, Dictionary<string, FieldReading> fields,
+    private async Task<string?> ReadOwnRowAsync(Frame frame, OwnRowSpec row, FieldReading own, Dictionary<string, FieldReading> fields,
         double quality, CancellationToken cancel)
     {
-        var wanted = TextParsing.Normalise(CodStats.Contracts.DisplayNames.WithoutClanTag(own.Text));
-        if (wanted.Length < 2)
+        if (TextParsing.Normalise(CodStats.Contracts.DisplayNames.WithoutClanTag(own.Text)).Length < 2)
         {
-            return;
+            return null;
         }
 
         var found = new List<(TableSpec Table, IReadOnlyList<TextLine> Lines, TextLine Name)>();
         foreach (var table in row.Tables)
         {
             var lines = await reader.ReadLinesAsync(frame, table.Region, cancel);
-            found.AddRange(lines
-                .Where(line => TextParsing.Normalise(CodStats.Contracts.DisplayNames.WithoutClanTag(line.Text)) == wanted)
-                .Select(line => (table, lines, line)));
+            found.AddRange(lines.Where(line => SameName(own.Text, line.Text)).Select(line => (table, lines, line)));
         }
         if (found.Count != 1)
         {
-            return;
+            return null;
         }
 
         var (ownTable, cells, name) = found[0];
@@ -114,6 +113,7 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 fields[field] = new FieldReading(cell.Text, quality);
             }
         }
+        return name.Text;
     }
 
     /// <summary>
@@ -153,12 +153,35 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         return string.Join(' ', texts);
     }
 
+    /// <summary>
+    /// The banner name and a table name are the same player. At 1080p the OCR sometimes reads the clan tag's "]" as
+    /// "I" ("[TLSITabsi98"), so the tag cannot always be cut off: one name ending in the other's tagless form counts,
+    /// for names of at least four characters.
+    /// </summary>
+    internal static bool SameName(string banner, string table)
+    {
+        var bannerCore = TextParsing.Normalise(CodStats.Contracts.DisplayNames.WithoutClanTag(banner));
+        var tableCore = TextParsing.Normalise(CodStats.Contracts.DisplayNames.WithoutClanTag(table));
+        if (bannerCore.Length < 2 || tableCore.Length < 2)
+        {
+            return false;
+        }
+        if (bannerCore == tableCore)
+        {
+            return true;
+        }
+        var bannerFull = TextParsing.Normalise(banner);
+        var tableFull = TextParsing.Normalise(table);
+        return (tableCore.Length >= 4 && bannerFull.EndsWith(tableCore, StringComparison.Ordinal) && bannerFull.Length - tableCore.Length <= 6)
+            || (bannerCore.Length >= 4 && tableFull.EndsWith(bannerCore, StringComparison.Ordinal) && tableFull.Length - bannerCore.Length <= 6);
+    }
+
     private async Task<bool> MatchesAsync(RecognitionProfile profile, Frame frame, CancellationToken cancel)
     {
         foreach (var anchor in profile.Anchors)
         {
             var text = await ReadAllAsync(frame, anchor.More.Prepend(anchor.Region), cancel);
-            if (!TextParsing.ContainsAny(text, anchor.AnyOf))
+            if (!TextParsing.ContainsAny(text, anchor.AnyOf) || TextParsing.ContainsAny(text, anchor.NoneOf))
             {
                 return false;
             }

@@ -20,6 +20,18 @@ public sealed record Region(double X, double Y, double Width, double Height)
     /// </summary>
     public int MaxHeight { get; init; }
 
+    /// <summary>
+    /// Read the region at each of these heights (0 = unscaled) and use all texts. Large banners read at one size
+    /// on one resolution and at another size on the next; together they read at 4K, 1440p and 1080p.
+    /// </summary>
+    public IReadOnlyList<int> TryHeights { get; init; } = [];
+
+    /// <summary>
+    /// Scale the region up until it is at least this many pixels high: a scoreboard table holds text only ~13 px
+    /// high at 1080p, too small for the OCR, while at 4K the same table needs no scaling.
+    /// </summary>
+    public int MinPixelHeight { get; init; }
+
     public bool IsValid => X >= 0 && Y >= 0 && Width > 0 && Height > 0 && X + Width <= 1.0001 && Y + Height <= 1.0001;
 }
 
@@ -30,6 +42,12 @@ public sealed record Region(double X, double Y, double Width, double Height)
 public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf)
 {
     public IReadOnlyList<Region> More { get; init; } = [];
+
+    /// <summary>
+    /// Words that rule the screen out even when <see cref="AnyOf"/> matches: "RUNDENSIEG" ends a round, not the
+    /// match, yet contains "SIEG".
+    /// </summary>
+    public IReadOnlyList<string> NoneOf { get; init; } = [];
 }
 
 public sealed record FieldSpec(Region Region)

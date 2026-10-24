@@ -30,6 +30,16 @@ public sealed class WindowsOcr : ITextReader
 
     public async Task<string> ReadAsync(Frame frame, Region region, CancellationToken cancel)
     {
+        ArgumentNullException.ThrowIfNull(region);
+        if (region.TryHeights.Count > 0)
+        {
+            var texts = new List<string>();
+            foreach (var height in region.TryHeights)
+            {
+                texts.Add(await ReadAsync(frame, region with { MaxHeight = height, TryHeights = [] }, cancel));
+            }
+            return string.Join(' ', texts);
+        }
         var (result, _, _) = await RecognizeAsync(frame, region, cancel);
         return string.Join(' ', result.Lines.Select(line => line.Text));
     }
@@ -54,7 +64,7 @@ public sealed class WindowsOcr : ITextReader
     private async Task<(OcrResult Result, int CropWidth, int CropHeight)> RecognizeAsync(Frame frame, Region region, CancellationToken cancel)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        using var crop = frame.Crop(region);
+        using var crop = frame.Crop(region, maxDimension: (int)OcrEngine.MaxImageDimension);
         using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(crop.Pixels.ToArray().AsBuffer(), BitmapPixelFormat.Bgra8, crop.Width, crop.Height, BitmapAlphaMode.Premultiplied);
         return (await engine.RecognizeAsync(bitmap).AsTask(cancel), crop.Width, crop.Height);
     }

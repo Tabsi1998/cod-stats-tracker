@@ -72,5 +72,29 @@
   },
   "splash_sieg.jpg": {
     "screen": "unknown"
+  },
+  "result_sieg_abschuss_bestaetigt_1440.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "ABSCHUSS BESTÄTIGT",
+    "kills": 23,
+    "deaths": 14,
+    "score": 4420,
+    "ownName": "Tabsi98"
+  },
+  "rundensieg_front_1440.jpg": {
+    "screen": "unknown"
+  },
+  "result_sieg_front_1440.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "FRONT",
+    "kills": 28,
+    "assists": 4,
+    "deaths": 21,
+    "score": 3815,
+    "ownName": "Tabsi98"
   }
 }
