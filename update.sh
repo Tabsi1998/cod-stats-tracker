@@ -72,6 +72,7 @@ compose up -d --remove-orphans
 wait_healthy 90 || { compose logs --tail 50 api >&2; die "Die API antwortet nach dem Update nicht."; }
 
 trap - EXIT
+fetch_installer
 docker image prune -f >/dev/null 2>&1 || true
 green "✓ Aktualisiert: $(describe "$OLD_COMMIT") → $(describe "$NEW_COMMIT")"
 [[ -n "$BACKUP_NOTE" ]] && echo "  Backup davor: $BACKUP_NOTE"

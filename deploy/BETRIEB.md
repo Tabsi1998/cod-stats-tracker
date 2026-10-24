@@ -68,13 +68,12 @@ location / {
 
 ## Windows-Client zum Download anbieten
 
-Die Webseite verlinkt `/downloads/CodStats-Setup-win-x64.exe`. Installer aus dem GitHub-Release holen und in den Web-Container legen:
+Die Webseite bietet `deploy/downloads/CodStats-Setup-win-x64.exe` an; der Ordner bleibt bei Updates erhalten. `install.sh` und `update.sh` holen den Installer des neuesten Releases selbst:
 
-```bash
-docker compose cp CodStats-Setup-win-x64.exe web:/srv/downloads/CodStats-Setup-win-x64.exe
-```
+- mit `gh` (bei privatem Repo nötig): einmal `gh auth login` auf dem Server,
+- bei öffentlichem Repo ohne Anmeldung.
 
-Nach einem `--build` des Web-Containers muss die Datei erneut hinein (sie ist nicht Teil des Images).
+Klappt beides nicht, die Datei von Hand aus dem GitHub-Release in `deploy/downloads/` legen. Solange keine Datei da ist, blendet die Webseite den Download-Knopf aus.
 
 ## Backups woanders aufbewahren
 

@@ -467,7 +467,8 @@ def portable_zip(context: Context) -> str:
 def checksums(context: Context) -> str:
     lines = [f"{hashlib.sha256(file.read_bytes()).hexdigest()}  {file.name}"
              for file in sorted(RELEASE_DIR.iterdir()) if file.is_file() and file.name != "SHA256SUMS"]
-    (RELEASE_DIR / "SHA256SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # LF on every platform: with CRLF, "sha256sum -c" on Linux verifies nothing.
+    (RELEASE_DIR / "SHA256SUMS").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     return f"{len(lines)} file(s)"
 
 
