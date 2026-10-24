@@ -98,9 +98,10 @@ public static class MatchRules
                 problems.Add("result does not match placement");
             }
         }
-        else if (placement is not null)
+        else if (placement is < 1 or > MaxPlacement)
         {
-            problems.Add("placement only exists in warzone");
+            // Free-for-all has a placement too.
+            problems.Add($"placement must be between 1 and {MaxPlacement}");
         }
         return problems;
     }
