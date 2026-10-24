@@ -139,8 +139,10 @@ public static class PublicEndpoints
         var matches = db.Matches.AsNoTracking().Where(m => games.Contains(m.Game));
         if (!string.IsNullOrWhiteSpace(mode))
         {
-            var wanted = mode.Trim().ToUpperInvariant();
-            matches = matches.Where(m => m.Mode != null && m.Mode.ToUpper() == wanted);
+            // Case-insensitive, with wildcards taken literally: modes are read in capitals, corrections may not be.
+            var wanted = mode.Trim().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal)
+                .Replace("_", "\\_", StringComparison.Ordinal);
+            matches = matches.Where(m => m.Mode != null && EF.Functions.ILike(m.Mode, wanted, "\\"));
         }
         var rows = await matches
             .Join(db.Profiles.Visible(), m => m.ProfileId, p => p.Id, (m, p) => new { m, p.DisplayName })
