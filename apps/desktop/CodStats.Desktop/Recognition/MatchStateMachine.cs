@@ -29,6 +29,12 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
 
     private static readonly TimeSpan MaxCollecting = TimeSpan.FromSeconds(20);
 
+    /// <summary>
+    /// After the result screen MW4 shows a highlight replay and the after-action report, which no profile knows.
+    /// Once the result has been gone this long, what was read is evaluated instead of waiting for the next match.
+    /// </summary>
+    private static readonly TimeSpan ResultGone = TimeSpan.FromSeconds(8);
+
     private readonly List<Observation> readings = [];
     private readonly Func<string, ProfileWords> words = words ?? (_ => ProfileWords.None);
     private bool sawStart;
@@ -88,6 +94,9 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
                     playingGame = null;
                 }
                 return left;
+
+            case ScreenKind.Unknown when Phase == MatchPhase.Collecting && observation.At - readings[^1].At > ResultGone:
+                return Evaluate();
 
             default:
                 return null;

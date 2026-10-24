@@ -62,6 +62,7 @@ public class FixtureTests
         Number("kills", Fields.Kills);
         Number("deaths", Fields.Deaths);
         Number("score", Fields.Score);
+        Number("assists", Fields.Assists);
         if (expected.TryGetProperty("result", out var result))
         {
             var words = profiles.First(p => p.Id == observation.ProfileId).Words;

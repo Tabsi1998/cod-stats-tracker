@@ -423,6 +423,26 @@ public class WindowCaptureTests
     }
 }
 
+public class ResultTimingTests
+{
+    [Fact]
+    public void A_short_result_screen_is_evaluated_once_it_is_gone()
+    {
+        // As recorded on a real PC: the result showed for two readings, then the highlight replay (unknown screens).
+        var start = DateTimeOffset.UtcNow.AddHours(-1);
+        var machine = new MatchStateMachine(_ => new(["SIEG"], ["NIEDERLAGE"], []));
+        machine.Observe(Observation.Of(start, ScreenKind.InMatch, Game.Mw4Multiplayer));
+        var result = new Observation(start.AddMinutes(9), ScreenKind.Result, Game.Mw4Multiplayer, "r",
+            new Dictionary<string, FieldReading> { [Fields.Kills] = new("19", 1), [Fields.Deaths] = new("24", 1), [Fields.Result] = new("SIEG", 1) });
+        Assert.Null(machine.Observe(result));
+        Assert.Null(machine.Observe(result with { At = result.At.AddSeconds(1) }));
+        Assert.Null(machine.Observe(Observation.Of(result.At.AddSeconds(4), ScreenKind.Unknown)));
+        var match = machine.Observe(Observation.Of(result.At.AddSeconds(10), ScreenKind.Unknown));
+        Assert.Equal(19, match!.Kills);
+        Assert.Equal(MatchResult.Win, match.Result);
+    }
+}
+
 public class ScoreboardTests
 {
     private static readonly DateTimeOffset Start = DateTimeOffset.UtcNow.AddHours(-1);

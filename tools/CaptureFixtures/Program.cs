@@ -16,10 +16,49 @@ if (args.Length is 6 or 7 && args[0] == "ocr")
     using var image = LoadImage(args[1]);
     var ocr = WindowsOcr.Create()!;
     Console.WriteLine($"OCR language: {ocr.Language}");
-    foreach (var line in await ocr.ReadLinesAsync(image, new Region(numbers[0], numbers[1], numbers[2], numbers[3]) { WhiteText = args.Length == 7 }, CancellationToken.None))
+    foreach (var line in await ocr.ReadLinesAsync(image, new Region(numbers[0], numbers[1], numbers[2], numbers[3]) { WhiteText = args.Length == 7 && args[6] == "white", MaxHeight = args.Length == 7 && int.TryParse(args[6], out var max) ? max : 0 }, CancellationToken.None))
     {
         Console.WriteLine($"x={line.Left:0.000}..{line.Left + line.Width:0.000} y={line.Top:0.000}..{line.Top + line.Height:0.000}  '{line.Text}'");
     }
+    return;
+}
+
+// "replay <folder> [<folder> ...]": the recorded frames in time order through the real state machine, as the
+// client would see them while playing; prints every match it would store.
+if (args.Length >= 2 && args[0] == "replay")
+{
+    var profiles = ProfileStore.Load([Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")]);
+    var reader = new ScreenReader(profiles, WindowsOcr.Create()!);
+    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
+    var names = new NameTracker();
+    var files = args[1..].SelectMany(folder => Directory.EnumerateFiles(folder, "*.jpg"))
+        .OrderBy(f => Path.GetFileName(f)[..15], StringComparer.Ordinal);
+    var previousPhase = machine.Phase;
+    foreach (var file in files)
+    {
+        var at = DateTime.ParseExact(Path.GetFileName(file)[..15], "yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        using var image = LoadImage(file);
+        var observation = await reader.ReadAsync(image, new DateTimeOffset(at), CancellationToken.None);
+        var before = machine.Phase;
+        var candidate = machine.Observe(observation);
+        if (before != MatchPhase.Playing && machine.Phase == MatchPhase.Playing)
+        {
+            names.NextMatch();
+        }
+        names.Observe(observation.OwnName is { } own ? own with { Quality = 1 } : null);
+        if (machine.Phase != previousPhase)
+        {
+            Console.WriteLine($"{at:HH:mm:ss} {previousPhase} -> {machine.Phase} ({observation.Screen})");
+            previousPhase = machine.Phase;
+        }
+        if (candidate is not null)
+        {
+            var local = RecognitionLoop.ToLocal(candidate);
+            Console.WriteLine($"  MATCH {candidate.Game} {candidate.Mode} {candidate.Result} K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} S={candidate.Score} " +
+                $"conf={candidate.Confidence:0.00} -> {local?.ReviewStatus.ToString() ?? "not stored"} doubts: {string.Join("; ", candidate.Doubts)}");
+        }
+    }
+    Console.WriteLine($"name: confirmed={names.Confirmed ?? "-"} candidate={names.Candidate ?? "-"}");
     return;
 }
 

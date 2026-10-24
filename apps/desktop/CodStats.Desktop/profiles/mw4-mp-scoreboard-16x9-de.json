@@ -80,6 +80,9 @@
         "ABSCHÜSSE",
         "ABSCHUSSE",
         "KILLS"
+      ],
+      "assists": [
+        "ASSISTS"
       ]
     }
   },

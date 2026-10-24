@@ -3,24 +3,8 @@
   "game": "mw4_mp",
   "screen": "result",
   "aspect": 1.7778,
-  "verified": false,
+  "verified": true,
   "anchors": [
-    {
-      "region": {
-        "x": 0.03,
-        "y": 0.05,
-        "width": 0.94,
-        "height": 0.12
-      },
-      "anyOf": [
-        "NIEDERLAGE",
-        "SIEG",
-        "UNENTSCHIEDEN",
-        "VICTORY",
-        "DEFEAT",
-        "DRAW"
-      ]
-    },
     {
       "region": {
         "x": 0.44,
@@ -32,6 +16,32 @@
         "ELIMINIERUNGEN",
         "ELIMINATIONS"
       ]
+    },
+    {
+      "region": {
+        "x": 0.03,
+        "y": 0.05,
+        "width": 0.3,
+        "height": 0.12,
+        "maxHeight": 40
+      },
+      "more": [
+        {
+          "x": 0.67,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "maxHeight": 40
+        }
+      ],
+      "anyOf": [
+        "NIEDERLAGE",
+        "SIEG",
+        "UNENTSCHIEDEN",
+        "VICTORY",
+        "DEFEAT",
+        "DRAW"
+      ]
     }
   ],
   "fields": {
@@ -39,9 +49,19 @@
       "region": {
         "x": 0.03,
         "y": 0.05,
-        "width": 0.94,
-        "height": 0.12
-      }
+        "width": 0.3,
+        "height": 0.12,
+        "maxHeight": 40
+      },
+      "more": [
+        {
+          "x": 0.67,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "maxHeight": 40
+        }
+      ]
     },
     "mode": {
       "region": {
@@ -91,6 +111,9 @@
         "ABSCHÜSSE",
         "ABSCHUSSE",
         "KILLS"
+      ],
+      "assists": [
+        "ASSISTS"
       ]
     }
   },

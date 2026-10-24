@@ -46,17 +46,20 @@ public sealed class Frame : IDisposable
     public Frame Crop(Region region, int minHeight = 48)
     {
         var (x, y, w, h) = ToPixels(region);
-        var scale = Math.Clamp((int)Math.Ceiling((double)minHeight / h), 1, 4);
-        var crop = new Frame(w * scale, h * scale);
+        // Up for small HUD text, down for huge banners (MaxHeight); nearest neighbour is enough for the OCR.
+        var scale = region.MaxHeight > 0 && h > region.MaxHeight
+            ? (double)region.MaxHeight / h
+            : Math.Clamp(Math.Ceiling((double)minHeight / h), 1, 4);
+        var crop = new Frame(Math.Max(1, (int)(w * scale)), Math.Max(1, (int)(h * scale)));
         var source = Pixels;
         var target = crop.Pixels;
         for (var row = 0; row < crop.Height; row++)
         {
-            var sourceRow = (y + row / scale) * Width * 4;
+            var sourceRow = (y + Math.Min(h - 1, (int)(row / scale))) * Width * 4;
             var targetRow = row * crop.Width * 4;
             for (var column = 0; column < crop.Width; column++)
             {
-                source.Slice(sourceRow + (x + column / scale) * 4, 4).CopyTo(target.Slice(targetRow + column * 4, 4));
+                source.Slice(sourceRow + (x + Math.Min(w - 1, (int)(column / scale))) * 4, 4).CopyTo(target.Slice(targetRow + column * 4, 4));
             }
         }
         if (region.WhiteText)

@@ -38,7 +38,7 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
             var fields = new Dictionary<string, FieldReading>();
             foreach (var (name, spec) in profile.Fields)
             {
-                var text = await reader.ReadAsync(frame, spec.Region, cancel);
+                var text = await ReadAllAsync(frame, spec.More.Prepend(spec.Region), cancel);
                 // A mode is stored by its name from the profile's list, not with whatever else the region held.
                 if (name == Recognition.Fields.Mode && profile.Modes.Count > 0)
                 {
@@ -143,11 +143,21 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         }
     }
 
+    private async Task<string> ReadAllAsync(Frame frame, IEnumerable<Region> regions, CancellationToken cancel)
+    {
+        var texts = new List<string>();
+        foreach (var region in regions)
+        {
+            texts.Add(await reader.ReadAsync(frame, region, cancel));
+        }
+        return string.Join(' ', texts);
+    }
+
     private async Task<bool> MatchesAsync(RecognitionProfile profile, Frame frame, CancellationToken cancel)
     {
         foreach (var anchor in profile.Anchors)
         {
-            var text = await reader.ReadAsync(frame, anchor.Region, cancel);
+            var text = await ReadAllAsync(frame, anchor.More.Prepend(anchor.Region), cancel);
             if (!TextParsing.ContainsAny(text, anchor.AnyOf))
             {
                 return false;

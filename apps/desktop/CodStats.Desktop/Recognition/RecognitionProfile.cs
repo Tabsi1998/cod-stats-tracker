@@ -14,13 +14,28 @@ public sealed record Region(double X, double Y, double Width, double Height)
     /// </summary>
     public bool WhiteText { get; init; }
 
+    /// <summary>
+    /// For very large text (the "SIEG" banner is ~190 px tall at 4K): the OCR does not read letters that big, so the
+    /// region is scaled to at most this many pixels high before reading. 0 = no limit.
+    /// </summary>
+    public int MaxHeight { get; init; }
+
     public bool IsValid => X >= 0 && Y >= 0 && Width > 0 && Height > 0 && X + Width <= 1.0001 && Y + Height <= 1.0001;
 }
 
-/// <summary>Text that must appear in a region for a frame to count as this screen.</summary>
-public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf);
+/// <summary>
+/// Text that must appear in a region for a frame to count as this screen. <see cref="More"/> adds regions read as
+/// well (the result banner sits left for a win and right for a loss).
+/// </summary>
+public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf)
+{
+    public IReadOnlyList<Region> More { get; init; } = [];
+}
 
-public sealed record FieldSpec(Region Region);
+public sealed record FieldSpec(Region Region)
+{
+    public IReadOnlyList<Region> More { get; init; } = [];
+}
 
 /// <summary>An area with labels and their values below them (field name → label words).</summary>
 public sealed record LabelledValuesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Values);
@@ -75,7 +90,7 @@ public sealed record RecognitionProfile
         if (string.IsNullOrWhiteSpace(Id)) yield return "id fehlt";
         if (Aspect is < 1 or > 4) yield return "aspect unplausibel";
         if (Anchors.Count == 0) yield return "keine Anker";
-        foreach (var region in Anchors.Select(a => a.Region).Concat(Fields.Values.Select(f => f.Region)))
+        foreach (var region in Anchors.SelectMany(a => a.More.Prepend(a.Region)).Concat(Fields.Values.SelectMany(f => f.More.Prepend(f.Region))))
         {
             if (!region.IsValid) yield return $"Bereich außerhalb 0..1: {region}";
         }

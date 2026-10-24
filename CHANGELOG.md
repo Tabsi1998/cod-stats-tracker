@@ -5,6 +5,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Hinzugefügt
+- Erkennung MW4 Multiplayer (deutsche Oberfläche, 16:9): Ergebnis-Scoreboard (Sieg/Niederlage, Modus, Abschüsse, Assists, Tode, Punkte, eigener Name), Tab-Scoreboard als Rückfallebene, laufendes Match; geprüft an echten Aufnahmen aus 4 Modi.
+- CoD-Prozess wird über das Muster `cod<NN>-cod` bzw. `cod` erkannt (am echten PC geprüft), Clan-Tags werden aus Namen entfernt.
 - Repo-Grundgerüst mit Architektur- und Sicherheitsdoku.
 - API: signierte Geräteidentität ohne Konto (ECDSA P-256, Zeitstempel, einmalige Nonce), Registrierung, Umzug per Wiederherstellungsschlüssel.
 - API: idempotenter Match-Upload mit Plausibilitätsprüfung und Duplikaterkennung, Korrekturen, Export, Löschen aller Daten.

@@ -48,5 +48,29 @@
   "inmatch_stellung.jpg": {
     "screen": "inMatch",
     "game": "mw4_mp"
+  },
+  "result_sieg_stellung.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "STELLUNG",
+    "kills": 19,
+    "deaths": 24,
+    "score": 4115,
+    "ownName": "Tabsi98"
+  },
+  "result_sieg_tdm.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "TEAM-DEATHMATCH",
+    "kills": 25,
+    "assists": 5,
+    "deaths": 12,
+    "score": 3585,
+    "ownName": "Tabsi98"
+  },
+  "splash_sieg.jpg": {
+    "screen": "unknown"
   }
 }
