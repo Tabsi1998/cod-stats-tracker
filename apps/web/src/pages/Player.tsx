@@ -5,7 +5,7 @@ import { api, type GameGroup, type Period, type Stats } from '../api'
 import {
   formatCount,
   formatDate,
-  formatDay,
+  axisLabel,
   formatKd,
   formatPercent,
   gameLabels,
@@ -115,8 +115,9 @@ export function Player() {
 }
 
 function StatsBlock({ stats }: { stats: Stats }) {
+  const label = axisLabel(stats.series.map((point) => point.playedAt))
   const series = stats.series.map((point) => ({
-    day: formatDay(point.playedAt),
+    day: label(point.playedAt),
     kd: point.runningKdRatio,
     winRate: point.runningWinRate == null ? null : Math.round(point.runningWinRate * 1000) / 10,
     kills: point.kills,
