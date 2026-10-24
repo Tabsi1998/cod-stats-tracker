@@ -15,6 +15,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Verlassene Matches gehen automatisch hoch, wenn der Matchbeginn erkannt wurde; sie zählen für K/D und Kills, nicht für die Siegquote.
 - Windows-Client: Match-Liste zeigt „Verlassen“.
 
+## [0.1.2] - 2026-10-24
+
 ### Behoben
 - Windows-Client: Rundenergebnisse (Kollateral, Front, Kapern) wurden als ganzes Match gezählt; ein Match zählt jetzt erst, wenn Einsatzbericht oder Lobby folgen.
 - Windows-Client: Endergebnisse mit schwer lesbarem Banner (z. B. Kapern-Sieg) wurden verpasst.
@@ -22,17 +24,15 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Windows-Client: Arbeitsspeicher wuchs während der Erkennung auf mehrere GB (4K-Bilder wurden nicht rechtzeitig freigegeben); jetzt ein wiederverwendeter Bildpuffer und eine feste Speichergrenze.
 - Windows-Client: Erkennung bricht bei Fehlern nicht mehr still ab, sondern startet die Aufnahme neu.
 - Windows-Client: Zeitraum-Auswahl und Tabellenüberschriften waren weiß auf weiß.
-
-### Hinzugefügt
-- Windows-Client: Einsatzbericht wird gelesen und bestätigt das Matchende; zusätzlich erfasst: Karte, Endstand, XP, Level, Eliminierungen und Modus-Werte (z. B. Erobert, Daten hochgeladen).
-- Windows-Client: Frei für alle wird erkannt, mit Platzierung (Top 3 = Sieg wie im Spiel).
-- Windows-Client: Verlassene Matches werden als „Verlassen“ erfasst (Werte aus dem letzten Scoreboard, kein Sieg und keine Niederlage).
-- Windows-Client: Lobby und Hauptmenü werden erkannt; neue Modi Kapern, Kollateral, Kill Block, Waffenspiel.
-- Windows-Client: Protokolldatei `%LOCALAPPDATA%\CodStats\client.log` (Zustände, Matches, Fehler; keine Bilder, keine fremden Namen).
-
-### Behoben
 - Download-Knopf lieferte die Startseite statt des Installers: Installer liegt jetzt in `deploy/downloads` (bleibt bei Updates), `install.sh`/`update.sh` holen ihn vom neuesten Release, Knopf erscheint erst, wenn er da ist.
 - `SHA256SUMS` hat Linux-Zeilenenden und lässt sich mit `sha256sum -c` prüfen.
+
+### Hinzugefügt
+- Windows-Client: Der Einsatzbericht wird gelesen und bestätigt das Matchende. Karte, Endstand, XP, Level, Eliminierungen und Modus-Werte werden schon erkannt; gespeichert und angezeigt werden sie ab 0.2.0.
+- Windows-Client: Frei für alle wird erkannt, mit Platzierung (Top 3 = Sieg wie im Spiel).
+- Windows-Client: Verlassene Matches werden erkannt (Werte aus dem letzten Scoreboard, kein Sieg und keine Niederlage); bis 0.2.0 bleiben sie auf dem PC zur Prüfung.
+- Windows-Client: Lobby und Hauptmenü werden erkannt; neue Modi Kapern, Kollateral, Kill Block, Waffenspiel.
+- Windows-Client: Protokolldatei `%LOCALAPPDATA%\CodStats\client.log` (Zustände, Matches, Fehler; keine Bilder, keine fremden Namen).
 
 ## [0.1.1] - 2026-10-24
 
@@ -63,6 +63,7 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Tabsi1998/cod-stats-tracker/releases/tag/v0.1.0
