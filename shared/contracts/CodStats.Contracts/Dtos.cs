@@ -32,7 +32,27 @@ public sealed record SyncStatusResponse(int Matches, DateTimeOffset? LastUploadA
 
 // Matches
 
+/// <summary>
+/// Values beyond the basics: what the result screen and the after-action report show. All optional; older clients
+/// send none.
+/// </summary>
+/// <param name="TeamScore">The own team's final score (free-for-all: the player's).</param>
+/// <param name="EnemyScore">The enemy team's final score (free-for-all: the leader's).</param>
+/// <param name="ModeStats">Mode values by key, such as "captures" or "data_uploaded".</param>
+public sealed record MatchDetails(
+    int? Eliminations = null,
+    int? TeamScore = null,
+    int? EnemyScore = null,
+    int? Xp = null,
+    int? Level = null,
+    IReadOnlyDictionary<string, int>? ModeStats = null)
+{
+    public bool IsEmpty => Eliminations is null && TeamScore is null && EnemyScore is null && Xp is null && Level is null
+        && (ModeStats is null || ModeStats.Count == 0);
+}
+
 /// <summary>One recognised match as the client uploads it. Unknown values are null, never 0.</summary>
+/// <param name="Status">Played to the end or left; a left match has no result. Older clients send none (completed).</param>
 public sealed record MatchUpload(
     Guid Id,
     Game Game,
@@ -47,7 +67,9 @@ public sealed record MatchUpload(
     int? Score,
     double Confidence,
     ReviewStatus ReviewStatus,
-    string? RecognizerVersion);
+    string? RecognizerVersion,
+    MatchStatus Status = MatchStatus.Completed,
+    MatchDetails? Details = null);
 
 public sealed record MatchBatchRequest(IReadOnlyList<MatchUpload> Matches);
 
@@ -78,7 +100,9 @@ public sealed record PublicMatch(
     MatchResult? Result,
     int? Placement,
     string? Map,
-    int? Score);
+    int? Score,
+    MatchStatus Status = MatchStatus.Completed,
+    MatchDetails? Details = null);
 
 public sealed record OwnMatch(
     Guid Id,
@@ -95,14 +119,21 @@ public sealed record OwnMatch(
     double Confidence,
     ReviewStatus ReviewStatus,
     string? RecognizerVersion,
-    DateTimeOffset UploadedAt);
+    DateTimeOffset UploadedAt,
+    MatchStatus Status = MatchStatus.Completed,
+    MatchDetails? Details = null);
 
 public sealed record Page<T>(IReadOnlyList<T> Items, int Total, int Offset, int Limit);
 
 // Statistics
 
 /// <param name="KdRatio">Total kills / total deaths over matches where both are known; kills when deaths are 0.</param>
-/// <param name="WinRate">Wins / matches with a known result, 0–1.</param>
+/// <param name="WinRate">Wins / matches with a known result, 0–1. Left matches have no result and do not count.</param>
+/// <param name="LeftMatches">Matches the player left before the end; they count for kills and K/D, not for the win rate.</param>
+/// <param name="LeaveRate">Left matches / all matches, 0–1.</param>
+/// <param name="BestMatchId">The match with the most kills (on a tie the newer one).</param>
+/// <param name="ByMode">The same figures per mode, most played first.</param>
+/// <param name="ByMap">The same figures per map, most played first.</param>
 public sealed record StatsResponse(
     GameGroup Game,
     bool IsCombined,
@@ -119,7 +150,29 @@ public sealed record StatsResponse(
     double? AveragePlacement,
     DateTimeOffset? FirstMatchAt,
     DateTimeOffset? LastMatchAt,
-    IReadOnlyList<StatsPoint> Series);
+    IReadOnlyList<StatsPoint> Series,
+    int LeftMatches = 0,
+    double? LeaveRate = null,
+    int Eliminations = 0,
+    double? AverageScore = null,
+    double? AverageXp = null,
+    long TotalXp = 0,
+    Guid? BestMatchId = null,
+    int? LongestWinStreak = null,
+    IReadOnlyList<StatsBreakdown>? ByMode = null,
+    IReadOnlyList<StatsBreakdown>? ByMap = null);
+
+/// <summary>Figures of the matches in one mode or on one map.</summary>
+public sealed record StatsBreakdown(
+    string Name,
+    int Matches,
+    int Wins,
+    int MatchesWithResult,
+    double? WinRate,
+    int Kills,
+    double? KdRatio,
+    double? AverageKills,
+    double? AverageScore);
 
 /// <summary>One match in time order, with the running totals the charts draw.</summary>
 public sealed record StatsPoint(
