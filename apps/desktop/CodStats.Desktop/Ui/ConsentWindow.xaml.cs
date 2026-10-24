@@ -11,11 +11,18 @@ public partial class ConsentWindow : Window
         this.settings = settings;
         InitializeComponent();
         Server.Text = settings.ServerUrl;
-        Publish.IsChecked = settings.PublishProfile;
         Autostart.IsChecked = settings.StartWithWindows;
     }
 
-    private void OnAccept(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Public is the default: the highlighted button and the Enter key. It is still an explicit choice, never a
+    /// pre-ticked box, because a pre-ticked box is no consent.
+    /// </summary>
+    private void OnAcceptPublic(object sender, RoutedEventArgs e) => Finish(publish: true);
+
+    private void OnAcceptPrivate(object sender, RoutedEventArgs e) => Finish(publish: false);
+
+    private void Finish(bool publish)
     {
         if (Capture.IsChecked != true)
         {
@@ -28,7 +35,7 @@ public partial class ConsentWindow : Window
             ShowError("Die Serveradresse muss mit https:// beginnen, z. B. https://codstats.tabelander.co.at");
             return;
         }
-        settings.PublishProfile = Publish.IsChecked == true;
+        settings.PublishProfile = publish;
         settings.StartWithWindows = Autostart.IsChecked == true;
         settings.ConsentGivenAt = DateTimeOffset.Now;
         DialogResult = true;

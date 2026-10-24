@@ -35,8 +35,9 @@ public static class MeEndpoints
     private static async Task<MeResponse> LoadMe(CurrentDevice device, AppDb db, CancellationToken cancel)
     {
         var profile = await db.Profiles.AsNoTracking().SingleAsync(p => p.Id == device.ProfileId, cancel);
+        var visible = await db.Profiles.Visible().AnyAsync(p => p.Id == device.ProfileId, cancel);
         return new MeResponse(profile.Id, device.DeviceId, profile.DisplayName, profile.NameStatus, profile.IsPublic,
-            Visibility.IsVisible(profile), profile.RecoveryKeyHash is not null, profile.CreatedAt);
+            visible, profile.RecoveryKeyHash is not null, profile.CreatedAt);
     }
 
     private static async Task<IResult> SetDisplayName(SetDisplayNameRequest body, CurrentDevice device, AppDb db,
@@ -77,6 +78,13 @@ public static class MeEndpoints
         await db.Profiles.Where(p => p.Id == device.ProfileId).ExecuteUpdateAsync(s => s
             .SetProperty(p => p.IsPublic, body.IsPublic)
             .SetProperty(p => p.UpdatedAt, clock.GetUtcNow()), cancel);
+        if (body.IsPublic)
+        {
+            // Going public shows the whole history, also what was played while private. Going private hides
+            // nothing already shown; it only keeps new matches off the website.
+            await db.Matches.Where(m => m.ProfileId == device.ProfileId && !m.IsPublic)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsPublic, true), cancel);
+        }
         return Results.Ok(await LoadMe(device, db, cancel));
     }
 
@@ -86,7 +94,7 @@ public static class MeEndpoints
         {
             return Results.Problem(detail: problem, statusCode: 400);
         }
-        return Results.Ok(await Statistics.ForProfile(db, device.ProfileId, filter, clock.GetUtcNow(), cancel));
+        return Results.Ok(await Statistics.ForProfile(db, device.ProfileId, filter, clock.GetUtcNow(), shownOnly: false, cancel));
     }
 
     private static async Task<IResult> GetMatches(CurrentDevice device, AppDb db, int? offset, int? limit, CancellationToken cancel)
@@ -107,6 +115,7 @@ public static class MeEndpoints
         }
 
         var now = clock.GetUtcNow();
+        var isPublic = await db.Profiles.Where(p => p.Id == device.ProfileId).Select(p => p.IsPublic).SingleAsync(cancel);
         var ids = body.Matches.Select(m => m.Id).ToList();
         var existing = await db.Matches.AsNoTracking().Where(m => ids.Contains(m.Id)).ToDictionaryAsync(m => m.Id, cancel);
         var results = new List<MatchBatchItemResult>(body.Matches.Count);
@@ -125,7 +134,7 @@ public static class MeEndpoints
                 results.Add(new(upload.Id, UploadOutcome.Rejected, string.Join("; ", problems)));
                 continue;
             }
-            var match = Mapping.ToEntity(upload, device.ProfileId, now);
+            var match = Mapping.ToEntity(upload, device.ProfileId, isPublic, now);
             if (existing.TryGetValue(upload.Id, out var stored))
             {
                 // Another profile's id says nothing about that profile: the answer is the same as for any conflict.

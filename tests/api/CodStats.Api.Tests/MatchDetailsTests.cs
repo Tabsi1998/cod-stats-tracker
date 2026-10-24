@@ -118,3 +118,45 @@ public class MatchDetailsTests(ApiFixture fixture)
         Assert.Equal(player.ProfileId, entry.PlayerId);
     }
 }
+
+[Collection(ApiTestGroup.Name)]
+public class MatchVisibilityTests(ApiFixture fixture)
+{
+    private ApiFactory Api => fixture.Api;
+
+    private static async Task SetPublic(TestDevice device, bool isPublic) =>
+        (await device.Http.PatchAsJsonAsync("/api/v1/me/privacy", new PrivacyRequest(isPublic))).EnsureSuccessStatusCode();
+
+    private static async Task<int> ShownMatches(TestDevice device) =>
+        (await device.Http.GetFromJsonAsync<Page<PublicMatch>>($"/api/v1/public/players/{device.ProfileId}/matches"))!.Total;
+
+    [Fact]
+    public async Task Going_private_keeps_what_was_shown_and_hides_only_new_matches()
+    {
+        using var device = await TestDevice.PublicPlayerAsync(Api, "Switcher" + Random.Shared.Next(100_000));
+        await device.UploadAsync(Matches.Mw4(10, 5));
+
+        await SetPublic(device, false);
+        await device.UploadAsync(Matches.Mw4(20, 5));
+
+        Assert.Equal(1, await ShownMatches(device));
+        var stats = await device.Http.GetFromJsonAsync<StatsResponse>($"/api/v1/public/players/{device.ProfileId}/stats");
+        Assert.Equal(10, stats!.Kills);
+        // The player's own view still has everything.
+        var own = await device.Http.GetFromJsonAsync<StatsResponse>("/api/v1/me/stats");
+        Assert.Equal(30, own!.Kills);
+        Assert.True((await device.Http.GetFromJsonAsync<MeResponse>("/api/v1/me"))!.IsVisible);
+    }
+
+    [Fact]
+    public async Task Going_public_shows_the_whole_history()
+    {
+        using var device = await TestDevice.PublicPlayerAsync(Api, "Latecomer" + Random.Shared.Next(100_000));
+        await SetPublic(device, false);
+        await device.UploadAsync(Matches.Mw4(7, 3), Matches.Mw4(8, 4));
+        Assert.Equal(HttpStatusCode.NotFound, (await device.Http.GetAsync($"/api/v1/public/players/{device.ProfileId}")).StatusCode);
+
+        await SetPublic(device, true);
+        Assert.Equal(2, await ShownMatches(device));
+    }
+}
