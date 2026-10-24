@@ -35,3 +35,6 @@ backups/
 run/
 deploy/downloads/*
 !deploy/downloads/.gitkeep
+
+# Design review captures (local only)
+.impeccable/review/
