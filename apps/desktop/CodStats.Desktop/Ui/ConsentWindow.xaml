@@ -18,7 +18,6 @@
         </Border>
 
         <CheckBox x:Name="Capture" Content="Ich erlaube die Erfassung meiner Matches und die Übertragung an den Server." />
-        <CheckBox x:Name="Publish" Content="Mein Profil darf öffentlich auf der Webseite erscheinen (jederzeit änderbar)." />
         <CheckBox x:Name="Autostart" Content="Mit Windows starten (im Tray, unauffällig)" IsChecked="True" />
 
         <TextBlock Style="{StaticResource Label}" Text="SERVERADRESSE" Margin="0,14,0,4" />
@@ -26,9 +25,12 @@
 
         <TextBlock x:Name="Error" Foreground="{StaticResource Loss}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <TextBlock Margin="0,20,0,0" TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                   Text="Öffentlich heißt: Dein Profil mit Anzeigename und Matchwerten erscheint auf der Webseite, in der Suche und in den Ranglisten. Das kannst du jederzeit in den Einstellungen ändern." />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="Abbrechen" IsCancel="True" Margin="0,0,8,0" />
-            <Button x:Name="Accept" Content="Zustimmen und starten" Style="{StaticResource Primary}" IsDefault="True" Click="OnAccept" />
+            <Button x:Name="Private" Content="Zustimmen, nur für mich" Margin="0,0,8,0" Click="OnAcceptPrivate" />
+            <Button x:Name="Accept" Content="Zustimmen, öffentlich zeigen" Style="{StaticResource Primary}" IsDefault="True" Click="OnAcceptPublic" />
         </StackPanel>
     </StackPanel>
 </Window>

@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- Windows-Client: Bei der Einrichtung ist „Zustimmen, öffentlich zeigen“ die hervorgehobene Standardwahl; „nur für mich“ bleibt eine Taste daneben und ist jederzeit in den Einstellungen änderbar.
+
 ## [0.2.0] - 2026-10-24
 
 ### Hinzugefügt
