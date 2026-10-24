@@ -86,6 +86,14 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("deaths");
 
+                    b.Property<int?>("Eliminations")
+                        .HasColumnType("integer")
+                        .HasColumnName("eliminations");
+
+                    b.Property<int?>("EnemyScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("enemy_score");
+
                     b.Property<string>("Game")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -96,6 +104,10 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("kills");
 
+                    b.Property<int?>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
                     b.Property<string>("Map")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -105,6 +117,10 @@ namespace CodStats.Api.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("mode");
+
+                    b.Property<string>("ModeStats")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("mode_stats");
 
                     b.Property<int?>("Placement")
                         .HasColumnType("integer")
@@ -138,6 +154,18 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("score");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("completed")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("TeamScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("team_score");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -145,6 +173,10 @@ namespace CodStats.Api.Data.Migrations
                     b.Property<DateTimeOffset>("UploadedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("uploaded_at");
+
+                    b.Property<int?>("Xp")
+                        .HasColumnType("integer")
+                        .HasColumnName("xp");
 
                     b.HasKey("Id")
                         .HasName("pk_matches");

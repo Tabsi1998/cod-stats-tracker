@@ -31,6 +31,13 @@ public static class Mapping
         Placement = upload.Placement,
         Map = upload.Map,
         Score = upload.Score,
+        Status = upload.Status,
+        Eliminations = upload.Details?.Eliminations,
+        TeamScore = upload.Details?.TeamScore,
+        EnemyScore = upload.Details?.EnemyScore,
+        Xp = upload.Details?.Xp,
+        Level = upload.Details?.Level,
+        ModeStats = upload.Details?.ModeStats is { Count: > 0 } stats ? new Dictionary<string, int>(stats) : null,
         Confidence = upload.Confidence,
         ReviewStatus = upload.ReviewStatus,
         RecognizerVersion = upload.RecognizerVersion,
@@ -47,19 +54,30 @@ public static class Mapping
 
     public static bool SameValues(Match a, Match b) =>
         a.Game == b.Game && a.Mode == b.Mode && a.PlayedAt == b.PlayedAt && a.Kills == b.Kills && a.Deaths == b.Deaths
-        && a.Assists == b.Assists && a.Result == b.Result && a.Placement == b.Placement && a.Map == b.Map && a.Score == b.Score;
+        && a.Assists == b.Assists && a.Result == b.Result && a.Placement == b.Placement && a.Map == b.Map && a.Score == b.Score
+        && a.Status == b.Status && a.Eliminations == b.Eliminations && a.TeamScore == b.TeamScore && a.EnemyScore == b.EnemyScore
+        && a.Xp == b.Xp && a.Level == b.Level
+        && (a.ModeStats ?? []).Count == (b.ModeStats ?? []).Count && !(a.ModeStats ?? []).Except(b.ModeStats ?? []).Any();
 
     public static bool IsDuplicate(Match a, Match b) =>
         a.Game == b.Game && (a.PlayedAt - b.PlayedAt).Duration() <= TimeSpan.FromMinutes(3)
         && a.Kills == b.Kills && a.Deaths == b.Deaths && a.Placement == b.Placement && a.Result == b.Result && a.Score == b.Score;
 
     public static OwnMatch ToOwn(Match m) => new(m.Id, m.Game, m.Mode, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result,
-        m.Placement, m.Map, m.Score, m.Confidence, m.ReviewStatus, m.RecognizerVersion, m.UploadedAt);
+        m.Placement, m.Map, m.Score, m.Confidence, m.ReviewStatus, m.RecognizerVersion, m.UploadedAt, m.Status, Details(m));
 
     public static PublicMatch ToPublic(Match m) => new(m.Id, m.Game, m.Mode, m.PlayedAt, m.Kills, m.Deaths, m.Assists,
-        m.Result, m.Placement, m.Map, m.Score);
+        m.Result, m.Placement, m.Map, m.Score, m.Status, Details(m));
 
-    public static MatchFacts ToFacts(Match m) => new(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement);
+    /// <summary>The extra values, or null when the match has none (uploaded by an older client).</summary>
+    public static MatchDetails? Details(Match m)
+    {
+        var details = new MatchDetails(m.Eliminations, m.TeamScore, m.EnemyScore, m.Xp, m.Level, m.ModeStats);
+        return details.IsEmpty ? null : details;
+    }
+
+    public static MatchFacts ToFacts(Match m) => new(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement,
+        m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp);
 }
 
 public static class Statistics
@@ -73,7 +91,8 @@ public static class Statistics
         var matches = await db.Matches.AsNoTracking()
             .Where(m => m.ProfileId == profileId && games.Contains(m.Game))
             .OrderByDescending(m => m.PlayedAt).Take(MaxMatches)
-            .Select(m => new MatchFacts(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement))
+            .Select(m => new MatchFacts(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement,
+                m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp))
             .ToListAsync(cancel);
         return StatsCalculator.Compute(filter.Game, filter.Apply(matches, now));
     }

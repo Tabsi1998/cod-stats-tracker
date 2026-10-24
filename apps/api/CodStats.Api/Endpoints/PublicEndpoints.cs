@@ -24,6 +24,7 @@ public static class PublicEndpoints
         pub.MapGet("/players/{id:guid}", GetPlayer);
         pub.MapGet("/players/{id:guid}/stats", GetPlayerStats);
         pub.MapGet("/players/{id:guid}/matches", GetPlayerMatches);
+        pub.MapGet("/players/{id:guid}/matches/{matchId:guid}", GetPlayerMatch);
         pub.MapGet("/leaderboards", GetLeaderboard);
         pub.MapGet("/platform-stats", GetPlatformStats);
     }
@@ -104,8 +105,19 @@ public static class PublicEndpoints
         return Results.Ok(new Page<PublicMatch>(items.Select(Mapping.ToPublic).ToList(), total, skip, take));
     }
 
+    /// <summary>One match of a visible player, for the match detail page.</summary>
+    private static async Task<IResult> GetPlayerMatch(Guid id, Guid matchId, AppDb db, CancellationToken cancel)
+    {
+        if (!await db.Profiles.Visible().AnyAsync(p => p.Id == id, cancel))
+        {
+            return Results.NotFound();
+        }
+        var match = await db.Matches.AsNoTracking().SingleOrDefaultAsync(m => m.Id == matchId && m.ProfileId == id, cancel);
+        return match is null ? Results.NotFound() : Results.Ok(Mapping.ToPublic(match));
+    }
+
     private static async Task<IResult> GetLeaderboard(AppDb db, IOptions<LeaderboardOptions> options, string? game, string? metric,
-        int? minMatches, CancellationToken cancel)
+        int? minMatches, string? mode, CancellationToken cancel)
     {
         if (!QueryFilters.TryGameGroup(game, out var group))
         {
@@ -116,12 +128,21 @@ public static class PublicEndpoints
         {
             return Results.Problem(detail: "metric must be kd, kills, matches or winrate", statusCode: 400);
         }
+        if (mode is { Length: > MatchRules.MaxTextLength })
+        {
+            return Results.Problem(detail: $"mode is longer than {MatchRules.MaxTextLength} characters", statusCode: 400);
+        }
         // A caller may ask for a stricter minimum, never for a looser one.
         var minimum = Math.Max(options.Value.MinMatches, minMatches ?? 0);
         var games = group.Members();
 
-        var rows = await db.Matches.AsNoTracking()
-            .Where(m => games.Contains(m.Game))
+        var matches = db.Matches.AsNoTracking().Where(m => games.Contains(m.Game));
+        if (!string.IsNullOrWhiteSpace(mode))
+        {
+            var wanted = mode.Trim().ToUpperInvariant();
+            matches = matches.Where(m => m.Mode != null && m.Mode.ToUpper() == wanted);
+        }
+        var rows = await matches
             .Join(db.Profiles.Visible(), m => m.ProfileId, p => p.Id, (m, p) => new { m, p.DisplayName })
             .GroupBy(x => new { x.m.ProfileId, x.DisplayName })
             .Select(g => new

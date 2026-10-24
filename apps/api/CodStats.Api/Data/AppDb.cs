@@ -19,6 +19,7 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         configurationBuilder.Properties<MatchResult>().HaveConversion<WireNameConverter<MatchResult>>().HaveMaxLength(16);
         configurationBuilder.Properties<ReviewStatus>().HaveConversion<WireNameConverter<ReviewStatus>>().HaveMaxLength(16);
         configurationBuilder.Properties<NameStatus>().HaveConversion<WireNameConverter<NameStatus>>().HaveMaxLength(16);
+        configurationBuilder.Properties<MatchStatus>().HaveConversion<WireNameConverter<MatchStatus>>().HaveMaxLength(16);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -51,6 +52,16 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             match.Property(m => m.Mode).HasMaxLength(MatchRules.MaxTextLength);
             match.Property(m => m.Map).HasMaxLength(MatchRules.MaxTextLength);
             match.Property(m => m.RecognizerVersion).HasMaxLength(MatchRules.MaxTextLength);
+            // Rows from before the status existed are matches played to the end.
+            match.Property(m => m.Status).HasDefaultValue(MatchStatus.Completed).HasSentinel((MatchStatus)(-1));
+            match.Property(m => m.ModeStats).HasColumnType("jsonb").HasConversion(
+                new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, int>?, string?>(
+                    stats => stats == null || stats.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(stats, (System.Text.Json.JsonSerializerOptions?)null),
+                    json => json == null ? null : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(json, (System.Text.Json.JsonSerializerOptions?)null)),
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<Dictionary<string, int>?>(
+                    (a, b) => a == null ? b == null : b != null && a.Count == b.Count && !a.Except(b).Any(),
+                    stats => stats == null ? 0 : stats.Aggregate(0, (hash, pair) => hash ^ HashCode.Combine(pair.Key, pair.Value)),
+                    stats => stats == null ? null : new Dictionary<string, int>(stats)));
             match.HasIndex(m => new { m.ProfileId, m.PlayedAt });
             match.HasIndex(m => new { m.Game, m.ProfileId });
         });
