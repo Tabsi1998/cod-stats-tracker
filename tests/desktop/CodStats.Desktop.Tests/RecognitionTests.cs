@@ -600,6 +600,78 @@ public class ResultTimingTests
     }
 }
 
+public class WindowResizeTests
+{
+    [Fact]
+    public async Task Capture_follows_a_window_that_grows_after_capture_started()
+    {
+        // The game starts in one size and goes to its full resolution later; frames must follow (issue #35).
+        if (Environment.GetEnvironmentVariable("CI") == "true" || !WindowCapture.IsSupported)
+        {
+            return;
+        }
+        var ready = new TaskCompletionSource<IntPtr>();
+        var done = new TaskCompletionSource();
+        Window? window = null;
+        var thread = new Thread(() =>
+        {
+            window = new Window
+            {
+                Width = 320,
+                Height = 180,
+                WindowStyle = WindowStyle.None,
+                ShowInTaskbar = false,
+                Topmost = true,
+                Background = new SolidColorBrush(Color.FromRgb(20, 22, 28)),
+                Content = new System.Windows.Controls.TextBlock { Text = "LOBBY", FontSize = 40, Foreground = Brushes.White },
+            };
+            // A game redraws all the time, and Windows only delivers frames when something changed: keep redrawing.
+            var ticks = 0;
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            timer.Tick += (_, _) => ((System.Windows.Controls.TextBlock)window.Content).Text = $"LOBBY {++ticks}";
+            timer.Start();
+            window.ContentRendered += (_, _) => ready.TrySetResult(new System.Windows.Interop.WindowInteropHelper(window).Handle);
+            _ = done.Task.ContinueWith(_ => window.Dispatcher.InvokeShutdown(), TaskScheduler.Default);
+            window.Show();
+            System.Windows.Threading.Dispatcher.Run();
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        try
+        {
+            var handle = await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            using var capture = WindowCapture.Start(handle);
+            Assert.NotNull(capture);
+            using (var first = await capture.GrabAsync(TimeSpan.FromSeconds(5), CancellationToken.None))
+            {
+                Assert.NotNull(first);
+                Assert.InRange(first.Width, 300, 800);
+            }
+
+            await window!.Dispatcher.InvokeAsync(() =>
+            {
+                window.Width = 960;
+                window.Height = 540;
+            });
+
+            // A few grabs: the first after the resize may still be in flight at the old size.
+            var width = 0;
+            for (var i = 0; i < 10 && width < 900; i++)
+            {
+                await Task.Delay(150);
+                using var frame = await capture.GrabAsync(TimeSpan.FromSeconds(2), CancellationToken.None);
+                width = frame?.Width ?? width;
+            }
+            Assert.True(width >= 900, $"frame stayed {width} px wide after the window grew");
+        }
+        finally
+        {
+            done.TrySetResult();
+            thread.Join(TimeSpan.FromSeconds(5));
+        }
+    }
+}
+
 public class SameNameTests
 {
     [Theory]
