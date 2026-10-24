@@ -21,6 +21,28 @@ Voraussetzungen auf dem Server: Linux, Docker mit Compose-Plugin, git, flock (be
 
 Die Skripte laufen nicht gleichzeitig (Sperre in `run/`), und `update.sh` bricht ab, wenn im Repo jemand Dateien geändert hat.
 
+## Ubuntu-Server von null
+
+Für einen frischen Ubuntu-Server (22.04 oder 24.04), der hinter deinem eigenen Reverse Proxy läuft:
+
+```bash
+# 1. Docker mit Compose-Plugin (offizielles Skript von Docker) und git
+curl -fsSL https://get.docker.com | sudo sh
+sudo apt-get install -y git
+sudo usermod -aG docker "$USER"   # danach einmal ab- und wieder anmelden
+
+# 2. Repo holen (privat: vorher anmelden, z. B. mit "gh auth login" oder einem Deploy-Key)
+git clone https://github.com/Tabsi1998/cod-stats-tracker.git
+cd cod-stats-tracker
+
+# 3. Einrichten: Auswahl 1 (eigener Reverse Proxy), Port 8080, IP deines Proxys
+./install.sh
+```
+
+Dann im Reverse Proxy: `https://codstats.tabelander.co.at` → `http://<IP dieses Servers>:8080`, und der DNS-Eintrag der Domain zeigt auf den Proxy. Port 8080 in der Firewall nur für den Proxy öffnen (`sudo ufw allow from <proxy-ip> to any port 8080`).
+
+Neue Versionen danach immer mit `./update.sh`.
+
 ## Hinter einem eigenen Reverse Proxy (HTTPS woanders)
 
 ```bash

@@ -4,6 +4,12 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- Windows-Client: Serveradresse ist standardmäßig https://codstats.tabelander.co.at (änderbar beim Einrichten und in den Einstellungen).
+
+### Behoben
+- Release-Notizen auf GitHub zeigen Umlaute richtig.
+
 ## [0.1.0] - 2026-10-24
 
 ### Hinzugefügt

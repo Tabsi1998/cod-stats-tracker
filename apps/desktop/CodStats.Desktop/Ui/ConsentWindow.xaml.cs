@@ -25,7 +25,7 @@ public partial class ConsentWindow : Window
         settings.ServerUrl = Server.Text.Trim();
         if (settings.ServerUri is null)
         {
-            ShowError("Die Serveradresse muss mit https:// beginnen, z. B. https://stats.example.com");
+            ShowError("Die Serveradresse muss mit https:// beginnen, z. B. https://codstats.tabelander.co.at");
             return;
         }
         settings.PublishProfile = Publish.IsChecked == true;
