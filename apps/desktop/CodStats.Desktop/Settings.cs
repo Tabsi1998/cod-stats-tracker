@@ -45,6 +45,7 @@ public sealed class Settings
     }
 
     /// <summary>The server address as a URI, or null when it is not an http(s) address.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public Uri? ServerUri =>
         Uri.TryCreate(ServerUrl.TrimEnd('/') + "/", UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" ? uri : null;
 }
@@ -57,6 +58,11 @@ public static class Autostart
 
     public static void Apply(bool enabled)
     {
+        // A second client on a test data folder (CODSTATS_DATA) must not touch the real client's autostart entry.
+        if (Environment.GetEnvironmentVariable("CODSTATS_DATA") is { Length: > 0 })
+        {
+            return;
+        }
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true) ?? Registry.CurrentUser.CreateSubKey(RunKey);
         if (enabled && Environment.ProcessPath is { } exe)
         {

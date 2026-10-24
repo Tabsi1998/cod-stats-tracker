@@ -40,7 +40,11 @@ public partial class App : Application
     {
         ArgumentNullException.ThrowIfNull(e);
         base.OnStartup(e);
-        single = new Mutex(true, @"Local\CodStats.Desktop", out var first);
+        // One client per data folder: a second data folder (CODSTATS_DATA, for testing) may run beside the real one.
+        var instance = Environment.GetEnvironmentVariable("CODSTATS_DATA") is { Length: > 0 }
+            ? @"Local\CodStats.Desktop." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Paths.Root)))[..16]
+            : @"Local\CodStats.Desktop";
+        single = new Mutex(true, instance, out var first);
         if (!first)
         {
             Shutdown();
@@ -48,6 +52,8 @@ public partial class App : Application
         }
 
         Paths.Ensure();
+        Diagnostics.Initialise(Paths);
+        Diagnostics.Log($"client {typeof(App).Assembly.GetName().Version} started");
         Settings = Settings.Load(Paths);
         if (Settings.ConsentGivenAt is null && new ConsentWindow(Settings).ShowDialog() != true)
         {

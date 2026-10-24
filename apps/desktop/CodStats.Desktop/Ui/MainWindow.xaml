@@ -44,16 +44,18 @@
                         <RadioButton x:Name="TabAll" Style="{StaticResource Tab}" Content="Übersicht" GroupName="game" Checked="OnFilter" />
                     </StackPanel>
                 </Border>
-                <ComboBox x:Name="Period" Width="170" Margin="0,0,10,6" VerticalContentAlignment="Center" SelectionChanged="OnFilter">
-                    <ComboBoxItem Content="Gesamt" IsSelected="True" />
-                    <ComboBoxItem Content="Letzte 10 Matches" Tag="last:10" />
-                    <ComboBoxItem Content="Letzte 25 Matches" Tag="last:25" />
-                    <ComboBoxItem Content="Letzte 50 Matches" Tag="last:50" />
-                    <ComboBoxItem Content="Letzte 100 Matches" Tag="last:100" />
-                    <ComboBoxItem Content="Letzte 7 Tage" Tag="days:7" />
-                    <ComboBoxItem Content="Letzte 30 Tage" Tag="days:30" />
-                    <ComboBoxItem Content="Zeitraum …" Tag="range" />
-                </ComboBox>
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="7" Padding="3" Margin="0,0,10,6">
+                    <StackPanel x:Name="Period" Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource Tab}" Content="Gesamt" GroupName="period" IsChecked="True" Checked="OnFilter" />
+                        <RadioButton Style="{StaticResource Tab}" Content="10" Tag="last:10" GroupName="period" Checked="OnFilter" ToolTip="Letzte 10 Matches" />
+                        <RadioButton Style="{StaticResource Tab}" Content="25" Tag="last:25" GroupName="period" Checked="OnFilter" ToolTip="Letzte 25 Matches" />
+                        <RadioButton Style="{StaticResource Tab}" Content="50" Tag="last:50" GroupName="period" Checked="OnFilter" ToolTip="Letzte 50 Matches" />
+                        <RadioButton Style="{StaticResource Tab}" Content="100" Tag="last:100" GroupName="period" Checked="OnFilter" ToolTip="Letzte 100 Matches" />
+                        <RadioButton Style="{StaticResource Tab}" Content="7 Tage" Tag="days:7" GroupName="period" Checked="OnFilter" />
+                        <RadioButton Style="{StaticResource Tab}" Content="30 Tage" Tag="days:30" GroupName="period" Checked="OnFilter" />
+                        <RadioButton Style="{StaticResource Tab}" Content="Zeitraum …" Tag="range" GroupName="period" Checked="OnFilter" />
+                    </StackPanel>
+                </Border>
                 <StackPanel x:Name="RangePanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,0,0,6">
                     <DatePicker x:Name="From" Width="120" SelectedDateChanged="OnFilter" />
                     <TextBlock Text="bis" Margin="8,0" VerticalAlignment="Center" />

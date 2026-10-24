@@ -72,36 +72,61 @@ public sealed class RecognitionLoop(
 
     private async Task RunAsync(ScreenReader reader, CancellationToken cancel)
     {
+        Diagnostics.Log($"recognition started: {profiles.Count} profile(s)");
         WindowCapture? capture = null;
+        var lastScreen = ScreenKind.Unknown;
         try
         {
             while (!cancel.IsCancellationRequested)
             {
-                capture ??= WindowCapture.Start(GameWatcher.FindGameWindow());
-                if (capture is null)
+                try
                 {
-                    await Task.Delay(Interval, cancel);
-                    continue;
-                }
-                using (var frame = await capture.GrabAsync(TimeSpan.FromSeconds(1), cancel))
-                {
-                    if (frame is not null)
+                    if (capture is null)
                     {
-                        var observation = await reader.ReadAsync(frame, DateTimeOffset.Now, cancel);
-                        Handle(observation);
+                        capture = WindowCapture.Start(GameWatcher.FindGameWindow());
+                        Diagnostics.Log(capture is null ? "game window not found yet" : "capture started");
                     }
+                    if (capture is null)
+                    {
+                        await Task.Delay(Interval, cancel);
+                        continue;
+                    }
+                    var started = Environment.TickCount64;
+                    using (var frame = await capture.GrabAsync(TimeSpan.FromSeconds(1), cancel))
+                    {
+                        if (frame is not null)
+                        {
+                            var observation = await reader.ReadAsync(frame, DateTimeOffset.Now, cancel);
+                            if (observation.Screen != lastScreen)
+                            {
+                                Diagnostics.Log($"screen {lastScreen} -> {observation.Screen} ({frame.Width}x{frame.Height}, {observation.ProfileId ?? "no profile"})");
+                                lastScreen = observation.Screen;
+                            }
+                            Handle(observation);
+                        }
+                    }
+                    MemoryGuard.AfterFrame();
+                    var took = Environment.TickCount64 - started;
+                    if (took > 1500)
+                    {
+                        Diagnostics.Log($"slow frame: {took} ms");
+                    }
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    // Capture breaks when the game restarts its window or changes mode; start over, never die silently.
+                    Diagnostics.Log($"recognition error, restarting capture: {error.GetType().Name}: {error.Message}");
+                    capture?.Dispose();
+                    capture = null;
+                    report(TrackerState.Uncertain);
                 }
                 await Task.Delay(machine.Phase == MatchPhase.Collecting ? CollectingInterval : Interval, cancel);
             }
         }
-        catch (Exception error) when (error is System.Runtime.InteropServices.COMException or ArgumentException or InvalidOperationException)
-        {
-            // The window went away mid-capture or capture is refused; the watcher restarts us with the game.
-            report(TrackerState.Uncertain);
-        }
         finally
         {
             capture?.Dispose();
+            Diagnostics.Log("recognition stopped");
         }
     }
 
@@ -135,6 +160,8 @@ public sealed class RecognitionLoop(
 
     private void Record(MatchCandidate candidate)
     {
+        Diagnostics.Log($"match: {candidate.Game} {candidate.Mode} {candidate.Result} K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} " +
+            $"S={candidate.Score} confidence={candidate.Confidence:0.00} doubts={string.Join("; ", candidate.Doubts)}");
         var match = ToLocal(candidate);
         if (match is null)
         {

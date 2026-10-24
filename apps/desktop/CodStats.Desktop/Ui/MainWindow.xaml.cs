@@ -38,7 +38,7 @@ public partial class MainWindow : Window
 
     private StatsFilter Filter()
     {
-        var tag = (Period.SelectedItem as ComboBoxItem)?.Tag as string;
+        var tag = Period.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag as string;
         RangePanel.Visibility = tag == "range" ? Visibility.Visible : Visibility.Collapsed;
         return tag?.Split(':') switch
         {

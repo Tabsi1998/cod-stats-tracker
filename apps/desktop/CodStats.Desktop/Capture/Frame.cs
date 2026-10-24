@@ -1,15 +1,19 @@
-using System.Buffers;
 using CodStats.Desktop.Recognition;
 
 namespace CodStats.Desktop.Capture;
 
 /// <summary>
-/// One captured image in memory (BGRA, 4 bytes per pixel). The buffer is rented and returned on Dispose, so
-/// pixels never outlive the analysis and are never written anywhere.
+/// One captured image in memory (BGRA, 4 bytes per pixel). Dispose clears the pixels and drops the buffer, so
+/// they never outlive the analysis and are never written anywhere.
 /// </summary>
+/// <remarks>
+/// Not from ArrayPool.Shared: a 4K frame is 33 MB, and the shared pool keeps such arrays per processor core.
+/// On a real PC that grew the client to 2.7 GB while it played (issue #26).
+/// </remarks>
 public sealed class Frame : IDisposable
 {
     private byte[]? pixels;
+    private readonly bool owned = true;
 
     public Frame(int width, int height)
     {
@@ -17,9 +21,17 @@ public sealed class Frame : IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
         Width = width;
         Height = height;
-        pixels = ArrayPool<byte>.Shared.Rent(width * height * 4);
-        // The shared pool may hand out an array someone else returned without clearing it.
-        Pixels.Clear();
+        pixels = new byte[width * height * 4];
+    }
+
+    /// <summary>A frame over a buffer someone else owns and reuses (the capture's one frame buffer).</summary>
+    internal Frame(int width, int height, byte[] buffer)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length, width * height * 4);
+        Width = width;
+        Height = height;
+        pixels = buffer;
+        owned = false;
     }
 
     public int Width { get; }
@@ -27,6 +39,9 @@ public sealed class Frame : IDisposable
     public double Aspect => (double)Width / Height;
 
     public Span<byte> Pixels => (pixels ?? throw new ObjectDisposedException(nameof(Frame))).AsSpan(0, Width * Height * 4);
+
+    /// <summary>The underlying array, for copying a capture straight in without another 33 MB buffer.</summary>
+    internal byte[] Buffer => pixels ?? throw new ObjectDisposedException(nameof(Frame));
 
     /// <summary>The pixel rectangle of a relative region, clamped to the frame.</summary>
     public (int X, int Y, int Width, int Height) ToPixels(Region region)
@@ -88,12 +103,10 @@ public sealed class Frame : IDisposable
 
     public void Dispose()
     {
-        if (pixels is not null)
+        if (pixels is not null && owned)
         {
-            // Clear before returning: the pool must not hand out game pixels to anyone else.
             Array.Clear(pixels);
-            ArrayPool<byte>.Shared.Return(pixels);
-            pixels = null;
         }
+        pixels = null;
     }
 }

@@ -23,6 +23,55 @@ if (args.Length is 6 or 7 && args[0] == "ocr")
     return;
 }
 
+// "shot <process name> <file.png>": one capture of a program's main window, e.g. to look at the client's dashboard.
+if (args.Length == 3 && args[0] == "shot")
+{
+    var window = System.Diagnostics.Process.GetProcessesByName(args[1]).Select(p => p.MainWindowHandle).FirstOrDefault(h => h != IntPtr.Zero);
+    using var shooter = WindowCapture.Start(window) ?? throw new InvalidOperationException("window not found");
+    using var image = await shooter.GrabAsync(TimeSpan.FromSeconds(3), CancellationToken.None) ?? throw new InvalidOperationException("no frame");
+    var bitmap = BitmapSource.Create(image.Width, image.Height, 96, 96, PixelFormats.Bgra32, null, image.Pixels.ToArray(), image.Width * 4);
+    var encoder = new PngBitmapEncoder();
+    encoder.Frames.Add(BitmapFrame.Create(bitmap));
+    using var stream = File.Create(args[2]);
+    encoder.Save(stream);
+    return;
+}
+
+// "leaktest <frames> <ocr>": grabs frames from the running game like the client does and prints private memory, to
+// find what holds on to memory. ocr = 0 (capture only) or 1 (capture + reading with the profiles).
+if (args.Length == 3 && args[0] == "leaktest")
+{
+    var count = int.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture);
+    var withOcr = args[2] == "1";
+    var reader = new ScreenReader(ProfileStore.Load([Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")]), WindowsOcr.Create()!);
+    using var grabber = WindowCapture.Start(GameWatcher.FindGameWindow()) ?? throw new InvalidOperationException("no game window");
+    using var self = System.Diagnostics.Process.GetCurrentProcess();
+    for (var i = 1; i <= count; i++)
+    {
+        using (var frame = await grabber.GrabAsync(TimeSpan.FromSeconds(2), CancellationToken.None))
+        {
+            if (frame is not null && withOcr)
+            {
+                await reader.ReadAsync(frame, DateTimeOffset.Now, CancellationToken.None);
+            }
+        }
+        MemoryGuard.AfterFrame();
+        if (i % 10 == 0)
+        {
+            if (Environment.GetEnvironmentVariable("LEAK_GC") == "1")
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+            self.Refresh();
+            Console.WriteLine($"{i} frames: private {self.PrivateMemorySize64 / 1048576} MB, managed {GC.GetTotalMemory(false) / 1048576} MB, gen2 {GC.CollectionCount(2)}");
+        }
+        await Task.Delay(200);
+    }
+    return;
+}
+
 // "import <server> <client data folder> <folder> [...]": replays the recordings, stores every recognised match
 // in a client database (as confirmed by the player) and syncs it through the real client code to a server.
 // For a demo on a local test server; never against a public server with someone else's recordings.
