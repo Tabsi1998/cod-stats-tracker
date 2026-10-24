@@ -1,5 +1,6 @@
-// End-to-end check against a running stack (docker compose): two simulated clients register, name themselves,
-// upload matches, and the public endpoints show the result. Test data only; run it against a test stack.
+// End-to-end check against a running stack (docker compose): two simulated clients register, name themselves (one
+// confirmed name per profile), upload matches, and the public endpoints show the result. Test data only; run it
+// against a test stack.
 //
 //   dotnet run --project tests/e2e/CodStats.E2E -- http://localhost:8080
 
@@ -29,9 +30,13 @@ using var first = await Client.RegisterAsync(baseUrl);
 using var second = await Client.RegisterAsync(baseUrl);
 Check(first.ProfileId != second.ProfileId, "two devices get two profiles");
 
+(await first.Http.PutAsJsonAsync("api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed))).EnsureSuccessStatusCode();
+using var taken = await second.Http.PutAsJsonAsync("api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed));
+Check(taken.StatusCode == HttpStatusCode.Conflict, "a confirmed name belongs to one profile only");
+// Only the case differs: in Call of Duty a different player.
+(await second.Http.PutAsJsonAsync("api/v1/me/display-name", new SetDisplayNameRequest(name.ToLowerInvariant(), NameStatus.Confirmed))).EnsureSuccessStatusCode();
 foreach (var client in new[] { first, second })
 {
-    (await client.Http.PutAsJsonAsync("api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed))).EnsureSuccessStatusCode();
     (await client.Http.PatchAsJsonAsync("api/v1/me/privacy", new PrivacyRequest(true))).EnsureSuccessStatusCode();
 }
 
@@ -51,7 +56,7 @@ var again = await (await first.Http.PostAsJsonAsync("api/v1/me/matches/batch", n
 Check(again!.Results.All(r => r.Outcome == UploadOutcome.Unchanged), "repeated upload is idempotent");
 
 var found = await anonymous.GetFromJsonAsync<List<PlayerSummary>>($"api/v1/public/players/search?q={name}");
-Check(found!.Count == 2, "search finds both profiles with the same name separately");
+Check(found!.Count == 2 && found.Count(p => p.DisplayName == name) == 1, "search finds both players, names differing only in case kept apart");
 
 var stats = await anonymous.GetFromJsonAsync<StatsResponse>($"api/v1/public/players/{first.ProfileId}/stats?game=mw4");
 Check(stats!.KdRatio == 0.94 && stats.Matches == 3, $"MW4 K/D is 15/16 = 0.94 over 3 matches (got {stats.KdRatio} over {stats.Matches})");
