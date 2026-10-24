@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace CodStats.Desktop.Recognition;
 
@@ -37,29 +38,45 @@ public static class TrackerStateText
 /// while no game runs: no capture, no window access. Which mode runs (MW4 or Warzone) needs the screen and is
 /// decided by the <see cref="RecognitionLoop"/>, which this watcher starts and stops.
 /// </summary>
-public sealed class GameWatcher : IDisposable
+public sealed partial class GameWatcher : IDisposable
 {
-    /// <summary>Process names of the CoD launcher builds (without .exe). To be checked against MW4 on a real PC.</summary>
-    public static readonly IReadOnlyList<string> DefaultProcessNames = ["cod", "cod26", "codmw4", "ModernWarfare"];
-
-    private readonly IReadOnlyList<string> processNames;
     private readonly Func<IEnumerable<string>> runningProcesses;
     private readonly System.Threading.Timer timer;
     private bool enabled = true;
 
-    public GameWatcher(IReadOnlyList<string>? processNames = null, Func<IEnumerable<string>>? runningProcesses = null)
+    public GameWatcher(Func<IEnumerable<string>>? runningProcesses = null)
     {
-        this.processNames = processNames ?? DefaultProcessNames;
-        // Asking for the few known names is far cheaper than listing every process every five seconds.
-        this.runningProcesses = runningProcesses ?? (() => this.processNames.Where(IsRunning));
+        this.runningProcesses = runningProcesses ?? RunningProcessNames;
         timer = new System.Threading.Timer(_ => Poll(), null, Timeout.Infinite, Timeout.Infinite);
     }
 
     public TrackerState State { get; private set; } = TrackerState.WaitingForGame;
 
-    public IReadOnlyList<string> ProcessNames => processNames;
-
     public event Action<TrackerState>? StateChanged;
+
+    /// <summary>
+    /// The CoD launcher builds name their executable after the year's title: Warzone ran as cod25-cod.exe
+    /// (Black Ops 7) when checked on a real PC in October 2026, so MW4 is expected as cod26-cod.exe.
+    /// The pattern also covers the years after it, so a new title needs no new client.
+    /// </summary>
+    public static bool IsCodProcess(string name) => CodProcess().IsMatch(name);
+
+    /// <summary>The main window of the running CoD process, or zero.</summary>
+    public static IntPtr FindGameWindow()
+    {
+        var window = IntPtr.Zero;
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process)
+            {
+                if (window == IntPtr.Zero && IsCodProcess(process.ProcessName) && process.MainWindowHandle != IntPtr.Zero)
+                {
+                    window = process.MainWindowHandle;
+                }
+            }
+        }
+        return window;
+    }
 
     public void Start() => timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(5));
 
@@ -85,7 +102,7 @@ public sealed class GameWatcher : IDisposable
     {
         try
         {
-            return runningProcesses().Any(name => processNames.Contains(name, StringComparer.OrdinalIgnoreCase));
+            return runningProcesses().Any(IsCodProcess);
         }
         catch (InvalidOperationException)
         {
@@ -93,15 +110,21 @@ public sealed class GameWatcher : IDisposable
         }
     }
 
-    private static bool IsRunning(string name)
+    private static List<string> RunningProcessNames()
     {
-        var found = Process.GetProcessesByName(name);
-        foreach (var process in found)
+        var names = new List<string>();
+        foreach (var process in Process.GetProcesses())
         {
-            process.Dispose();
+            using (process)
+            {
+                names.Add(process.ProcessName);
+            }
         }
-        return found.Length > 0;
+        return names;
     }
+
+    [GeneratedRegex(@"^cod(\d{2}-cod)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex CodProcess();
 
     public void Dispose() => timer.Dispose();
 }

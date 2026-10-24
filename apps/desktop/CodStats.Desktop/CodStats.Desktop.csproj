@@ -27,6 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Recognition profiles stay files next to the EXE, so an updated profile needs no new build. -->
+    <Content Include="profiles\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\shared\contracts\CodStats.Contracts\CodStats.Contracts.csproj" />
   </ItemGroup>
 

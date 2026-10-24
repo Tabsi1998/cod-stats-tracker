@@ -124,15 +124,52 @@ public class GameWatcherTests
     [Fact]
     public void Notices_the_game_start_and_stop()
     {
-        var running = new List<string> { "explorer" };
-        using var watcher = new GameWatcher(["cod"], () => running);
+        var running = new List<string> { "explorer", "Battle.net", "codex" };
+        using var watcher = new GameWatcher(() => running);
         watcher.Poll();
         Assert.Equal(TrackerState.WaitingForGame, watcher.State);
-        running.Add("cod");
+        running.Add("cod25-cod");
         watcher.Poll();
         Assert.Equal(TrackerState.GameRunning, watcher.State);
         watcher.SetEnabled(false);
         Assert.Equal(TrackerState.TrackingOff, watcher.State);
+    }
+}
+
+public class ProcessNameTests
+{
+    [Theory]
+    [InlineData("cod25-cod", true)]   // Warzone / Black Ops 7, seen on a real PC in October 2026
+    [InlineData("cod26-cod", true)]   // expected for MW4
+    [InlineData("COD27-COD", true)]
+    [InlineData("cod", true)]
+    [InlineData("Battle.net", false)]
+    [InlineData("codex", false)]
+    [InlineData("cod25-cod-helper", false)]
+    public void Recognises_cod_launcher_builds(string name, bool expected) => Assert.Equal(expected, GameWatcher.IsCodProcess(name));
+}
+
+public class ClanTagTests
+{
+    [Theory]
+    [InlineData("[TLS] Tabsi98", "Tabsi98")]   // as the Warzone party list shows it
+    [InlineData("[TLS]Tabsi98", "Tabsi98")]
+    [InlineData("Tabsi98", "Tabsi98")]
+    [InlineData("[Clan] ", "")]
+    [InlineData("[VeryLongTag] Name", "[VeryLongTag] Name")]
+    public void Clan_tags_are_removed(string shown, string expected) =>
+        Assert.Equal(expected, CodStats.Contracts.DisplayNames.WithoutClanTag(shown));
+
+    [Fact]
+    public void A_clan_change_does_not_split_the_name()
+    {
+        var names = new NameTracker();
+        foreach (var shown in new[] { "[TLS] Tabsi98", "[ABC] Tabsi98", "Tabsi98" })
+        {
+            names.NextMatch();
+            names.Observe(new FieldReading(shown, 1));
+        }
+        Assert.Equal("Tabsi98", names.Confirmed);
     }
 }
 

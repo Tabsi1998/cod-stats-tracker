@@ -18,6 +18,12 @@ require_installed
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 TARGET="$BACKUP_DIR/codstats-$(date +%F_%H%M%S).dump"
+# Two backups in the same second (manual backup, then update.sh) must not overwrite each other.
+n=2
+while [[ -e "$TARGET" ]]; do
+  TARGET="$BACKUP_DIR/codstats-$(date +%F_%H%M%S)-$n.dump"
+  n=$((n + 1))
+done
 
 umask 077
 compose exec -T db pg_dump -U codstats -d codstats -Fc >"$TARGET.partial" || { rm -f -- "$TARGET.partial"; die "Backup fehlgeschlagen."; }

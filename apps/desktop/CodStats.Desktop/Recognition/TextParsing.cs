@@ -90,6 +90,10 @@ public static class TextParsing
     public static string Normalise(string? text) =>
         new((text ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
 
+    /// <summary>The first of the words the text contains (see <see cref="ContainsAny"/>), as written in the list.</summary>
+    public static string? FirstOf(string? text, IEnumerable<string> words) =>
+        words.FirstOrDefault(word => ContainsAny(text, [word]));
+
     /// <summary>True when OCR text contains one of the words, allowing one wrong letter in longer words.</summary>
     public static bool ContainsAny(string? text, IEnumerable<string> words)
     {

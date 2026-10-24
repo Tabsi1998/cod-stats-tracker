@@ -12,13 +12,18 @@ namespace CodStats.Desktop.Recognition;
 public sealed class RecognitionLoop(
     IReadOnlyList<RecognitionProfile> profiles,
     MatchStore store,
-    IReadOnlyList<string> processNames,
     Action<TrackerState> report,
     Action<MatchCandidate, LocalMatch> recorded,
     Action<string> nameConfirmed) : IDisposable
 {
     public const string RecognizerVersion = "ocr-0.1";
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// MW4 shows its result scoreboard only for about four seconds (seen on a real PC): read it quickly enough
+    /// for the three readings the state machine wants.
+    /// </summary>
+    private static readonly TimeSpan CollectingInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly MatchStateMachine machine = new(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     private readonly NameTracker names = new();
@@ -72,7 +77,7 @@ public sealed class RecognitionLoop(
         {
             while (!cancel.IsCancellationRequested)
             {
-                capture ??= WindowCapture.Start(FindGameWindow());
+                capture ??= WindowCapture.Start(GameWatcher.FindGameWindow());
                 if (capture is null)
                 {
                     await Task.Delay(Interval, cancel);
@@ -86,7 +91,7 @@ public sealed class RecognitionLoop(
                         Handle(observation);
                     }
                 }
-                await Task.Delay(Interval, cancel);
+                await Task.Delay(machine.Phase == MatchPhase.Collecting ? CollectingInterval : Interval, cancel);
             }
         }
         catch (Exception error) when (error is System.Runtime.InteropServices.COMException or ArgumentException or InvalidOperationException)
@@ -157,24 +162,6 @@ public sealed class RecognitionLoop(
         var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;
-    }
-
-    private IntPtr FindGameWindow()
-    {
-        foreach (var name in processNames)
-        {
-            foreach (var process in Process.GetProcessesByName(name))
-            {
-                using (process)
-                {
-                    if (process.MainWindowHandle != IntPtr.Zero)
-                    {
-                        return process.MainWindowHandle;
-                    }
-                }
-            }
-        }
-        return IntPtr.Zero;
     }
 
     public void Dispose() => stop?.Dispose();

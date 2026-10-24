@@ -40,3 +40,21 @@ Die Werte oben sind **Beispiele, keine echten Koordinaten**.
 2. Bereiche ausmessen (Pixel ÷ Breite bzw. Höhe).
 3. Profil nach `apps/desktop/CodStats.Desktop/profiles/` legen, Test gegen die Fixtures laufen lassen.
 4. Erst wenn alle Fixtures richtig gelesen werden: `verified: true`.
+
+## Was die echten MW4-Bilder gelehrt haben (24.10.2026)
+
+Erste Profile in `apps/desktop/CodStats.Desktop/profiles/`, gemessen an 3840×2160-Aufnahmen mit deutscher Oberfläche (Herrschaft, Stellung, Team-Deathmatch, Inflation):
+
+| Erkenntnis | Lösung im Profil |
+|---|---|
+| Spalten wechseln je Modus (GELD, ZIELZEIT, ASSISTS, TODE …) | `ownRow.columns`: Spalte über ihre Überschrift finden, nicht über eine feste Position |
+| Die eigene Zeile steht mal auf Platz 1, mal auf Platz 6 | `ownRow`: Name aus der eigenen Leiste in den Tabellen suchen (`tables`, beide Seiten) |
+| Einzelne Ziffern allein liest die OCR oft nicht | ganze Tabelle bzw. ganze Leiste in einem Durchgang lesen; `labelled`: Wert unter der Beschriftung („TODE“ → „17“) |
+| „SIEG“ ist so groß, dass die OCR es nicht erkennt | `maxHeight: 40` verkleinert den Bereich vorher |
+| SIEG steht links, NIEDERLAGE rechts | `more`: zweiter Bereich für Anker und Feld |
+| Weißer HUD-Text auf hellem Himmel | `whiteText: true`: nur fast weiße Pixel bleiben |
+| Ergebnisbildschirm nur ~4 s sichtbar, danach Wiederholung „Beste Aktion“ | Client liest dort alle 0,5 s; Auswertung 8 s nach dem Ende des Ergebnisses |
+| Eliminierungen = Abschüsse + Assists | gespeichert werden Abschüsse als Kills; die K/D im Spiel („Elim/T-Quote“) rechnet mit Eliminierungen |
+
+Werkzeug dazu: `tools/CaptureFixtures` (Aufnehmen, `ocr`, `read`, `scan`, `replay`).
+

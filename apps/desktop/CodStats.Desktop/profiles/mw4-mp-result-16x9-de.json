@@ -1,0 +1,172 @@
+{
+  "id": "mw4-mp-result-16x9-de",
+  "game": "mw4_mp",
+  "screen": "result",
+  "aspect": 1.7778,
+  "verified": true,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.44,
+        "y": 0.865,
+        "width": 0.11,
+        "height": 0.028
+      },
+      "anyOf": [
+        "ELIMINIERUNGEN",
+        "ELIMINATIONS"
+      ]
+    },
+    {
+      "region": {
+        "x": 0.03,
+        "y": 0.05,
+        "width": 0.3,
+        "height": 0.12,
+        "maxHeight": 40
+      },
+      "more": [
+        {
+          "x": 0.67,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "maxHeight": 40
+        }
+      ],
+      "anyOf": [
+        "NIEDERLAGE",
+        "SIEG",
+        "UNENTSCHIEDEN",
+        "VICTORY",
+        "DEFEAT",
+        "DRAW"
+      ]
+    }
+  ],
+  "fields": {
+    "result": {
+      "region": {
+        "x": 0.03,
+        "y": 0.05,
+        "width": 0.3,
+        "height": 0.12,
+        "maxHeight": 40
+      },
+      "more": [
+        {
+          "x": 0.67,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "maxHeight": 40
+        }
+      ]
+    },
+    "mode": {
+      "region": {
+        "x": 0.03,
+        "y": 0.17,
+        "width": 0.94,
+        "height": 0.06
+      }
+    }
+  },
+  "ownName": {
+    "region": {
+      "x": 0.29,
+      "y": 0.862,
+      "width": 0.15,
+      "height": 0.03
+    }
+  },
+  "ownRow": {
+    "tables": [
+      {
+        "region": {
+          "x": 0.05,
+          "y": 0.548,
+          "width": 0.455,
+          "height": 0.31
+        },
+        "headerHeight": 0.03
+      },
+      {
+        "region": {
+          "x": 0.51,
+          "y": 0.548,
+          "width": 0.455,
+          "height": 0.31
+        },
+        "headerHeight": 0.03
+      }
+    ],
+    "rowHeight": 0.03,
+    "columns": {
+      "score": [
+        "PUNKTE",
+        "SCORE"
+      ],
+      "kills": [
+        "ABSCHÜSSE",
+        "ABSCHUSSE",
+        "KILLS"
+      ],
+      "assists": [
+        "ASSISTS"
+      ]
+    }
+  },
+  "winWords": [
+    "SIEG",
+    "VICTORY"
+  ],
+  "lossWords": [
+    "NIEDERLAGE",
+    "DEFEAT"
+  ],
+  "drawWords": [
+    "UNENTSCHIEDEN",
+    "DRAW"
+  ],
+  "modes": [
+    "HERRSCHAFT",
+    "DOMINATION",
+    "TEAM-DEATHMATCH",
+    "TEAM DEATHMATCH",
+    "ABSCHUSS BESTÄTIGT",
+    "KILL CONFIRMED",
+    "STELLUNG",
+    "HARDPOINT",
+    "SUCHEN UND ZERSTÖREN",
+    "SEARCH AND DESTROY",
+    "JEDER GEGEN JEDEN",
+    "FREE-FOR-ALL",
+    "INFLATION",
+    "KILL BLOCK",
+    "KOLLATERAL",
+    "BODENKRIEG",
+    "GROUND WAR",
+    "HAUPTQUARTIER",
+    "HEADQUARTERS",
+    "KONTROLLE",
+    "CONTROL",
+    "FEUERGEFECHT",
+    "GUNFIGHT",
+    "FRONT"
+  ],
+  "labelled": {
+    "region": {
+      "x": 0.44,
+      "y": 0.86,
+      "width": 0.33,
+      "height": 0.07
+    },
+    "values": {
+      "deaths": [
+        "TODE",
+        "DEATHS"
+      ]
+    }
+  }
+}

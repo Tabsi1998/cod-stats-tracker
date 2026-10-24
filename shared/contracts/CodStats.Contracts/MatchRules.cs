@@ -136,6 +136,21 @@ public static class DisplayNames
     public const int MinLength = 2;
     public const int MaxLength = 40;
 
+    /// <summary>
+    /// The name without a leading clan tag: the game shows "[TLS] Tabsi98", the player is "Tabsi98". A clan change
+    /// must not look like a name change.
+    /// </summary>
+    public static string WithoutClanTag(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var trimmed = name.Trim();
+        if (trimmed.StartsWith('[') && trimmed.IndexOf(']', StringComparison.Ordinal) is > 1 and <= 9 and var end)
+        {
+            return trimmed[(end + 1)..].Trim();
+        }
+        return trimmed;
+    }
+
     /// <summary>The trimmed name, or null when it cannot be a display name.</summary>
     public static string? Normalise(string? name)
     {
