@@ -5,6 +5,14 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Behoben
+- Windows-Client: Arbeitsspeicher wuchs während der Erkennung auf mehrere GB (4K-Bilder wurden nicht rechtzeitig freigegeben); jetzt ein wiederverwendeter Bildpuffer und eine feste Speichergrenze.
+- Windows-Client: Erkennung bricht bei Fehlern nicht mehr still ab, sondern startet die Aufnahme neu.
+- Windows-Client: Zeitraum-Auswahl und Tabellenüberschriften waren weiß auf weiß.
+
+### Hinzugefügt
+- Windows-Client: Protokolldatei `%LOCALAPPDATA%\CodStats\client.log` (Zustände, Matches, Fehler; keine Bilder, keine fremden Namen).
+
+### Behoben
 - Download-Knopf lieferte die Startseite statt des Installers: Installer liegt jetzt in `deploy/downloads` (bleibt bei Updates), `install.sh`/`update.sh` holen ihn vom neuesten Release, Knopf erscheint erst, wenn er da ist.
 - `SHA256SUMS` hat Linux-Zeilenenden und lässt sich mit `sha256sum -c` prüfen.
 

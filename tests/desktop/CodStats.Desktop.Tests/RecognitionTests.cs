@@ -505,3 +505,24 @@ public class ScoreboardTests
         Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
     }
 }
+
+public class MemoryGuardTests
+{
+    [Fact]
+    public void Memory_stays_bounded_while_frames_come_in()
+    {
+        // As in a real 4K session: a 33 MB frame plus a few large crops every two seconds (issue #26).
+        long highest = 0;
+        for (var i = 0; i < 120; i++)
+        {
+            using (var frame = new Frame(3840, 2160))
+            {
+                frame.Pixels[i] = 1;
+                using var crop = frame.Crop(new Region(0.05, 0.55, 0.45, 0.31) { MinPixelHeight = 670 });
+            }
+            MemoryGuard.AfterFrame();
+            highest = Math.Max(highest, GC.GetTotalMemory(false));
+        }
+        Assert.True(highest < MemoryGuard.Limit + 128L * 1024 * 1024, $"managed memory reached {highest / 1048576} MB");
+    }
+}

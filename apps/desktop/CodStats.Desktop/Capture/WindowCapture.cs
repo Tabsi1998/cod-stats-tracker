@@ -20,6 +20,12 @@ public sealed partial class WindowCapture : IDisposable
     private readonly Direct3D11CaptureFramePool pool;
     private readonly GraphicsCaptureSession session;
 
+    /// <summary>
+    /// One buffer for every frame of this capture. A new 33 MB array per 4K frame piled up to gigabytes on a real
+    /// PC: .NET waits long before collecting large arrays when the PC has plenty of RAM (issue #26).
+    /// </summary>
+    private byte[] buffer = [];
+
     private WindowCapture(IntPtr window)
     {
         device = CreateDevice();
@@ -72,17 +78,20 @@ public sealed partial class WindowCapture : IDisposable
                 pool.Recreate(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, captured.ContentSize);
             }
             using var bitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(captured.Surface, BitmapAlphaMode.Premultiplied).AsTask(cancel);
-            var frame = new Frame(bitmap.PixelWidth, bitmap.PixelHeight);
-            var buffer = new byte[frame.Pixels.Length];
+            var size = bitmap.PixelWidth * bitmap.PixelHeight * 4;
+            if (buffer.Length != size)
+            {
+                buffer = new byte[size];
+            }
+            var frame = new Frame(bitmap.PixelWidth, bitmap.PixelHeight, buffer);
             bitmap.CopyToBuffer(buffer.AsBuffer());
-            buffer.CopyTo(frame.Pixels);
-            Array.Clear(buffer);
             return frame;
         }
     }
 
     public void Dispose()
     {
+        Array.Clear(buffer);
         session.Dispose();
         pool.Dispose();
         device.Dispose();
