@@ -123,7 +123,7 @@ public partial class App : Application
     }
 
     public ApiClient CreateClient() =>
-        new(Settings.ServerUri ?? throw new InvalidOperationException("Serveradresse ist ungültig"), Identity);
+        new(Settings.ServerUri, Identity);
 
     /// <summary>Syncs now; on failure the next attempt waits longer, up to 15 minutes.</summary>
     public async Task SyncNowAsync()

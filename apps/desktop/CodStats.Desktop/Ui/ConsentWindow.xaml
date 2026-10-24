@@ -20,8 +20,6 @@
         <CheckBox x:Name="Capture" Content="Ich erlaube die Erfassung meiner Matches und die Übertragung an den Server." />
         <CheckBox x:Name="Autostart" Content="Mit Windows starten (im Tray, unauffällig)" IsChecked="True" />
 
-        <TextBlock Style="{StaticResource Label}" Text="SERVERADRESSE" Margin="0,14,0,4" />
-        <TextBox x:Name="Server" />
 
         <TextBlock x:Name="Error" Foreground="{StaticResource Loss}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
 

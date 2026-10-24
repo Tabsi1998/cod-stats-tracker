@@ -56,8 +56,8 @@ python scripts/local_check.py --release --version 0.1.0
 
 Dann `.local-testing/release/CodStats-Setup-win-x64.exe` installieren (ohne Adminrechte) oder direkt `.local-testing/publish/win-x64/CodStats.exe` starten. Beim ersten Start:
 
-- Serveradresse `http://localhost:8080` eintragen (für echte Server immer `https://`)
-- Zustimmen, optional „Profil öffentlich“ anhaken
+- Der Client spricht fest mit https://codstats.tabelander.co.at (Konstante `Settings.Server` in `apps/desktop/CodStats.Desktop/Settings.cs`). Für einen lokalen Stack vor dem Start `CODSTATS_SERVER=http://localhost:8080` setzen; ein eigener Server ist eine Änderung dieser Konstante und ein neuer Build.
+- Zustimmen, „öffentlich zeigen“ oder „nur für mich“ wählen
 
 Der Client sitzt danach im Tray (Symbol neben der Uhr).
 

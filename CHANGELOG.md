@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- Windows-Client: Die Serveradresse ist fest https://codstats.tabelander.co.at und lässt sich nicht mehr einstellen (Einrichtung und Einstellungen ohne Adressfeld).
+
 ## [0.2.1] - 2026-10-24
 
 ### Behoben
