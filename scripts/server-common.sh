@@ -60,6 +60,26 @@ wait_healthy() {
   return 1
 }
 
+# Puts the latest release's Windows installer into deploy/downloads for the website's download button.
+# Never fatal: the site runs without it, the button just stays hidden.
+fetch_installer() {
+  local target="$DEPLOY_DIR/downloads" file="CodStats-Setup-win-x64.exe" repo
+  repo="$(git -C "$ROOT_DIR" remote get-url origin 2>/dev/null | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')"
+  mkdir -p "$target"
+  [[ -n "$repo" ]] || { yellow "  Installer: GitHub-Repo unbekannt, Download-Knopf bleibt ausgeblendet."; return 0; }
+  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
+     && gh release download --repo "$repo" --pattern "$file" --dir "$target" --clobber >/dev/null 2>&1; then
+    green "✓ Installer der neuesten Version für die Webseite geholt."
+  elif curl -fsSL -o "$target/$file.part" "https://github.com/$repo/releases/latest/download/$file" 2>/dev/null; then
+    mv -- "$target/$file.part" "$target/$file"
+    green "✓ Installer der neuesten Version für die Webseite geholt."
+  else
+    rm -f -- "$target/$file.part"
+    yellow "  Installer nicht geholt (privates Repo ohne 'gh auth login'?). Von Hand: Datei $file aus dem"
+    yellow "  GitHub-Release nach $target legen. Bis dahin ist der Download-Knopf ausgeblendet."
+  fi
+}
+
 site_address() {
   grep -E '^SITE_ADDRESS=' "$ENV_FILE" | head -n 1 | cut -d= -f2-
 }

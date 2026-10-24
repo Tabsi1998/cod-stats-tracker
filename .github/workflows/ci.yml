@@ -80,6 +80,17 @@ jobs:
           kill %1
       - name: install.sh behind a reverse proxy (Fabian's setup), as on a fresh server
         run: ./install.sh --behind-proxy --port 8080
+      - name: install.sh fetched the latest installer; without it the download is a real 404
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -s deploy/downloads/CodStats-Setup-win-x64.exe
+          curl -fsS -D - -o /dev/null http://localhost:8080/downloads/CodStats-Setup-win-x64.exe | grep -qi 'content-disposition: attachment'
+          rm deploy/downloads/CodStats-Setup-win-x64.exe
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/downloads/CodStats-Setup-win-x64.exe)" = 404
+          echo test-installer > deploy/downloads/CodStats-Setup-win-x64.exe
+          curl -fsS -D - -o /dev/null http://localhost:8080/downloads/CodStats-Setup-win-x64.exe | grep -qi 'content-disposition: attachment'
+          rm deploy/downloads/CodStats-Setup-win-x64.exe
       - name: End-to-end checks
         run: dotnet run --project tests/e2e/CodStats.E2E -- http://localhost:8080
       - name: Real client addresses reach the rate limit through the proxy

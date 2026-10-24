@@ -116,6 +116,14 @@ function query(values: Record<string, string | number | undefined>): string {
   return text ? `?${text}` : ''
 }
 
+export const installerUrl = '/downloads/CodStats-Setup-win-x64.exe'
+
+/** Whether the server offers the installer; the button stays hidden until it does. */
+export async function installerAvailable(): Promise<boolean> {
+  const response = await fetch(installerUrl, { method: 'HEAD' })
+  return response.ok && !(response.headers.get('content-type') ?? '').includes('text/html')
+}
+
 const base = '/api/v1/public'
 
 export const api = {

@@ -47,6 +47,8 @@ services:
     volumes:
       - caddy-data:/data
       - caddy-config:/config
+      # The Windows installer offered on the website; install.sh and update.sh fetch the latest release here.
+      - ./downloads:/srv/downloads:ro
 
 volumes:
   db-data:

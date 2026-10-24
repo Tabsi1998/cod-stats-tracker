@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { api } from '../api'
+import { api, installerAvailable, installerUrl } from '../api'
 import { formatCount, formatKd } from '../format'
 import { SearchBox } from './Search'
 import { useLoad } from '../load'
@@ -8,6 +8,7 @@ import { Card, CommunityNote, Message, StatCard } from '../ui'
 export function Home() {
   const platform = useLoad(api.platformStats, [])
   const top = useLoad(() => api.leaderboard('all', 'kd'), [])
+  const installer = useLoad(installerAvailable, [])
 
   return (
     <div className="space-y-8">
@@ -59,12 +60,16 @@ export function Home() {
             Einmal installieren, zustimmen und vergessen. Der Client startet mit Windows, wartet im Tray auf das Spiel und
             synchronisiert deine Matches automatisch.
           </p>
-          <a
-            href="/downloads/CodStats-Setup-win-x64.exe"
-            className="inline-block rounded-lg bg-accent px-4 py-2 font-medium text-bg hover:brightness-110"
-          >
-            Für Windows herunterladen
-          </a>
+          {installer.state === 'ready' && installer.data ? (
+            <a
+              href={installerUrl}
+              className="inline-block rounded-lg bg-accent px-4 py-2 font-medium text-bg hover:brightness-110"
+            >
+              Für Windows herunterladen
+            </a>
+          ) : (
+            <p className="text-sm text-muted">{installer.state === 'loading' ? '…' : 'Der Download folgt in Kürze.'}</p>
+          )}
           <p className="mt-3 text-xs text-muted">Windows 10/11, 64 Bit. Kein Zugriff auf den Spielspeicher.</p>
         </Card>
       </div>

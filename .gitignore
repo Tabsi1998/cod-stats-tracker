@@ -33,3 +33,5 @@ Thumbs.db
 # Server runtime
 backups/
 run/
+deploy/downloads/*
+!deploy/downloads/.gitkeep

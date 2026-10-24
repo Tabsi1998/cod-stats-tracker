@@ -120,6 +120,7 @@ yellow "→ Warte auf die API …"
 wait_healthy 90 || { compose logs --tail 50 api >&2; die "Die API ist nicht hochgekommen. Logs oben."; }
 
 trap - EXIT
+fetch_installer
 green "✓ Läuft: $URL"
 if [[ "$MODE" == "domain" ]]; then
   echo "  DNS von $DOMAIN muss auf diesen Server zeigen, Ports 80 und 443 offen. Caddy holt das Zertifikat selbst."
