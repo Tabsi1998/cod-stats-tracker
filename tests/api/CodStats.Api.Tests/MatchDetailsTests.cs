@@ -160,3 +160,46 @@ public class MatchVisibilityTests(ApiFixture fixture)
         Assert.Equal(2, await ShownMatches(device));
     }
 }
+
+[Collection(ApiTestGroup.Name)]
+public class UniqueNameTests(ApiFixture fixture)
+{
+    private ApiFactory Api => fixture.Api;
+
+    [Fact]
+    public async Task A_confirmed_name_belongs_to_one_profile_only()
+    {
+        var name = "Unique" + Random.Shared.Next(100_000);
+        using var first = await TestDevice.PublicPlayerAsync(Api, name);
+        using var second = await TestDevice.RegisterAsync(Api);
+
+        var taken = await second.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed));
+        Assert.Equal(HttpStatusCode.Conflict, taken.StatusCode);
+
+        // Unconfirmed it is allowed: such a profile is never shown.
+        var uncertain = await second.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Uncertain));
+        uncertain.EnsureSuccessStatusCode();
+
+        var found = await first.Http.GetFromJsonAsync<List<PlayerSummary>>($"/api/v1/public/players/search?q={name}");
+        Assert.Single(found!);
+    }
+
+    [Fact]
+    public async Task Names_differing_only_in_case_are_different_players()
+    {
+        // In Call of Duty "Tabsi98" and "TAbsi98" are two accounts.
+        var name = "case" + Random.Shared.Next(100_000);
+        using var lower = await TestDevice.PublicPlayerAsync(Api, name);
+        using var upper = await TestDevice.PublicPlayerAsync(Api, name.ToUpperInvariant());
+        Assert.NotEqual(lower.ProfileId, upper.ProfileId);
+    }
+
+    [Fact]
+    public async Task The_owner_can_confirm_their_own_name_again()
+    {
+        var name = "Owner" + Random.Shared.Next(100_000);
+        using var device = await TestDevice.PublicPlayerAsync(Api, name);
+        var again = await device.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed));
+        again.EnsureSuccessStatusCode();
+    }
+}

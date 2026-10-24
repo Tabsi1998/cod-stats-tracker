@@ -75,6 +75,17 @@ Die Webseite bietet `deploy/downloads/CodStats-Setup-win-x64.exe` an; der Ordner
 
 Klappt beides nicht, die Datei von Hand aus dem GitHub-Release in `deploy/downloads/` legen. Solange keine Datei da ist, blendet die Webseite den Download-Knopf aus.
 
+## Zwei Profile eines Spielers zusammenlegen
+
+Passiert, wenn jemand den Client mit „lokale Daten löschen“ deinstalliert und neu installiert: Der PC meldet sich als neues Gerät an, sein bestätigter Name ist aber schon vergeben. Die IDs stehen in den Profil-Adressen (`/player/<ID>`).
+
+```bash
+./merge-profiles.sh <BEHALTEN-ID> <AUFLÖSEN-ID>         # Vorschau
+./merge-profiles.sh <BEHALTEN-ID> <AUFLÖSEN-ID> --yes   # ausführen, vorher automatisch Backup
+```
+
+Geräte, Matches und Namen wandern ins behaltene Profil; der PC schreibt ab dem nächsten Sync dorthin.
+
 ## Backups woanders aufbewahren
 
 `backups/` liegt auf demselben Server. Kopiere die Dateien zusätzlich regelmäßig woandershin (NAS, Nextcloud, anderer Server), sonst hilft ein Backup bei einem Plattendefekt nichts.

@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // The version in the title bar: which client runs is the first question after every update.
+        var version = typeof(MainWindow).Assembly.GetName().Version;
+        Title = version is null ? "COD Stats" : $"COD Stats {version.Major}.{version.Minor}.{version.Build}";
         refresh = () => Dispatcher.BeginInvoke(Refresh);
         app.DataChanged += refresh;
 

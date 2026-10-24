@@ -153,21 +153,6 @@ public class PublicTests(ApiFixture fixture)
     }
 
     [Fact]
-    public async Task Equal_names_stay_separate_profiles()
-    {
-        var name = UniqueName("Shadow");
-        using var first = await TestDevice.PublicPlayerAsync(Api, name);
-        using var second = await TestDevice.PublicPlayerAsync(Api, name);
-        await first.UploadAsync(Matches.Mw4(10, 2));
-
-        var found = await Api.Anonymous().GetFromJsonAsync<List<PlayerSummary>>($"/api/v1/public/players/search?q={name.ToUpperInvariant()}");
-        Assert.Equal(2, found!.Count);
-        Assert.Equal(new[] { first.ProfileId, second.ProfileId }.Order(), found.Select(p => p.Id).Order());
-        Assert.Equal(1, found.Single(p => p.Id == first.ProfileId).Matches);
-        Assert.Equal(0, found.Single(p => p.Id == second.ProfileId).Matches);
-    }
-
-    [Fact]
     public async Task Search_treats_wildcards_literally()
     {
         using var device = await TestDevice.PublicPlayerAsync(Api, UniqueName("Wild"));

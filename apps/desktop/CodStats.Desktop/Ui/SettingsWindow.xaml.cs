@@ -19,7 +19,6 @@ public partial class SettingsWindow : Window
         Publish.IsChecked = settings.PublishProfile;
         Tracking.IsChecked = settings.TrackingEnabled;
         Autostart.IsChecked = settings.StartWithWindows;
-        Server.Text = settings.ServerUrl;
     }
 
     private async void OnSave(object sender, RoutedEventArgs e)
@@ -31,14 +30,6 @@ public partial class SettingsWindow : Window
             return;
         }
         var settings = app.Settings;
-        var previousServer = settings.ServerUrl;
-        settings.ServerUrl = Server.Text.Trim();
-        if (settings.ServerUri is null)
-        {
-            settings.ServerUrl = previousServer;
-            Status.Text = "Die Serveradresse muss mit https:// beginnen.";
-            return;
-        }
         settings.DisplayName = name;
         settings.NameConfirmed = name is not null && NameConfirmed.IsChecked == true;
         settings.PublishProfile = Publish.IsChecked == true;

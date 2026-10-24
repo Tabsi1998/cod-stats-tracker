@@ -6,8 +6,11 @@ namespace CodStats.Desktop;
 
 public sealed class Settings
 {
-    /// <summary>The project's own server. Self-hosters change it in the setup window or the settings.</summary>
-    public string ServerUrl { get; set; } = "https://codstats.tabelander.co.at";
+    /// <summary>
+    /// The server, fixed in code: players never type an address. A self-hosted server is a change here and a new
+    /// build. CODSTATS_SERVER overrides it for development against a local stack only.
+    /// </summary>
+    public const string Server = "https://codstats.tabelander.co.at";
 
     /// <summary>When the player agreed to screen recognition and upload. Nothing runs before.</summary>
     public DateTimeOffset? ConsentGivenAt { get; set; }
@@ -44,10 +47,12 @@ public sealed class Settings
         File.Move(temp, paths.Settings, overwrite: true);
     }
 
-    /// <summary>The server address as a URI, or null when it is not an http(s) address.</summary>
-    [System.Text.Json.Serialization.JsonIgnore]
-    public Uri? ServerUri =>
-        Uri.TryCreate(ServerUrl.TrimEnd('/') + "/", UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" ? uri : null;
+    /// <summary>The server's address with a trailing slash.</summary>
+    public static Uri ServerUri =>
+        Environment.GetEnvironmentVariable("CODSTATS_SERVER") is { Length: > 0 } development
+        && Uri.TryCreate(development.TrimEnd('/') + "/", UriKind.Absolute, out var local) && local.Scheme is "https" or "http"
+            ? local
+            : new Uri(Server + "/");
 }
 
 /// <summary>Start with Windows through the current user's Run key; no admin rights, no scheduled task.</summary>

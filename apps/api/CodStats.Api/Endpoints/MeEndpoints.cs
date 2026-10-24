@@ -53,6 +53,19 @@ public static class MeEndpoints
             return Results.Problem(detail: "status must be uncertain or confirmed", statusCode: 400);
         }
 
+        // One confirmed name, one profile: a second PC or a reinstall must not create a second "Tabsi98". The name
+        // alone never moves a profile (anyone could type it); the recovery key does.
+        if (body.Status == NameStatus.Confirmed)
+        {
+            // Exactly as written: in Call of Duty "Tabsi98" and "TAbsi98" are two different players.
+            var taken = await db.Profiles.AnyAsync(p => p.Id != device.ProfileId && p.NameStatus == NameStatus.Confirmed
+                && p.DisplayName == name, cancel);
+            if (taken)
+            {
+                return Results.Problem(detail: "this name already belongs to another profile; take that profile over with its recovery key", statusCode: 409);
+            }
+        }
+
         var now = clock.GetUtcNow();
         var profile = await db.Profiles.SingleAsync(p => p.Id == device.ProfileId, cancel);
         profile.DisplayName = name;
@@ -68,7 +81,15 @@ public static class MeEndpoints
         {
             history.LastSeenAt = now;
         }
-        await db.SaveChangesAsync(cancel);
+        try
+        {
+            await db.SaveChangesAsync(cancel);
+        }
+        catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation, ConstraintName: "ix_profiles_confirmed_name" })
+        {
+            // Another device confirmed the same name a moment earlier.
+            return Results.Problem(detail: "this name already belongs to another profile; take that profile over with its recovery key", statusCode: 409);
+        }
         return Results.Ok(await LoadMe(device, db, cancel));
     }
 
