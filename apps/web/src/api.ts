@@ -3,6 +3,7 @@
 export type Game = 'mw4_mp' | 'wz_br' | 'wz_resurgence'
 export type GameGroup = 'all' | 'mw4' | 'warzone'
 export type MatchResult = 'win' | 'loss' | 'draw'
+export type MatchStatus = 'completed' | 'left'
 export type LeaderboardMetric = 'kd' | 'kills' | 'matches' | 'winrate'
 
 export interface PlayerSummary {
@@ -50,6 +51,39 @@ export interface Stats {
   firstMatchAt: string | null
   lastMatchAt: string | null
   series: StatsPoint[]
+  leftMatches: number
+  leaveRate: number | null
+  eliminations: number
+  averageScore: number | null
+  averageXp: number | null
+  totalXp: number
+  bestMatchId: string | null
+  longestWinStreak: number | null
+  byMode: StatsBreakdown[] | null
+  byMap: StatsBreakdown[] | null
+}
+
+/** The figures of the matches in one mode or on one map. */
+export interface StatsBreakdown {
+  name: string
+  matches: number
+  wins: number
+  matchesWithResult: number
+  winRate: number | null
+  kills: number
+  kdRatio: number | null
+  averageKills: number | null
+  averageScore: number | null
+}
+
+/** Values beyond the basics, read from the result screen and the after-action report. */
+export interface MatchDetails {
+  eliminations: number | null
+  teamScore: number | null
+  enemyScore: number | null
+  xp: number | null
+  level: number | null
+  modeStats: Record<string, number> | null
 }
 
 export interface PublicMatch {
@@ -64,6 +98,8 @@ export interface PublicMatch {
   placement: number | null
   map: string | null
   score: number | null
+  status: MatchStatus
+  details: MatchDetails | null
 }
 
 export interface Page<T> {
@@ -133,8 +169,10 @@ export const api = {
   player: (id: string) => get<PlayerProfile>(`${base}/players/${encodeURIComponent(id)}`),
   stats: (id: string, game: GameGroup, period: Period) =>
     get<Stats>(`${base}/players/${encodeURIComponent(id)}/stats${query({ game, ...period })}`),
-  matches: (id: string, game: GameGroup) =>
-    get<Page<PublicMatch>>(`${base}/players/${encodeURIComponent(id)}/matches${query({ game, limit: 10 })}`),
-  leaderboard: (game: GameGroup, metric: LeaderboardMetric) =>
-    get<Leaderboard>(`${base}/leaderboards${query({ game, metric })}`),
+  matches: (id: string, game: GameGroup, offset = 0, limit = 25) =>
+    get<Page<PublicMatch>>(`${base}/players/${encodeURIComponent(id)}/matches${query({ game, offset, limit })}`),
+  match: (id: string, matchId: string) =>
+    get<PublicMatch>(`${base}/players/${encodeURIComponent(id)}/matches/${encodeURIComponent(matchId)}`),
+  leaderboard: (game: GameGroup, metric: LeaderboardMetric, mode?: string) =>
+    get<Leaderboard>(`${base}/leaderboards${query({ game, metric, mode })}`),
 }

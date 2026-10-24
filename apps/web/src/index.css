@@ -1,29 +1,256 @@
+@import "@fontsource/saira-condensed/latin-500.css";
+@import "@fontsource/saira-condensed/latin-600.css";
+@import "@fontsource/saira-condensed/latin-700.css";
+@import "@fontsource/saira-condensed/latin-800.css";
+@import "@fontsource/saira-condensed/latin-ext-600.css";
+@import "@fontsource/saira-condensed/latin-ext-700.css";
+@import "@fontsource/barlow/latin-400.css";
+@import "@fontsource/barlow/latin-500.css";
+@import "@fontsource/barlow/latin-600.css";
+@import "@fontsource/barlow/latin-ext-400.css";
+@import "@fontsource/barlow/latin-ext-600.css";
 @import "tailwindcss";
 
 @theme {
-  --color-bg: oklch(0.17 0.01 260);
-  --color-surface: oklch(0.21 0.012 260);
-  --color-raised: oklch(0.25 0.014 260);
-  --color-line: oklch(0.32 0.015 260);
-  --color-text: oklch(0.95 0.005 260);
-  --color-muted: oklch(0.7 0.012 260);
-  --color-accent: oklch(0.8 0.16 85);
-  --color-win: oklch(0.75 0.15 150);
-  --color-loss: oklch(0.68 0.17 25);
-  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  /* Night-ops ground: a blue-black that the cyan and orange of the game's scoreboards sit on. */
+  --color-bg: oklch(0.155 0.018 252);
+  --color-deep: oklch(0.125 0.016 252);
+  --color-surface: oklch(0.195 0.02 250);
+  --color-raised: oklch(0.235 0.022 248);
+  --color-line: oklch(0.32 0.022 248);
+  --color-bracket: oklch(0.62 0.03 240);
+  --color-text: oklch(0.955 0.008 240);
+  --color-muted: oklch(0.72 0.022 240);
+  --color-faint: oklch(0.6 0.02 242);
+
+  /* Roles, as in the game: own team / win cyan, enemy / loss orange, you yellow, left slate. */
+  --color-win: oklch(0.84 0.14 205);
+  --color-loss: oklch(0.72 0.17 45);
+  --color-you: oklch(0.88 0.16 98);
+  --color-left: oklch(0.66 0.03 265);
+  --color-draw: oklch(0.8 0.02 240);
+
+  --font-display: "Saira Condensed", "Arial Narrow", sans-serif;
+  --font-sans: "Barlow", "Segoe UI", system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
   color-scheme: dark;
+  scrollbar-color: var(--color-line) var(--color-deep);
 }
 
 body {
-  background: var(--color-bg);
+  background:
+    radial-gradient(120% 60% at 15% -10%, oklch(0.22 0.04 230 / 0.55), transparent 60%),
+    var(--color-bg);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: oklch(0.88 0.16 98 / 0.35);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-you);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border: 2px solid var(--color-deep);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+input {
+  caret-color: var(--color-you);
+}
+
+.display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The signature: the after-action report's tile brackets. Four thin L-corners around a cluster, never a box.
+ * Two pseudo elements each draw two opposite corners; on first render they close in from outside onto the cluster.
+ */
+.bracket {
+  --bracket-size: 14px;
+  --bracket-weight: 1.5px;
+  --bracket-color: var(--color-bracket);
+  position: relative;
+}
+.bracket::before,
+.bracket::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  animation: bracket-draw 900ms var(--ease-out-expo) both;
+}
+.bracket::before {
+  background-image:
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color));
+  background-position:
+    top left,
+    top left,
+    bottom right,
+    bottom right;
+  background-size:
+    var(--bracket-size) var(--bracket-weight),
+    var(--bracket-weight) var(--bracket-size),
+    var(--bracket-size) var(--bracket-weight),
+    var(--bracket-weight) var(--bracket-size);
+}
+.bracket::after {
+  background-image:
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color)),
+    linear-gradient(var(--bracket-color), var(--bracket-color));
+  background-position:
+    top right,
+    top right,
+    bottom left,
+    bottom left;
+  background-size:
+    var(--bracket-size) var(--bracket-weight),
+    var(--bracket-weight) var(--bracket-size),
+    var(--bracket-size) var(--bracket-weight),
+    var(--bracket-weight) var(--bracket-size);
+}
+.bracket-win {
+  --bracket-color: var(--color-win);
+}
+.bracket-loss {
+  --bracket-color: var(--color-loss);
+}
+.bracket-you {
+  --bracket-color: var(--color-you);
+}
+.bracket-left {
+  --bracket-color: var(--color-left);
+}
+
+@keyframes bracket-draw {
+  from {
+    opacity: 0;
+    inset: -10px;
+  }
+  to {
+    opacity: 1;
+    inset: 0;
+  }
+}
+
+/* Content rises in once, staggered by --i. Visible by default: the animation only runs where motion is welcome. */
+.rise {
+  animation: rise 700ms var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* The result word lights up once, like the banner on the game's result screen. */
+.flare {
+  animation: flare 1400ms var(--ease-out-expo) both;
+}
+@keyframes flare {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 0 transparent;
+  }
+  35% {
+    opacity: 1;
+    text-shadow: 0 0 28px currentColor;
+  }
+  100% {
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 0 transparent;
+  }
+}
+
+/* A form cell fills in from the bottom, oldest to newest. */
+.cell-in {
+  animation: cell-in 500ms var(--ease-out-expo) both;
+  animation-delay: calc(300ms + var(--i, 0) * 25ms);
+  transform-origin: bottom;
+}
+@keyframes cell-in {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* A bar grows to its value. */
+.bar-in {
+  animation: bar-in 900ms var(--ease-out-expo) both;
+  animation-delay: calc(200ms + var(--i, 0) * 40ms);
+  transform-origin: left;
+}
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bracket::before,
+  .bracket::after,
+  .flare,
+  .rise,
+  .cell-in,
+  .bar-in {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
+  }
 }

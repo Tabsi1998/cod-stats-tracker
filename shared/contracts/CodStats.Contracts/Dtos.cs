@@ -47,6 +47,7 @@ public sealed record MatchDetails(
     int? Level = null,
     IReadOnlyDictionary<string, int>? ModeStats = null)
 {
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsEmpty => Eliminations is null && TeamScore is null && EnemyScore is null && Xp is null && Level is null
         && (ModeStats is null || ModeStats.Count == 0);
 }

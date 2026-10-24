@@ -1,0 +1,463 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T12:00:00Z",
+  "title": "Design System: COD Stats",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Night-Ops Ground",
+        "canonical": "oklch(0.155 0.018 252)",
+        "tonalRamp": [
+          "oklch(0.15 0.018 252)",
+          "oklch(0.26 0.018 252)",
+          "oklch(0.37 0.018 252)",
+          "oklch(0.49 0.018 252)",
+          "oklch(0.6 0.018 252)",
+          "oklch(0.72 0.018 252)",
+          "oklch(0.83 0.018 252)",
+          "oklch(0.95 0.018 252)"
+        ]
+      },
+      "deep": {
+        "role": "neutral",
+        "displayName": "Deep Well",
+        "canonical": "oklch(0.125 0.016 252)",
+        "tonalRamp": [
+          "oklch(0.15 0.016 252)",
+          "oklch(0.26 0.016 252)",
+          "oklch(0.37 0.016 252)",
+          "oklch(0.49 0.016 252)",
+          "oklch(0.6 0.016 252)",
+          "oklch(0.72 0.016 252)",
+          "oklch(0.83 0.016 252)",
+          "oklch(0.95 0.016 252)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Steel Surface",
+        "canonical": "oklch(0.195 0.02 250)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 250)",
+          "oklch(0.26 0.02 250)",
+          "oklch(0.37 0.02 250)",
+          "oklch(0.49 0.02 250)",
+          "oklch(0.6 0.02 250)",
+          "oklch(0.72 0.02 250)",
+          "oklch(0.83 0.02 250)",
+          "oklch(0.95 0.02 250)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Steel",
+        "canonical": "oklch(0.235 0.022 248)",
+        "tonalRamp": [
+          "oklch(0.15 0.022 248)",
+          "oklch(0.26 0.022 248)",
+          "oklch(0.37 0.022 248)",
+          "oklch(0.49 0.022 248)",
+          "oklch(0.6 0.022 248)",
+          "oklch(0.72 0.022 248)",
+          "oklch(0.83 0.022 248)",
+          "oklch(0.95 0.022 248)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(0.32 0.022 248)",
+        "tonalRamp": [
+          "oklch(0.15 0.022 248)",
+          "oklch(0.26 0.022 248)",
+          "oklch(0.37 0.022 248)",
+          "oklch(0.49 0.022 248)",
+          "oklch(0.6 0.022 248)",
+          "oklch(0.72 0.022 248)",
+          "oklch(0.83 0.022 248)",
+          "oklch(0.95 0.022 248)"
+        ]
+      },
+      "bracket": {
+        "role": "neutral",
+        "displayName": "Bracket Steel",
+        "canonical": "oklch(0.62 0.03 240)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 240)",
+          "oklch(0.26 0.03 240)",
+          "oklch(0.37 0.03 240)",
+          "oklch(0.49 0.03 240)",
+          "oklch(0.6 0.03 240)",
+          "oklch(0.72 0.03 240)",
+          "oklch(0.83 0.03 240)",
+          "oklch(0.95 0.03 240)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Report White",
+        "canonical": "oklch(0.955 0.008 240)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 240)",
+          "oklch(0.26 0.008 240)",
+          "oklch(0.37 0.008 240)",
+          "oklch(0.49 0.008 240)",
+          "oklch(0.6 0.008 240)",
+          "oklch(0.72 0.008 240)",
+          "oklch(0.83 0.008 240)",
+          "oklch(0.95 0.008 240)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Steel",
+        "canonical": "oklch(0.72 0.022 240)",
+        "tonalRamp": [
+          "oklch(0.15 0.022 240)",
+          "oklch(0.26 0.022 240)",
+          "oklch(0.37 0.022 240)",
+          "oklch(0.49 0.022 240)",
+          "oklch(0.6 0.022 240)",
+          "oklch(0.72 0.022 240)",
+          "oklch(0.83 0.022 240)",
+          "oklch(0.95 0.022 240)"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint Steel",
+        "canonical": "oklch(0.6 0.02 242)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 242)",
+          "oklch(0.26 0.02 242)",
+          "oklch(0.37 0.02 242)",
+          "oklch(0.49 0.02 242)",
+          "oklch(0.6 0.02 242)",
+          "oklch(0.72 0.02 242)",
+          "oklch(0.83 0.02 242)",
+          "oklch(0.95 0.02 242)"
+        ]
+      },
+      "you": {
+        "role": "primary",
+        "displayName": "Operator Yellow",
+        "canonical": "oklch(0.88 0.16 98)",
+        "tonalRamp": [
+          "oklch(0.15 0.16 98)",
+          "oklch(0.26 0.16 98)",
+          "oklch(0.37 0.16 98)",
+          "oklch(0.49 0.16 98)",
+          "oklch(0.6 0.16 98)",
+          "oklch(0.72 0.16 98)",
+          "oklch(0.83 0.16 98)",
+          "oklch(0.95 0.16 98)"
+        ]
+      },
+      "win": {
+        "role": "secondary",
+        "displayName": "Own-Team Cyan",
+        "canonical": "oklch(0.84 0.14 205)",
+        "tonalRamp": [
+          "oklch(0.15 0.14 205)",
+          "oklch(0.26 0.14 205)",
+          "oklch(0.37 0.14 205)",
+          "oklch(0.49 0.14 205)",
+          "oklch(0.6 0.14 205)",
+          "oklch(0.72 0.14 205)",
+          "oklch(0.83 0.14 205)",
+          "oklch(0.95 0.14 205)"
+        ]
+      },
+      "loss": {
+        "role": "secondary",
+        "displayName": "Signal Orange",
+        "canonical": "oklch(0.72 0.17 45)",
+        "tonalRamp": [
+          "oklch(0.15 0.17 45)",
+          "oklch(0.26 0.17 45)",
+          "oklch(0.37 0.17 45)",
+          "oklch(0.49 0.17 45)",
+          "oklch(0.6 0.17 45)",
+          "oklch(0.72 0.17 45)",
+          "oklch(0.83 0.17 45)",
+          "oklch(0.95 0.17 45)"
+        ]
+      },
+      "left": {
+        "role": "tertiary",
+        "displayName": "Left Slate",
+        "canonical": "oklch(0.66 0.03 265)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 265)",
+          "oklch(0.26 0.03 265)",
+          "oklch(0.37 0.03 265)",
+          "oklch(0.49 0.03 265)",
+          "oklch(0.6 0.03 265)",
+          "oklch(0.72 0.03 265)",
+          "oklch(0.83 0.03 265)",
+          "oklch(0.95 0.03 265)"
+        ]
+      },
+      "draw": {
+        "role": "tertiary",
+        "displayName": "Draw Grey",
+        "canonical": "oklch(0.8 0.02 240)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 240)",
+          "oklch(0.26 0.02 240)",
+          "oklch(0.37 0.02 240)",
+          "oklch(0.49 0.02 240)",
+          "oklch(0.6 0.02 240)",
+          "oklch(0.72 0.02 240)",
+          "oklch(0.83 0.02 240)",
+          "oklch(0.95 0.02 240)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one page-defining word: player name, match result word, home headline, page titles. Steps 3.75rem / 4.5rem / 6rem / 8rem by role and breakpoint."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Count-up statistics, sizes md 2.25rem, lg 3-3.75rem, xl 3.75-6rem; final score 6-8rem. Units step down to 0.55em on the same line."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section and chart headings inside a page."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Names in rows and tables, nav links, tabs, buttons, mode and map tags."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tracked caps caption beneath every figure; table header rows."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running explanatory text in Barlow; lead paragraphs 1.125-1.25rem, capped at 55-70ch."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Hints under figures, legends, notes and metadata lines in Faint Steel."
+      }
+    },
+    "shadows": [
+      {
+        "name": "debrief-lift",
+        "value": "0 24px 48px -28px rgb(0 0 0 / 0.9)",
+        "purpose": "Under bracket clusters with a surface fill only."
+      },
+      {
+        "name": "flare-glow",
+        "value": "text-shadow: 0 0 28px currentColor",
+        "purpose": "Peak of the one-time result-word flare; fades to none."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The single easing for every arrival animation and the tab underline."
+      },
+      {
+        "name": "bracket-draw",
+        "value": "900ms ease-out-expo; inset -10px to 0, opacity 0 to 1",
+        "purpose": "Corner brackets close in onto their cluster on first render."
+      },
+      {
+        "name": "rise",
+        "value": "700ms ease-out-expo; translateY(10px) + blur(4px) to none; delay index x 60ms",
+        "purpose": "Content blocks and list rows rise in once, staggered."
+      },
+      {
+        "name": "count-up",
+        "value": "900ms (1200ms inline on home), exponential ease-out 1 - 2^(-10t), once",
+        "purpose": "Figures count from 0 on first appearance; later changes are immediate."
+      },
+      {
+        "name": "flare",
+        "value": "1400ms ease-out-expo; tracking 0.12em to 0.02em, glow peak at 35%",
+        "purpose": "The match result word lights up once."
+      },
+      {
+        "name": "cell-in",
+        "value": "500ms ease-out-expo; scaleY 0 to 1 from bottom; delay 300ms + index x 25ms",
+        "purpose": "Form-strip cells fill oldest to newest."
+      },
+      {
+        "name": "bar-in",
+        "value": "900ms ease-out-expo; scaleX 0 to 1 from left; delay 200ms + index x 40ms",
+        "purpose": "Win-rate and ranking bars grow to their value."
+      },
+      {
+        "name": "tab-slide",
+        "value": "500ms ease-out-expo transform",
+        "purpose": "The yellow tab underline slides to the active tab."
+      },
+      {
+        "name": "state-change",
+        "value": "200ms colour / filter / transform",
+        "purpose": "Hover and focus on rows, links, controls, buttons."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all keyframe animations off, transitions 0ms, count-up skipped",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bracket Cluster",
+      "kind": "card",
+      "refersTo": "bracket-cluster",
+      "description": "The signature debrief frame: four thin L-corners around a cluster of figures, tinted to the outcome, never a box.",
+      "html": "<section class=\"ds-bracket ds-bracket-win\"><div class=\"ds-fig\"><div class=\"ds-fig-num\">1,42</div><div class=\"ds-fig-label\">K/D</div></div><div class=\"ds-fig\"><div class=\"ds-fig-num ds-win\">58<span class=\"ds-unit\">%</span></div><div class=\"ds-fig-label\">Siegquote</div></div></section>",
+      "css": ".ds-bracket { --bc: var(--color-bracket); position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 32px 24px; padding: 28px 32px; background: color-mix(in oklch, var(--color-surface) 50%, transparent); box-shadow: 0 24px 48px -28px rgb(0 0 0 / 0.9); } .ds-bracket-win { --bc: var(--color-win); } .ds-bracket::before, .ds-bracket::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat; background-image: linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)); background-size: 14px 1.5px, 1.5px 14px, 14px 1.5px, 1.5px 14px; animation: ds-bracket-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-bracket::before { background-position: top left, top left, bottom right, bottom right; } .ds-bracket::after { background-position: top right, top right, bottom left, bottom left; } @keyframes ds-bracket-draw { from { opacity: 0; inset: -10px; } to { opacity: 1; inset: 0; } } .ds-fig-num { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; line-height: 0.95; font-weight: 700; font-size: 3.75rem; font-variant-numeric: tabular-nums; color: var(--color-you); } .ds-fig-num.ds-win { color: var(--color-win); } .ds-unit { margin-left: 4px; font-size: 0.55em; } .ds-fig-label { margin-top: 8px; font-family: var(--font-display); text-transform: uppercase; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; color: var(--color-muted); } @media (prefers-reduced-motion: reduce) { .ds-bracket::before, .ds-bracket::after { animation: none; } }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Operator-yellow square button for the one main action (search submit, client download).",
+      "html": "<button class=\"ds-btn-primary\">Suchen</button>",
+      "css": ".ds-btn-primary { background: var(--color-you); color: var(--color-bg); border: 0; border-radius: 0; padding: 12px 24px; font-family: var(--font-display); text-transform: uppercase; font-size: 1.125rem; font-weight: 700; letter-spacing: 0.1em; line-height: 0.95; cursor: pointer; transition: filter 200ms, transform 200ms; } .ds-btn-primary:hover { filter: brightness(1.1); } .ds-btn-primary:active { transform: translateY(1px); filter: brightness(0.95); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-you); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Full-width hairline button for loading more; border turns yellow on hover.",
+      "html": "<button class=\"ds-btn-outline\">Weitere Matches (25 übrig)</button>",
+      "css": ".ds-btn-outline { width: 100%; background: transparent; border: 1px solid var(--color-line); border-radius: 0; padding: 12px 0; color: var(--color-muted); font-family: var(--font-display); text-transform: uppercase; font-size: 1.125rem; font-weight: 700; letter-spacing: 0.1em; line-height: 0.95; cursor: pointer; transition: color 200ms, border-color 200ms; } .ds-btn-outline:hover { border-color: var(--color-you); color: var(--color-text); } .ds-btn-outline:focus-visible { outline: 2px solid var(--color-you); outline-offset: 2px; } .ds-btn-outline:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Recessed square field with an inline search icon; border turns yellow on focus.",
+      "html": "<div class=\"ds-search\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"ds-search-icon\" aria-hidden=\"true\"><path d=\"M9 15.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM13.7 13.7 18 18\"/></svg><input class=\"ds-input\" placeholder=\"Spielername, z. B. Tabsi98\" aria-label=\"Spielername\"></div>",
+      "css": ".ds-search { position: relative; max-width: 42rem; } .ds-search-icon { position: absolute; left: 12px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--color-faint); pointer-events: none; } .ds-input { width: 100%; background: color-mix(in oklch, var(--color-deep) 80%, transparent); border: 1px solid var(--color-line); border-radius: 0; padding: 12px 16px 12px 40px; color: var(--color-text); caret-color: var(--color-you); font-family: var(--font-sans); font-size: 1.125rem; outline: none; transition: border-color 200ms; } .ds-input::placeholder { color: var(--color-faint); } .ds-input:focus { border-color: var(--color-you); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Game, period and metric switch: recessed group, active segment raised with a yellow bottom bar.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\" aria-label=\"Spiel\"><button class=\"ds-seg-opt is-active\" role=\"radio\" aria-checked=\"true\">MW4</button><button class=\"ds-seg-opt\" role=\"radio\" aria-checked=\"false\">Warzone</button><button class=\"ds-seg-opt\" role=\"radio\" aria-checked=\"false\">Alle</button></div>",
+      "css": ".ds-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--color-line); background: color-mix(in oklch, var(--color-deep) 70%, transparent); } .ds-seg-opt { position: relative; border: 0; border-radius: 0; background: transparent; padding: 8px 14px; color: var(--color-muted); font-family: var(--font-display); text-transform: uppercase; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.06em; line-height: 0.95; cursor: pointer; transition: color 200ms, background-color 200ms; } .ds-seg-opt:hover { background: var(--color-surface); color: var(--color-text); } .ds-seg-opt.is-active { background: var(--color-raised); color: var(--color-text); } .ds-seg-opt.is-active::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: 0; height: 2px; background: var(--color-you); } .ds-seg-opt:focus-visible { outline: 2px solid var(--color-you); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Equal-width view tabs over a hairline; one yellow bar slides to the active tab.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab is-active\" role=\"tab\" aria-selected=\"true\">Übersicht</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Matches</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Modi<span class=\"ds-tab-count\">7</span></button><span class=\"ds-tab-bar\" aria-hidden=\"true\"></span></div>",
+      "css": ".ds-tabs { position: relative; display: grid; grid-template-columns: repeat(3, minmax(5rem, 1fr)); max-width: 42rem; border-bottom: 1px solid var(--color-line); } .ds-tab { border: 0; background: transparent; padding: 12px 12px 10px; color: var(--color-muted); font-family: var(--font-display); text-transform: uppercase; font-size: 1.125rem; font-weight: 700; letter-spacing: 0.08em; line-height: 0.95; cursor: pointer; transition: color 200ms; } .ds-tab:hover, .ds-tab.is-active { color: var(--color-text); } .ds-tab:focus-visible { outline: 2px solid var(--color-you); outline-offset: 2px; } .ds-tab-count { margin-left: 8px; font-family: var(--font-sans); font-size: 0.875rem; font-weight: 500; letter-spacing: normal; text-transform: none; color: var(--color-faint); } .ds-tab-bar { position: absolute; left: 0; bottom: 0; width: 33.333%; height: 2px; background: var(--color-you); transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1); }"
+    },
+    {
+      "name": "Outcome Tags",
+      "kind": "chip",
+      "refersTo": "outcome-tag-win",
+      "description": "Result as a square tag: role colour at 15% behind role-colour text.",
+      "html": "<span class=\"ds-tag ds-tag-win\">Sieg</span> <span class=\"ds-tag ds-tag-loss\">Niederlage</span> <span class=\"ds-tag ds-tag-left\">Verlassen</span>",
+      "css": ".ds-tag { display: inline-block; padding: 2px 8px; border-radius: 0; font-family: var(--font-display); text-transform: uppercase; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.1em; line-height: 1.2; } .ds-tag-win { background: color-mix(in oklch, var(--color-win) 15%, transparent); color: var(--color-win); } .ds-tag-loss { background: color-mix(in oklch, var(--color-loss) 15%, transparent); color: var(--color-loss); } .ds-tag-left { background: color-mix(in oklch, var(--color-left) 15%, transparent); color: var(--color-left); }"
+    },
+    {
+      "name": "Form Strip",
+      "kind": "custom",
+      "refersTo": "form-strip",
+      "description": "Last results oldest-left as square outcome cells that fill from the bottom in sequence.",
+      "html": "<div class=\"ds-form\"><span class=\"ds-cell w\" style=\"--i:0\"></span><span class=\"ds-cell l\" style=\"--i:1\"></span><span class=\"ds-cell w\" style=\"--i:2\"></span><span class=\"ds-cell w\" style=\"--i:3\"></span><span class=\"ds-cell x\" style=\"--i:4\"></span><span class=\"ds-cell l\" style=\"--i:5\"></span><span class=\"ds-cell w\" style=\"--i:6\"></span><span class=\"ds-cell w\" style=\"--i:7\"></span><span class=\"ds-cell l\" style=\"--i:8\"></span><span class=\"ds-cell w\" style=\"--i:9\"></span></div>",
+      "css": ".ds-form { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; max-width: 24rem; } .ds-cell { display: block; aspect-ratio: 1; transform-origin: bottom; animation: ds-cell-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(300ms + var(--i, 0) * 25ms); } .ds-cell.w { background: var(--color-win); } .ds-cell.l { background: var(--color-loss); } .ds-cell.x { background: var(--color-left); } @keyframes ds-cell-in { from { transform: scaleY(0); } to { transform: none; } } @media (prefers-reduced-motion: reduce) { .ds-cell { animation: none; } }"
+    },
+    {
+      "name": "Result Banner",
+      "kind": "custom",
+      "refersTo": "result-banner",
+      "description": "Match page headline: the outcome word in its role colour, flaring once, beside the cyan | orange final score.",
+      "html": "<header class=\"ds-banner\"><div><h1 class=\"ds-result\">Sieg</h1><span class=\"ds-mode\">Herrschaft</span></div><div class=\"ds-score\"><span class=\"ds-score-n ds-own\">200</span><span class=\"ds-score-sep\" aria-hidden=\"true\">|</span><span class=\"ds-score-n ds-enemy\">143</span></div></header>",
+      "css": ".ds-banner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 32px; } .ds-result { margin: 0 0 16px; font-family: var(--font-display); text-transform: uppercase; font-size: 4.5rem; font-weight: 800; line-height: 0.95; letter-spacing: 0.02em; color: var(--color-win); animation: ds-flare 1400ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-mode { display: inline-block; background: var(--color-text); color: var(--color-bg); padding: 4px 12px; font-family: var(--font-display); text-transform: uppercase; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.14em; } .ds-score { display: flex; align-items: flex-end; gap: 16px; font-family: var(--font-display); font-weight: 800; line-height: 0.95; font-variant-numeric: tabular-nums; } .ds-score-n { font-size: 6rem; } .ds-own { color: var(--color-win); } .ds-enemy { color: var(--color-loss); } .ds-score-sep { font-size: 3rem; color: var(--color-faint); } @keyframes ds-flare { 0% { opacity: 0; letter-spacing: 0.12em; text-shadow: 0 0 0 transparent; } 35% { opacity: 1; text-shadow: 0 0 28px currentColor; } 100% { letter-spacing: 0.02em; text-shadow: 0 0 0 transparent; } } @media (prefers-reduced-motion: reduce) { .ds-result { animation: none; } }"
+    },
+    {
+      "name": "Ranking Row",
+      "kind": "custom",
+      "refersTo": "row-link",
+      "description": "A linked list row: rank, name with a value bar, figure; hover tones the background and turns the name yellow.",
+      "html": "<a class=\"ds-row\" href=\"#\"><span class=\"ds-rank is-first\">1</span><span class=\"ds-row-name\"><span class=\"ds-name\">Tabsi98</span><span class=\"ds-track\"><span class=\"ds-fill\" style=\"width:100%\"></span></span></span><span class=\"ds-row-val\">1,84</span></a><a class=\"ds-row\" href=\"#\"><span class=\"ds-rank\">2</span><span class=\"ds-row-name\"><span class=\"ds-name\">Ghost_7</span><span class=\"ds-track\"><span class=\"ds-fill ds-fill-win\" style=\"width:72%\"></span></span></span><span class=\"ds-row-val\">1,32</span></a>",
+      "css": ".ds-row { display: grid; grid-template-columns: 3rem 1fr auto; align-items: center; gap: 12px; padding: 12px; color: var(--color-text); text-decoration: none; transition: background-color 200ms; } .ds-row:hover { background: var(--color-surface); } .ds-row:hover .ds-name { color: var(--color-you); } .ds-row:focus-visible { outline: 2px solid var(--color-you); outline-offset: 2px; } .ds-rank, .ds-name, .ds-row-val { font-family: var(--font-display); text-transform: uppercase; line-height: 0.95; letter-spacing: 0.02em; } .ds-rank { font-size: 1.875rem; font-weight: 800; color: var(--color-text); } .ds-rank.is-first { color: var(--color-you); } .ds-name { display: block; font-size: 1.25rem; font-weight: 700; transition: color 200ms; } .ds-track { display: block; height: 4px; margin-top: 6px; background: color-mix(in oklch, var(--color-line) 50%, transparent); } .ds-fill { display: block; height: 100%; background: var(--color-you); transform-origin: left; animation: ds-bar-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-fill-win { background: color-mix(in oklch, var(--color-win) 70%, transparent); } .ds-row-val { font-size: 1.875rem; font-weight: 700; font-variant-numeric: tabular-nums; } @keyframes ds-bar-in { from { transform: scaleX(0); } to { transform: none; } } @media (prefers-reduced-motion: reduce) { .ds-fill { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The After-Action Report",
+    "overview": "Every surface reads like the debrief the game shows after a match: one report per match, one service record per player. Numbers are the protagonists, set huge in condensed uppercase on a deep blue-black night-ops ground, each with a small tracked label beneath, exactly as the in-game report stacks value over caption. The colours are the game's own team colours, used as meaning rather than decoration: cyan is your side and a win, signal orange is the enemy and a loss, operator yellow is \"you\" and the current selection, slate is a match that was left.\n\nDensity is high but calm. Clusters of figures are held by the system's signature, four thin L-shaped corner brackets drawn around a cluster instead of a box, and everything else is separated by single hairlines, never by rounded cards. Shapes are square throughout. Motion happens once, on arrival: brackets close in onto their cluster, numbers count up, the result word flares, form cells fill, bars grow. After that, the page is still. The build refuses the category default of a grey dashboard of same-size stat cards with one accent.\n\nUnknown values render as an en dash (\"–\"), never as 0; this is a visual rule as much as a data rule, since the dash sits in the same figure slot and the same type as a real number.",
+    "keyCharacteristics": [
+      "Night-ops ground: blue-black base with a faint cool radial glow from the top left, fixed to the viewport.",
+      "Condensed uppercase display type (Saira Condensed) for names, numbers, result words, labels and controls; Barlow for running text; tabular numerals everywhere.",
+      "Outcome colours carry meaning only: win/own cyan, loss/enemy orange, you/selection yellow, left slate.",
+      "Corner-bracket frames around every debrief cluster; hairlines elsewhere; zero corner radius.",
+      "One-time arrival motion on an expo-out curve, fully disabled under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Team Colour Rule",
+        "body": "Cyan, orange, yellow and slate always mean win/own, loss/enemy, you/selection and left. A colour that does not carry one of those meanings stays neutral. The one standing exception is the home page, where cyan marks the product's own side (the headline word \"Automatisch\" and the step numerals).",
+        "section": "colors"
+      },
+      {
+        "name": "The Tint, Not Fill Rule",
+        "body": "Outcome tags use their role colour at 15% as background with the full colour as text; only form cells, bars, the primary button and the mode tag use solid fills.",
+        "section": "colors"
+      },
+      {
+        "name": "The Report Print Rule",
+        "body": "If the in-game report would print it (a name, a number, a result, a label, a control), it is set in the condensed uppercase display face. Sentences that explain are set in Barlow, sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Value Over Label Rule",
+        "body": "A figure is always the number first, large, with its label beneath in small tracked caps; never a label above a number.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Lift Rule",
+        "body": "Only a bracket cluster casts a shadow. Panels, rows, controls and tags stay flat; hover is a tonal background change, not elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do frame every debrief cluster with the four-corner bracket (14px arms, 1.5px), tinted to the outcome it reports.",
+      "Do set numbers, names, results, labels and controls in Saira Condensed uppercase with tabular numerals, and stack value over label.",
+      "Do keep cyan = win/own, orange = loss/enemy, yellow = you/selection, slate = left, on every surface including charts and the form strip.",
+      "Do show an unknown value as \"–\" in the same slot and type a number would use.",
+      "Do run arrival motion once on the expo-out curve (`cubic-bezier(0.16, 1, 0.3, 1)`), stagger by index (60ms for rising content), and turn it all off under `prefers-reduced-motion`.",
+      "Do separate sections with a single hairline and let tonal steps (deep, bg, surface, raised) carry depth."
+    ],
+    "donts": [
+      "Don't use rounded corners anywhere; the system radius is 0.",
+      "Don't wrap content in closed bordered or rounded cards; use brackets for clusters and hairlines for everything else.",
+      "Don't build a grid of same-size stat cards with a single accent; give the defining figure the largest size and let the rest step down.",
+      "Don't use the role colours decoratively; outside the home page's cyan headline word and step numerals they mean win, loss, you/selection or left only.",
+      "Don't cast shadows outside bracket clusters; hover is a background tone, not a lift.",
+      "Don't show game artwork, map images or Activision logos; names only."
+    ]
+  }
+}
