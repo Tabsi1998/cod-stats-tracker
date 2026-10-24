@@ -10,7 +10,7 @@
     <AssemblyName>CodStats</AssemblyName>
     <RootNamespace>CodStats.Desktop</RootNamespace>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <!-- The capture's Direct3D interop uses generated P/Invoke stubs. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

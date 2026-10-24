@@ -4,6 +4,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-24
+
 ### Geändert
 - Ein bestätigter Spielername gehört genau einem Profil (exakte Schreibweise; „Tabsi98“ und „TAbsi98“ sind wie im Spiel zwei Spieler): Ein zweites Profil (anderer PC, Neuinstallation mit gelöschten Daten) bekommt den Namen nicht, der Client verweist auf den Wiederherstellungsschlüssel. Bereits doppelte Namen: das ältere Profil behält ihn.
 - Windows-Client: Beim Deinstallieren ist „Daten behalten“ die Vorauswahl; der Client zeigt seine Version in der Titelleiste.
@@ -89,7 +91,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.1...v0.1.2
