@@ -7,6 +7,10 @@ public static class MatchRules
     public const int MaxPlacement = 150;
     public const int MaxScore = 100_000;
     public const int MaxTextLength = 64;
+    public const int MaxXp = 1_000_000;
+    public const int MaxLevel = 1_000;
+    public const int MaxModeStats = 12;
+    public const int MaxModeStatKeyLength = 32;
     public static readonly TimeSpan MaxFuture = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan MaxAge = TimeSpan.FromDays(180);
 
@@ -41,8 +45,63 @@ public static class MatchRules
         }
         problems.AddRange(ValidateValues(match.Game, match.Mode, match.PlayedAt, match.Kills, match.Deaths,
             match.Assists, match.Result, match.Placement, match.Map, match.Score, now));
+        if (!Enum.IsDefined(match.Status))
+        {
+            problems.Add("status is not known");
+        }
+        else if (match.Status == MatchStatus.Left && match.Result is not null)
+        {
+            problems.Add("a left match has no result");
+        }
+        if (match.Details is { } details)
+        {
+            problems.AddRange(ValidateDetails(details));
+        }
         return problems;
     }
+
+    public static IReadOnlyList<string> ValidateDetails(MatchDetails details)
+    {
+        ArgumentNullException.ThrowIfNull(details);
+        var problems = new List<string>();
+        CheckCount(problems, "eliminations", details.Eliminations);
+        foreach (var (name, value) in new[] { ("teamScore", details.TeamScore), ("enemyScore", details.EnemyScore) })
+        {
+            if (value is < 0 or > MaxScore)
+            {
+                problems.Add($"{name} must be between 0 and {MaxScore}");
+            }
+        }
+        if (details.Xp is < 0 or > MaxXp)
+        {
+            problems.Add($"xp must be between 0 and {MaxXp}");
+        }
+        if (details.Level is < 1 or > MaxLevel)
+        {
+            problems.Add($"level must be between 1 and {MaxLevel}");
+        }
+        if (details.ModeStats is { } stats)
+        {
+            if (stats.Count > MaxModeStats)
+            {
+                problems.Add($"at most {MaxModeStats} modeStats");
+            }
+            foreach (var (key, value) in stats)
+            {
+                if (key.Length is 0 or > MaxModeStatKeyLength || !key.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_'))
+                {
+                    problems.Add($"modeStats key '{Shorten(key)}' must be 1–{MaxModeStatKeyLength} of a-z, 0-9, _");
+                }
+                if (value is < 0 or > MaxScore)
+                {
+                    problems.Add($"modeStats value of '{Shorten(key)}' must be between 0 and {MaxScore}");
+                }
+            }
+        }
+        return problems;
+    }
+
+    private static string Shorten(string text) => text.Length > MaxModeStatKeyLength ? text[..MaxModeStatKeyLength] + "…" : text;
 
     public static IReadOnlyList<string> Validate(Game game, MatchCorrectionRequest correction, DateTimeOffset now)
     {

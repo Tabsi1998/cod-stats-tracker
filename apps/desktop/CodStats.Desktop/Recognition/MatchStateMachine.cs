@@ -40,9 +40,6 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
     /// <summary>Below this a candidate is stored for the player's review instead of being uploaded.</summary>
     public const double SafeConfidence = 0.85;
 
-    /// <summary>Said in the doubts of a match the player left; such a match has no result.</summary>
-    public const string LeftDoubt = "Match verlassen";
-
     private static readonly TimeSpan MaxCollecting = TimeSpan.FromSeconds(20);
 
     /// <summary>
@@ -254,7 +251,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         results.Clear();
         results.AddRange(Enumerable.Repeat(board, ReadingsPerResult));
         reports.Clear();
-        return Finish(MatchStatus.Left, LeftDoubt);
+        return Finish(MatchStatus.Left);
     }
 
     /// <summary>
@@ -319,8 +316,13 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         var mode = Text(reports, Fields.Mode) ?? Text(results, Fields.Mode);
         var map = Text(reports, Fields.Map) ?? Text(results, Fields.Map);
 
-        // The values a statistic depends on: kills always, placement in Warzone, the result of a finished MW4 match.
-        var essentials = new List<double> { kills is null ? 0 : killsConfidence };
+        // The values a statistic depends on: kills, placement in Warzone, the result of a finished MW4 match. A left
+        // match needs none of them: that it was left is what it says, its values may be unreadable (yellow zeros).
+        var essentials = new List<double>();
+        if (status == MatchStatus.Completed)
+        {
+            essentials.Add(kills is null ? 0 : killsConfidence);
+        }
         if (game?.IsWarzone() == true)
         {
             essentials.Add(placement is null ? 0 : placementConfidence);
@@ -333,12 +335,12 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
                 doubts.Add("Ergebnis nicht lesbar");
             }
         }
-        if (kills is null)
+        if (kills is null && status == MatchStatus.Completed)
         {
             doubts.Add("Kills nicht lesbar");
         }
 
-        var confidence = essentials.Min() * (game is null ? 0.5 : gameAgreement) * (sawStart ? 1 : 0.7)
+        var confidence = (essentials.Count > 0 ? essentials.Min() : 1) * (game is null ? 0.5 : gameAgreement) * (sawStart ? 1 : 0.7)
             * (wellRead ? 1 : 0.8);
         if (doubt is not null && status == MatchStatus.Completed)
         {

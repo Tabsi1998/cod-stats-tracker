@@ -18,7 +18,7 @@ public sealed class RecognitionLoop(
     Action<string> nameConfirmed,
     Func<string?>? savedName = null) : IDisposable
 {
-    public const string RecognizerVersion = "ocr-0.1";
+    public const string RecognizerVersion = "ocr-0.2";
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
 
     /// <summary>
@@ -187,7 +187,9 @@ public sealed class RecognitionLoop(
         }
         var match = new LocalMatch(Guid.NewGuid(), game, candidate.Mode, candidate.PlayedAt, candidate.Kills, candidate.Deaths,
             candidate.Assists, candidate.Result, candidate.Placement, candidate.Map, candidate.Score,
-            Math.Clamp(candidate.Confidence, 0, 1), ReviewStatus.Pending, RecognizerVersion, SyncState.Waiting, null);
+            Math.Clamp(candidate.Confidence, 0, 1), ReviewStatus.Pending, RecognizerVersion, SyncState.Waiting, null, candidate.Status,
+            new MatchDetails(candidate.Eliminations, candidate.TeamScore, candidate.EnemyScore, candidate.Xp, candidate.Level,
+                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null));
         var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;

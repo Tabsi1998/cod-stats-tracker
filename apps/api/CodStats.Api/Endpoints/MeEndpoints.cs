@@ -181,6 +181,11 @@ public static class MeEndpoints
         match.Result = MatchRules.NormalisedResult(match.Game, body.Result, body.Placement);
         match.Map = body.Map;
         match.Score = body.Score;
+        // A result given by the player means the match was played to the end after all.
+        if (match.Result is not null)
+        {
+            match.Status = MatchStatus.Completed;
+        }
         match.ReviewStatus = ReviewStatus.Corrected;
         match.UpdatedAt = now;
         await db.SaveChangesAsync(cancel);

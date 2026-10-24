@@ -60,6 +60,16 @@ public sealed class Match
     public int? Placement { get; set; }
     public string? Map { get; set; }
     public int? Score { get; set; }
+    public MatchStatus Status { get; set; }
+    public int? Eliminations { get; set; }
+    public int? TeamScore { get; set; }
+    public int? EnemyScore { get; set; }
+    public int? Xp { get; set; }
+    public int? Level { get; set; }
+
+    /// <summary>Mode values such as captures; stored as jsonb, since every mode has others.</summary>
+    public Dictionary<string, int>? ModeStats { get; set; }
+
     public double Confidence { get; set; }
     public ReviewStatus ReviewStatus { get; set; }
     public string? RecognizerVersion { get; set; }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using CodStats.Contracts;
 using Microsoft.Data.Sqlite;
 
@@ -32,20 +33,25 @@ public sealed record LocalMatch(
     ReviewStatus ReviewStatus,
     string? RecognizerVersion,
     SyncState SyncState,
-    string? SyncError)
+    string? SyncError,
+    MatchStatus Status = MatchStatus.Completed,
+    MatchDetails? Details = null)
 {
     public MatchUpload ToUpload() => new(Id, Game, Mode, PlayedAt, Kills, Deaths, Assists, Result, Placement, Map, Score,
-        Confidence, ReviewStatus, RecognizerVersion);
+        Confidence, ReviewStatus, RecognizerVersion, Status, Details is { IsEmpty: false } ? Details : null);
 
     public MatchCorrectionRequest ToCorrection() => new(Mode, PlayedAt, Kills, Deaths, Assists, Result, Placement, Map, Score);
 
-    public MatchFacts ToFacts() => new(Id, Game, PlayedAt, Kills, Deaths, Assists, Result, Placement);
+    public MatchFacts ToFacts() => new(Id, Game, PlayedAt, Kills, Deaths, Assists, Result, Placement, Status, Mode, Map, Score,
+        Details?.Eliminations, Details?.Xp);
 }
 
 /// <summary>The local SQLite database. It holds only this player's own matches.</summary>
 public sealed class MatchStore(string path)
 {
     private readonly string connectionString = new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString();
+
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     public void Initialise()
     {
@@ -74,6 +80,25 @@ public sealed class MatchStore(string path)
             CREATE INDEX IF NOT EXISTS matches_sync_state ON matches (sync_state);
             PRAGMA journal_mode = WAL;
             """);
+        // Columns added in 0.2.0; databases of older clients get them here, their matches count as completed.
+        var columns = new List<string>();
+        using (var info = connection.CreateCommand())
+        {
+            info.CommandText = "PRAGMA table_info(matches)";
+            using var reader = info.ExecuteReader();
+            while (reader.Read())
+            {
+                columns.Add(reader.GetString(1));
+            }
+        }
+        if (!columns.Contains("status"))
+        {
+            Execute(connection, "ALTER TABLE matches ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'");
+        }
+        if (!columns.Contains("details"))
+        {
+            Execute(connection, "ALTER TABLE matches ADD COLUMN details TEXT");
+        }
     }
 
     /// <summary>Stores a new match. Returns false when a match with the same id or the same result already exists.</summary>
@@ -88,9 +113,9 @@ public sealed class MatchStore(string path)
         using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT OR IGNORE INTO matches (id, game, mode, played_at, kills, deaths, assists, result, placement, map, score,
-                confidence, review_status, recognizer_version, sync_state, sync_error, created_at)
+                confidence, review_status, recognizer_version, sync_state, sync_error, created_at, status, details)
             VALUES ($id, $game, $mode, $played, $kills, $deaths, $assists, $result, $placement, $map, $score,
-                $confidence, $review, $recognizer, $sync, NULL, $created)
+                $confidence, $review, $recognizer, $sync, NULL, $created, $status, $details)
             """;
         Bind(command, match);
         command.Parameters.AddWithValue("$sync", match.SyncState.ToString());
@@ -107,6 +132,7 @@ public sealed class MatchStore(string path)
         command.CommandText = """
             UPDATE matches SET mode = $mode, played_at = $played, kills = $kills, deaths = $deaths, assists = $assists,
                 result = $result, placement = $placement, map = $map, score = $score, review_status = $review,
+                status = CASE WHEN $result IS NULL THEN status ELSE 'completed' END,
                 sync_error = NULL,
                 sync_state = CASE sync_state WHEN 'Synced' THEN 'CorrectionWaiting' WHEN 'CorrectionWaiting' THEN 'CorrectionWaiting' ELSE 'Waiting' END
             WHERE id = $id
@@ -195,6 +221,8 @@ public sealed class MatchStore(string path)
         command.Parameters.AddWithValue("$confidence", match.Confidence);
         command.Parameters.AddWithValue("$review", WireNames.Of(match.ReviewStatus));
         command.Parameters.AddWithValue("$recognizer", (object?)match.RecognizerVersion ?? DBNull.Value);
+        command.Parameters.AddWithValue("$status", WireNames.Of(match.Status));
+        command.Parameters.AddWithValue("$details", match.Details is { IsEmpty: false } details ? JsonSerializer.Serialize(details, Json) : DBNull.Value);
     }
 
     private List<LocalMatch> Query(string sql)
@@ -222,7 +250,9 @@ public sealed class MatchStore(string path)
                 Parse<ReviewStatus>(reader.GetString(reader.GetOrdinal("review_status"))),
                 NullableString(reader, "recognizer_version"),
                 Enum.Parse<SyncState>(reader.GetString(reader.GetOrdinal("sync_state"))),
-                NullableString(reader, "sync_error")));
+                NullableString(reader, "sync_error"),
+                Parse<MatchStatus>(reader.GetString(reader.GetOrdinal("status"))),
+                NullableString(reader, "details") is { } details ? JsonSerializer.Deserialize<MatchDetails>(details, Json) : null));
         }
         return matches;
     }

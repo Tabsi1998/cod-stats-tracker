@@ -183,7 +183,8 @@ public class MatchStateMachineTests
         Assert.Equal(MatchStatus.Left, match.Status);
         Assert.Null(match.Result);
         Assert.Equal(3, match.Kills);
-        Assert.Contains(MatchStateMachine.LeftDoubt, match.Doubts);
+        // That it was left is certain; it goes up on its own and counts for K/D, not for the win rate.
+        Assert.Equal(ReviewStatus.Auto, RecognitionLoop.ToLocal(match)!.ReviewStatus);
     }
 
     [Fact]
@@ -659,7 +660,9 @@ public class ScoreboardTests
         Assert.Equal(15, match!.Kills);
         Assert.Equal(MatchStatus.Left, match.Status);
         Assert.Null(match.Result);
-        Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+        var local = RecognitionLoop.ToLocal(match)!;
+        Assert.Equal(ReviewStatus.Auto, local.ReviewStatus);
+        Assert.Equal(MatchStatus.Left, local.ToUpload().Status);
     }
 }
 

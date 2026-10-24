@@ -9,7 +9,13 @@ public sealed record MatchFacts(
     int? Deaths,
     int? Assists,
     MatchResult? Result,
-    int? Placement);
+    int? Placement,
+    MatchStatus Status = MatchStatus.Completed,
+    string? Mode = null,
+    string? Map = null,
+    int? Score = null,
+    int? Eliminations = null,
+    int? Xp = null);
 
 /// <summary>Which matches a statistic covers. At most one of Last and Days/From/To should be set.</summary>
 public sealed record StatsFilter(GameGroup Game = GameGroup.All, int? Last = null, int? Days = null,
@@ -82,7 +88,11 @@ public static class StatsCalculator
         ArgumentNullException.ThrowIfNull(matchesOldestFirst);
         int kdKills = 0, kdDeaths = 0, kills = 0, deaths = 0, assists = 0, wins = 0, withResult = 0;
         int killMatches = 0, placementSum = 0, placementMatches = 0;
+        int left = 0, eliminations = 0, streak = 0, longestStreak = 0;
+        long scoreSum = 0, xpSum = 0;
+        int scoreMatches = 0, xpMatches = 0;
         int? best = null;
+        Guid? bestMatch = null;
         var series = new List<StatsPoint>(matchesOldestFirst.Count);
 
         foreach (var match in matchesOldestFirst)
@@ -90,10 +100,30 @@ public static class StatsCalculator
             kills += match.Kills ?? 0;
             deaths += match.Deaths ?? 0;
             assists += match.Assists ?? 0;
+            eliminations += match.Eliminations ?? 0;
+            if (match.Status == MatchStatus.Left)
+            {
+                left++;
+            }
+            if (match.Score is { } score)
+            {
+                scoreSum += score;
+                scoreMatches++;
+            }
+            if (match.Xp is { } xp)
+            {
+                xpSum += xp;
+                xpMatches++;
+            }
             if (match.Kills is { } k)
             {
                 killMatches++;
-                best = best is null ? k : Math.Max(best.Value, k);
+                // Oldest first: ">=" lets the newer of two equal matches win.
+                if (best is null || k >= best.Value)
+                {
+                    best = k;
+                    bestMatch = match.Id;
+                }
             }
             if (match.Kills is { } kk && match.Deaths is { } dd)
             {
@@ -108,6 +138,9 @@ public static class StatsCalculator
                 {
                     wins++;
                 }
+                // A left match ends no streak and continues none: it has no result.
+                streak = result == MatchResult.Win ? streak + 1 : 0;
+                longestStreak = Math.Max(longestStreak, streak);
             }
             if (match.Game.IsWarzone() && match.Placement is { } place)
             {
@@ -134,6 +167,50 @@ public static class StatsCalculator
             placementMatches > 0 ? Math.Round((double)placementSum / placementMatches, 1) : null,
             matchesOldestFirst.Count > 0 ? matchesOldestFirst[0].PlayedAt : null,
             matchesOldestFirst.Count > 0 ? matchesOldestFirst[^1].PlayedAt : null,
-            series);
+            series,
+            left,
+            matchesOldestFirst.Count > 0 ? Math.Round((double)left / matchesOldestFirst.Count, 4) : null,
+            eliminations,
+            scoreMatches > 0 ? Math.Round((double)scoreSum / scoreMatches, 1) : null,
+            xpMatches > 0 ? Math.Round((double)xpSum / xpMatches, 1) : null,
+            xpSum,
+            bestMatch,
+            withResult > 0 ? longestStreak : null,
+            Breakdown(matchesOldestFirst, m => m.Mode),
+            Breakdown(matchesOldestFirst, m => m.Map));
+    }
+
+    /// <summary>
+    /// The figures per mode or map, most played first. Names are compared without case, since the OCR reads them in
+    /// capitals and corrections may not be.
+    /// </summary>
+    public static IReadOnlyList<StatsBreakdown> Breakdown(IEnumerable<MatchFacts> matches, Func<MatchFacts, string?> key)
+    {
+        ArgumentNullException.ThrowIfNull(matches);
+        ArgumentNullException.ThrowIfNull(key);
+        return matches
+            .Where(m => !string.IsNullOrWhiteSpace(key(m)))
+            .GroupBy(m => key(m)!.Trim().ToUpperInvariant())
+            .Select(g =>
+            {
+                var list = g.ToList();
+                var results = list.Select(m => MatchRules.NormalisedResult(m.Game, m.Result, m.Placement)).Where(r => r is not null).ToList();
+                var wins = results.Count(r => r == MatchResult.Win);
+                var withKills = list.Where(m => m.Kills is not null).ToList();
+                var both = list.Where(m => m.Kills is not null && m.Deaths is not null).ToList();
+                var scored = list.Where(m => m.Score is not null).ToList();
+                return new StatsBreakdown(
+                    g.Key,
+                    list.Count,
+                    wins,
+                    results.Count,
+                    WinRate(wins, results.Count),
+                    withKills.Sum(m => m.Kills!.Value),
+                    KdRatio(both.Sum(m => (long)m.Kills!.Value), both.Sum(m => (long)m.Deaths!.Value)),
+                    withKills.Count > 0 ? Math.Round(withKills.Average(m => m.Kills!.Value), 2) : null,
+                    scored.Count > 0 ? Math.Round(scored.Average(m => m.Score!.Value), 1) : null);
+            })
+            .OrderByDescending(b => b.Matches).ThenBy(b => b.Name, StringComparer.Ordinal)
+            .ToList();
     }
 }
