@@ -76,7 +76,8 @@ public partial class App : Application
                 DataChanged?.Invoke();
                 await SyncNowAsync();
             }),
-            name => Dispatcher.BeginInvoke(() => AdoptRecognisedName(name)));
+            name => Dispatcher.BeginInvoke(() => AdoptRecognisedName(name)),
+            () => Settings.NameConfirmed ? Settings.DisplayName : null);
 
         tray = new Tray(this);
         Watcher.StateChanged += state => Dispatcher.BeginInvoke(async () =>

@@ -53,10 +53,33 @@ public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf)
 public sealed record FieldSpec(Region Region)
 {
     public IReadOnlyList<Region> More { get; init; } = [];
+
+    /// <summary>
+    /// For numbers (1, or 2 for a score line like "300 | 0"): every region is read on its own and the value most
+    /// regions agree on wins. Large digits read at one size and one filter but not at another, so several passes
+    /// over the same spot together are reliable where a single pass is not.
+    /// </summary>
+    public int Numbers { get; init; }
+
+    /// <summary>
+    /// The text of the lines that do not hold a mode name: the map sits beside the mode ("KAPERN  MUNITION").
+    /// </summary>
+    public bool WithoutModes { get; init; }
 }
 
 /// <summary>An area with labels and their values below them (field name → label words).</summary>
 public sealed record LabelledValuesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Values);
+
+/// <summary>
+/// Tiles of a number above a label, as on the after-action report ("1225 / PUNKTE", "2 / EROBERT"). Which tiles a
+/// report shows depends on the mode, so tiles are found by their labels, not by position. Every region is a pass
+/// over the same area with other options; their readings are merged (field name → label words). A label that no
+/// field lists is kept as a mode value under its own name when two passes read it alike.
+/// </summary>
+public sealed record TilesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Labels)
+{
+    public IReadOnlyList<Region> More { get; init; } = [];
+}
 
 /// <summary>A scoreboard table: its area including the heading row, and how tall that heading row is.</summary>
 public sealed record TableSpec(Region Region, double HeaderHeight);
@@ -65,7 +88,14 @@ public sealed record TableSpec(Region Region, double HeaderHeight);
 /// The player's own scoreboard row: searched by name in the tables, values read from the columns whose heading
 /// contains one of the words (field name → heading words).
 /// </summary>
-public sealed record OwnRowSpec(IReadOnlyList<TableSpec> Tables, double RowHeight, IReadOnlyDictionary<string, IReadOnlyList<string>> Columns);
+public sealed record OwnRowSpec(IReadOnlyList<TableSpec> Tables, double RowHeight, IReadOnlyDictionary<string, IReadOnlyList<string>> Columns)
+{
+    /// <summary>
+    /// A field filled with the own row's rank in the list (1 + names above it) when its column cannot be read: the
+    /// free-for-all placement digits are orange on orange. Only for the top three, where the list has no gaps.
+    /// </summary>
+    public string? RankField { get; init; }
+}
 
 /// <summary>
 /// How one screen of one game looks at one aspect ratio. Profiles are data, not code, so a season update that
@@ -92,6 +122,9 @@ public sealed record RecognitionProfile
 
     /// <summary>Values printed under a label ("TODE" over "17"), read as one area.</summary>
     public LabelledValuesSpec? Labelled { get; init; }
+
+    /// <summary>Numbers above labels, such as the tiles of the after-action report.</summary>
+    public TilesSpec? Tiles { get; init; }
     public IReadOnlyList<string> WinWords { get; init; } = [];
     public IReadOnlyList<string> LossWords { get; init; } = [];
     public IReadOnlyList<string> DrawWords { get; init; } = [];
@@ -108,12 +141,17 @@ public sealed record RecognitionProfile
         if (string.IsNullOrWhiteSpace(Id)) yield return "id fehlt";
         if (Aspect is < 1 or > 4) yield return "aspect unplausibel";
         if (Anchors.Count == 0) yield return "keine Anker";
-        foreach (var region in Anchors.SelectMany(a => a.More.Prepend(a.Region)).Concat(Fields.Values.SelectMany(f => f.More.Prepend(f.Region))))
+        var regions = Anchors.SelectMany(a => a.More.Prepend(a.Region)).Concat(Fields.Values.SelectMany(f => f.More.Prepend(f.Region)));
+        if (Tiles is { } tiles)
+        {
+            regions = regions.Concat(tiles.More.Prepend(tiles.Region));
+        }
+        foreach (var region in regions)
         {
             if (!region.IsValid) yield return $"Bereich außerhalb 0..1: {region}";
         }
-        if (Screen == ScreenKind.Result && Game is null) yield return "Ergebnisprofil ohne Spiel";
-        if (OwnRow is not null && OwnName is null) yield return "ownRow braucht ownName";
+        if (Screen is ScreenKind.Result or ScreenKind.AfterAction && Game is null) yield return "Ergebnisprofil ohne Spiel";
+        if (Fields.Values.Any(f => f.Numbers is < 0 or > 2)) yield return "numbers nur 1 oder 2";
         if (OwnRow is { } row && (row.Tables.Count == 0 || row.Tables.Any(t => !t.Region.IsValid) || row.RowHeight is <= 0 or > 0.2)) yield return "ownRow unplausibel";
     }
 }

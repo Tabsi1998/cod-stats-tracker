@@ -31,10 +31,23 @@
     "screen": "unknown"
   },
   "einsatzbericht.jpg": {
-    "screen": "unknown"
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "HERRSCHAFT",
+    "map": "TRANSIT 213",
+    "scoreline": "101 200",
+    "score": 2010,
+    "kills": 14,
+    "xp": 9968,
+    "level": 20,
+    "stats": {
+      "captures": 1
+    }
   },
   "lobby_kartenabstimmung.jpg": {
-    "screen": "unknown"
+    "screen": "lobby",
+    "game": "mw4_mp"
   },
   "tab_stellung.jpg": {
     "screen": "inMatch",
@@ -84,7 +97,9 @@
     "ownName": "Tabsi98"
   },
   "rundensieg_front_1440.jpg": {
-    "screen": "unknown"
+    "screen": "result",
+    "game": "mw4_mp",
+    "mode": "FRONT"
   },
   "result_sieg_front_1440.jpg": {
     "screen": "result",
@@ -96,5 +111,92 @@
     "deaths": 21,
     "score": 3815,
     "ownName": "Tabsi98"
+  },
+  "aar_sieg_kapern.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "KAPERN",
+    "map": "MUNITION",
+    "scoreline": "300 0",
+    "score": 1225,
+    "kills": 8,
+    "xp": 12410,
+    "level": 26,
+    "stats": {
+      "captures": 2,
+      "data_uploaded": 77
+    }
+  },
+  "aar_sieg_ffa.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "FREI FÜR ALLE",
+    "map": "COAL",
+    "scoreline": "25 29",
+    "score": 25,
+    "kills": 25,
+    "deaths": 22,
+    "xp": 18894,
+    "level": 27
+  },
+  "result_sieg_kapern.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "mode": "KAPERN",
+    "kills": 8,
+    "deaths": 8,
+    "score": 1225,
+    "eliminations": 11,
+    "ownName": "Tabsi98",
+    "stats": {
+      "captures": 2
+    }
+  },
+  "rundensieg_kapern.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "mode": "KAPERN",
+    "kills": 3,
+    "deaths": 5,
+    "ownName": "Tabsi98"
+  },
+  "rundenniederlage_kollateral.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "mode": "KOLLATERAL"
+  },
+  "result_sieg_ffa.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "FREI FÜR ALLE",
+    "placement": 3,
+    "score": 25
+  },
+  "lobby_nach_match.jpg": {
+    "screen": "lobby",
+    "game": "mw4_mp"
+  },
+  "menu_schnelles_spiel.jpg": {
+    "screen": "menu",
+    "game": "mw4_mp"
+  },
+  "killcam.jpg": {
+    "screen": "unknown"
+  },
+  "tab_kapern.jpg": {
+    "screen": "inMatch",
+    "game": "mw4_mp",
+    "_note": "Banner zeigt den ausgewählten Mitspieler; eigene Nullen gelb auf gelb unlesbar: keine Werte erwartet.",
+    "absent": [
+      "deaths",
+      "kills"
+    ]
+  },
+  "tab_ffa.jpg": {
+    "screen": "inMatch",
+    "game": "mw4_mp"
   }
 }

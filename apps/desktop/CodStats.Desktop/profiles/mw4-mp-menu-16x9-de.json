@@ -1,0 +1,21 @@
+{
+  "id": "mw4-mp-menu-16x9-de",
+  "game": "mw4_mp",
+  "screen": "menu",
+  "aspect": 1.7778,
+  "verified": true,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.11,
+        "y": 0.14,
+        "width": 0.21,
+        "height": 0.07
+      },
+      "anyOf": [
+        "SCHNELLES",
+        "QUICK PLAY"
+      ]
+    }
+  ]
+}

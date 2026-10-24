@@ -57,7 +57,8 @@ public class FixtureTests
         var ocr = WindowsOcr.Create()!;
         using var frame = Load(path, width);
 
-        var observation = await new ScreenReader(profiles, ocr).ReadAsync(frame, DateTimeOffset.Now, CancellationToken.None);
+        // All captures are of one player, whose name the client knows after a few matches.
+        var observation = await new ScreenReader(profiles, ocr, () => "Tabsi98").ReadAsync(frame, DateTimeOffset.Now, CancellationToken.None);
 
         Assert.Equal(expected.GetProperty("screen").GetString(), Name(observation.Screen));
         if (expected.TryGetProperty("game", out var game))
@@ -76,6 +77,34 @@ public class FixtureTests
         Number("deaths", Fields.Deaths);
         Number("score", Fields.Score);
         Number("assists", Fields.Assists);
+        Number("eliminations", Fields.Eliminations);
+        Number("xp", Fields.Xp);
+        Number("level", Fields.Level);
+        if (expected.TryGetProperty("placement", out var placement))
+        {
+            Assert.True(placement.GetInt32() == TextParsing.Placement(Field(Fields.Placement)).Value, $"placement: expected {placement}, read '{Field(Fields.Placement)}'");
+        }
+        foreach (var key in new[] { "map", "scoreline" })
+        {
+            if (expected.TryGetProperty(key, out var text))
+            {
+                Assert.Equal(text.GetString(), Field(key));
+            }
+        }
+        if (expected.TryGetProperty("absent", out var absent))
+        {
+            foreach (var field in absent.EnumerateArray())
+            {
+                Assert.False(observation.Fields.ContainsKey(field.GetString()!), $"{field} should not be read");
+            }
+        }
+        if (expected.TryGetProperty("stats", out var stats))
+        {
+            foreach (var stat in stats.EnumerateObject())
+            {
+                Number(stat.Name, Fields.StatPrefix + stat.Name);
+            }
+        }
         if (expected.TryGetProperty("result", out var result))
         {
             var words = profiles.First(p => p.Id == observation.ProfileId).Words;
@@ -94,6 +123,7 @@ public class FixtureTests
     private static string Name(ScreenKind screen) => screen switch
     {
         ScreenKind.InMatch => "inMatch",
+        ScreenKind.AfterAction => "afterAction",
         _ => screen.ToString().ToLowerInvariant(),
     };
 

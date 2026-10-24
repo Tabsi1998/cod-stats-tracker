@@ -20,42 +20,48 @@
     {
       "region": {
         "x": 0.03,
-        "y": 0.05,
+        "y": 0.17,
         "width": 0.3,
-        "height": 0.12,
-        "tryHeights": [
-          40,
-          80,
-          0
-        ]
+        "height": 0.08
       },
       "more": [
         {
           "x": 0.67,
-          "y": 0.05,
+          "y": 0.17,
           "width": 0.3,
-          "height": 0.12,
-          "tryHeights": [
-            40,
-            80,
-            0
-          ]
+          "height": 0.08
         }
       ],
       "anyOf": [
-        "NIEDERLAGE",
-        "SIEG",
-        "UNENTSCHIEDEN",
-        "VICTORY",
-        "DEFEAT",
-        "DRAW"
-      ],
-      "noneOf": [
-        "RUNDENSIEG",
-        "RUNDENNIEDERLAGE",
-        "RUNDENUNENTSCHIEDEN",
-        "ROUND WIN",
-        "ROUND LOSS"
+        "ABSCHUSS BESTÄTIGT",
+        "KILL CONFIRMED",
+        "SUCHEN & ZERSTÖREN",
+        "SUCHEN UND ZERSTÖREN",
+        "SEARCH AND DESTROY",
+        "TEAM-DEATHMATCH",
+        "TEAM DEATHMATCH",
+        "FREI FÜR ALLE",
+        "JEDER GEGEN JEDEN",
+        "FREE-FOR-ALL",
+        "HERRSCHAFT",
+        "DOMINATION",
+        "STELLUNG",
+        "HARDPOINT",
+        "KAPERN",
+        "INFLATION",
+        "KILL BLOCK",
+        "KOLLATERAL",
+        "WAFFENSPIEL",
+        "GUN GAME",
+        "BODENKRIEG",
+        "GROUND WAR",
+        "HAUPTQUARTIER",
+        "HEADQUARTERS",
+        "KONTROLLE",
+        "CONTROL",
+        "FEUERGEFECHT",
+        "GUNFIGHT",
+        "FRONT"
       ]
     }
   ],
@@ -83,6 +89,22 @@
             80,
             0
           ]
+        },
+        {
+          "x": 0.03,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "whiteText": true,
+          "maxHeight": 40
+        },
+        {
+          "x": 0.67,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "whiteText": true,
+          "maxHeight": 40
         }
       ]
     },
@@ -90,9 +112,17 @@
       "region": {
         "x": 0.03,
         "y": 0.17,
-        "width": 0.94,
-        "height": 0.06
-      }
+        "width": 0.3,
+        "height": 0.08
+      },
+      "more": [
+        {
+          "x": 0.67,
+          "y": 0.17,
+          "width": 0.3,
+          "height": 0.08
+        }
+      ]
     }
   },
   "ownName": {
@@ -139,6 +169,14 @@
       ],
       "assists": [
         "ASSISTS"
+      ],
+      "stat.captures": [
+        "EROBERT",
+        "CAPTURES"
+      ],
+      "stat.data_uploaded": [
+        "DATEN",
+        "DATA"
       ]
     }
   },
@@ -155,21 +193,26 @@
     "DRAW"
   ],
   "modes": [
-    "HERRSCHAFT",
-    "DOMINATION",
-    "TEAM-DEATHMATCH",
-    "TEAM DEATHMATCH",
     "ABSCHUSS BESTÄTIGT",
     "KILL CONFIRMED",
-    "STELLUNG",
-    "HARDPOINT",
+    "SUCHEN & ZERSTÖREN",
     "SUCHEN UND ZERSTÖREN",
     "SEARCH AND DESTROY",
+    "TEAM-DEATHMATCH",
+    "TEAM DEATHMATCH",
+    "FREI FÜR ALLE",
     "JEDER GEGEN JEDEN",
     "FREE-FOR-ALL",
+    "HERRSCHAFT",
+    "DOMINATION",
+    "STELLUNG",
+    "HARDPOINT",
+    "KAPERN",
     "INFLATION",
     "KILL BLOCK",
     "KOLLATERAL",
+    "WAFFENSPIEL",
+    "GUN GAME",
     "BODENKRIEG",
     "GROUND WAR",
     "HAUPTQUARTIER",
@@ -191,6 +234,10 @@
       "deaths": [
         "TODE",
         "DEATHS"
+      ],
+      "eliminations": [
+        "ELIMINIERUNGEN",
+        "ELIMINATIONS"
       ]
     }
   }

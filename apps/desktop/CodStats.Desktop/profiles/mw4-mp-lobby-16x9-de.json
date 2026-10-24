@@ -1,0 +1,20 @@
+{
+  "id": "mw4-mp-lobby-16x9-de",
+  "game": "mw4_mp",
+  "screen": "lobby",
+  "aspect": 1.7778,
+  "verified": true,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.74,
+        "y": 0.095,
+        "width": 0.12,
+        "height": 0.04
+      },
+      "anyOf": [
+        "LOBBY"
+      ]
+    }
+  ]
+}

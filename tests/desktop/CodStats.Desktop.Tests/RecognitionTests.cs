@@ -60,7 +60,8 @@ public class MatchStateMachineTests
     private static readonly DateTimeOffset Start = DateTimeOffset.UtcNow.AddHours(-2);
     private static readonly ProfileWords Words = new(["VICTORY"], ["DEFEAT"], ["DRAW"]);
 
-    private static Observation Result(int second, string kills, string deaths, string result = "VICTORY", double quality = 1.0, Game game = Game.Mw4Multiplayer, string? placement = null)
+    private static Observation Result(int second, string kills, string deaths, string result = "VICTORY", double quality = 1.0,
+        Game? game = Game.Mw4Multiplayer, string? placement = null, Dictionary<string, string>? more = null)
     {
         var fields = new Dictionary<string, FieldReading>
         {
@@ -72,67 +73,201 @@ public class MatchStateMachineTests
         {
             fields[Fields.Placement] = new(placement, quality);
         }
+        foreach (var (name, text) in more ?? [])
+        {
+            fields[name] = new(text, quality);
+        }
         return new Observation(Start.AddSeconds(second), ScreenKind.Result, game, "profile", fields);
     }
 
+    private static Observation Report(int second, string result = "VICTORY", Dictionary<string, string>? more = null)
+    {
+        var fields = new Dictionary<string, FieldReading>
+        {
+            [Fields.Result] = new(result, 1),
+            [Fields.Mode] = new("KAPERN", 1),
+            [Fields.Map] = new("MUNITION", 1),
+            [Fields.Scoreline] = new("300 0", 1),
+            [Fields.Xp] = new("12410", 1),
+            [Fields.Level] = new("26", 1),
+        };
+        foreach (var (name, text) in more ?? [])
+        {
+            fields[name] = new(text, 1);
+        }
+        return new Observation(Start.AddSeconds(second), ScreenKind.AfterAction, Game.Mw4Multiplayer, "report", fields);
+    }
+
+    private static Observation Screen(int second, ScreenKind screen) => Observation.Of(Start.AddSeconds(second), screen, Game.Mw4Multiplayer);
+
     private static MatchStateMachine Machine() => new(_ => Words);
 
+    /// <summary>Feeds observations and returns the matches they produced.</summary>
+    private static List<MatchCandidate> Feed(MatchStateMachine machine, params Observation[] observations) =>
+        observations.Select(machine.Observe).OfType<MatchCandidate>().ToList();
+
     [Fact]
-    public void A_clean_match_becomes_a_safe_candidate()
+    public void A_match_ends_with_its_after_action_report()
     {
         var machine = Machine();
-        Assert.Null(machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer)));
-        Assert.Null(machine.Observe(Result(600, "23", "11")));
-        Assert.Null(machine.Observe(Result(602, "23", "11")));
-        var match = machine.Observe(Result(604, "23", "11"));
+        var matches = Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "23", "11"), Result(601, "23", "11"), Result(602, "23", "11"),
+            Screen(612, ScreenKind.Unknown),
+            Report(630), Report(631), Report(632));
 
-        Assert.NotNull(match);
+        var match = Assert.Single(matches);
         Assert.Equal(23, match.Kills);
         Assert.Equal(11, match.Deaths);
         Assert.Equal(MatchResult.Win, match.Result);
+        Assert.Equal(MatchStatus.Completed, match.Status);
+        Assert.Equal("KAPERN", match.Mode);
+        Assert.Equal("MUNITION", match.Map);
+        Assert.Equal((300, 0), (match.TeamScore, match.EnemyScore));
+        Assert.Equal(12410, match.Xp);
+        Assert.Equal(26, match.Level);
         Assert.Empty(match.Doubts);
-        Assert.True(match.Confidence >= MatchStateMachine.SafeConfidence);
-        Assert.NotNull(RecognitionLoop.ToLocal(match));
         Assert.Equal(ReviewStatus.Auto, RecognitionLoop.ToLocal(match)!.ReviewStatus);
     }
 
     [Fact]
-    public void The_same_result_screen_is_recorded_once()
+    public void A_report_closed_at_once_is_confirmed_by_the_lobby()
     {
         var machine = Machine();
-        machine.Observe(Observation.Of(Start, ScreenKind.InMatch, Game.Mw4Multiplayer));
-        for (var i = 0; i < 3; i++)
-        {
-            machine.Observe(Result(600 + i, "5", "5"));
-        }
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.InMatch),
+            Result(600, "23", "11"), Result(601, "23", "11"), Result(602, "23", "11"),
+            Report(630), Screen(632, ScreenKind.Lobby)));
+        Assert.Equal(ReviewStatus.Auto, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void Without_a_report_the_lobby_confirms_the_end()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "23", "11"), Result(601, "23", "11"), Result(602, "23", "11"),
+            Screen(612, ScreenKind.Unknown), Screen(640, ScreenKind.Lobby)));
+        Assert.Equal(MatchResult.Win, match.Result);
+        Assert.Equal(ReviewStatus.Auto, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void A_round_result_followed_by_gameplay_is_no_match()
+    {
+        // Kollateral, Front, Kapern: the round's result screen looks like the match's ("RUNDENSIEG" is often misread).
+        var machine = Machine();
+        Assert.Empty(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(300, "3", "5"), Result(301, "3", "5"), Result(302, "3", "5"),
+            Screen(312, ScreenKind.Unknown), Screen(330, ScreenKind.InMatch)));
+        Assert.Equal(MatchPhase.Playing, machine.Phase);
+
+        var match = Assert.Single(Feed(machine,
+            Result(600, "8", "8"), Result(601, "8", "8"), Result(602, "8", "8"),
+            Report(630), Report(631), Report(632)));
+        Assert.Equal(8, match.Kills);
+        Assert.Empty(match.Doubts);
+    }
+
+    [Fact]
+    public void Leaving_after_a_round_is_a_left_match_without_result()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(300, "3", "5", result: "DEFEAT"), Result(301, "3", "5", result: "DEFEAT"),
+            Screen(312, ScreenKind.Unknown), Screen(400, ScreenKind.Menu)));
+
+        Assert.Equal(MatchStatus.Left, match.Status);
+        Assert.Null(match.Result);
+        Assert.Equal(3, match.Kills);
+        Assert.Contains(MatchStateMachine.LeftDoubt, match.Doubts);
+    }
+
+    [Fact]
+    public void Leaving_with_unreadable_values_is_still_a_left_match()
+    {
+        // Kollateral, left after the first round with 0/0: the own row's zeros are yellow on yellow and unreadable.
+        var machine = Machine();
+        var round = new Observation(Start.AddSeconds(300), ScreenKind.Result, Game.Mw4Multiplayer, "profile",
+            new Dictionary<string, FieldReading> { [Fields.Mode] = new("KOLLATERAL", 1), [Fields.Result] = new("NNIEDERLAGE", 1) });
+        var match = Assert.Single(Feed(machine, Screen(0, ScreenKind.Loading), round, Screen(312, ScreenKind.Unknown),
+            Screen(320, ScreenKind.InMatch), Screen(370, ScreenKind.Menu)));
+
+        Assert.Equal(MatchStatus.Left, match.Status);
+        Assert.Equal("KOLLATERAL", match.Mode);
+        Assert.Null(match.Kills);
+        Assert.Null(match.Result);
+    }
+
+    [Fact]
+    public void The_report_is_recorded_once()
+    {
+        var machine = Machine();
+        Feed(machine, Screen(0, ScreenKind.InMatch), Result(600, "5", "5"), Result(601, "5", "5"), Result(602, "5", "5"),
+            Report(630), Report(631), Report(632));
         Assert.Equal(MatchPhase.Recorded, machine.Phase);
-        Assert.Null(machine.Observe(Result(610, "5", "5")));
-        Assert.Null(machine.Observe(Observation.Of(Start.AddSeconds(620), ScreenKind.Menu)));
-        Assert.Null(machine.Observe(Result(630, "5", "5")));
+        // The report stays up, is opened again from the lobby, the result screen may be seen again.
+        Assert.Empty(Feed(machine, Report(633), Screen(640, ScreenKind.Lobby), Report(650), Result(660, "5", "5"), Screen(700, ScreenKind.Menu)));
     }
 
     [Fact]
     public void Disagreeing_readings_are_doubtful_and_wait_for_review()
     {
         var machine = Machine();
-        machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer));
-        machine.Observe(Result(600, "23", "11"));
-        machine.Observe(Result(602, "28", "11"));
-        var match = machine.Observe(Result(604, "23", "11"));
-
-        Assert.Equal(23, match!.Kills);
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "23", "11"), Result(601, "28", "11"), Result(602, "23", "11"),
+            Report(630), Report(631), Report(632)));
+        Assert.Equal(23, match.Kills);
         Assert.Contains(match.Doubts, d => d.StartsWith(Fields.Kills, StringComparison.Ordinal));
         Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void Kills_differing_between_table_and_report_are_doubtful()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "8", "8"), Result(601, "8", "8"), Result(602, "8", "8"),
+            Report(630, more: new() { [Fields.Kills] = "9" }), Report(631, more: new() { [Fields.Kills] = "9" }), Report(632, more: new() { [Fields.Kills] = "9" })));
+        Assert.Equal(8, match.Kills);
+        Assert.Contains(match.Doubts, d => d.Contains("Einsatzbericht", StringComparison.Ordinal));
     }
 
     [Fact]
     public void Without_a_seen_start_the_match_waits_for_review()
     {
         var machine = Machine();
-        machine.Observe(Result(600, "9", "3"));
-        machine.Observe(Result(601, "9", "3"));
-        var match = machine.Observe(Result(602, "9", "3"));
-        Assert.Contains("Matchbeginn nicht gesehen", match!.Doubts);
+        var match = Assert.Single(Feed(machine, Result(600, "9", "3"), Result(601, "9", "3"), Result(602, "9", "3"), Screen(640, ScreenKind.Lobby)));
+        Assert.Contains("Matchbeginn nicht gesehen", match.Doubts);
+        Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void A_report_alone_counts_for_review()
+    {
+        // The client was started while the report was up.
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine, Report(10, more: new() { [Fields.Kills] = "25", [Fields.Deaths] = "22" }),
+            Report(11, more: new() { [Fields.Kills] = "25", [Fields.Deaths] = "22" }), Report(12, more: new() { [Fields.Kills] = "25", [Fields.Deaths] = "22" })));
+        Assert.Equal(25, match.Kills);
+        Assert.Equal(22, match.Deaths);
+        Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void An_unconfirmed_end_waits_for_review()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "23", "11"), Result(601, "23", "11"), Result(602, "23", "11"),
+            Screen(612, ScreenKind.Unknown), Screen(800, ScreenKind.Unknown)));
+        Assert.Contains(match.Doubts, d => d.Contains("nicht bestätigt", StringComparison.Ordinal));
         Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
     }
 
@@ -140,12 +275,39 @@ public class MatchStateMachineTests
     public void Unverified_profiles_never_produce_safe_matches()
     {
         var machine = Machine();
-        machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer));
-        machine.Observe(Result(600, "23", "11", quality: 0.5));
-        machine.Observe(Result(601, "23", "11", quality: 0.5));
-        var match = machine.Observe(Result(602, "23", "11", quality: 0.5));
-        Assert.True(match!.Confidence < MatchStateMachine.SafeConfidence);
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "23", "11", quality: 0.5), Result(601, "23", "11", quality: 0.5), Result(602, "23", "11", quality: 0.5),
+            Screen(640, ScreenKind.Lobby)));
+        Assert.True(match.Confidence < MatchStateMachine.SafeConfidence);
         Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
+    }
+
+    [Fact]
+    public void Free_for_all_keeps_its_placement_and_the_top_three_win()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "25", "22", placement: "3"), Result(601, "25", "22", placement: "3"), Result(602, "25", "22", placement: "3"),
+            Report(630), Screen(640, ScreenKind.Lobby)));
+        Assert.Equal(3, match.Placement);
+        Assert.Equal(MatchResult.Win, match.Result);
+        Assert.Empty(MatchRules.Validate(RecognitionLoop.ToLocal(match)!.ToUpload(), DateTimeOffset.Now));
+    }
+
+    [Fact]
+    public void Mode_values_come_from_table_and_report()
+    {
+        var machine = Machine();
+        var match = Assert.Single(Feed(machine,
+            Screen(0, ScreenKind.Loading),
+            Result(600, "8", "8", more: new() { ["stat.captures"] = "2" }), Result(601, "8", "8", more: new() { ["stat.captures"] = "2" }),
+            Result(602, "8", "8", more: new() { ["stat.captures"] = "2" }),
+            Report(630, more: new() { ["stat.data_uploaded"] = "77", ["stat.captures"] = "3" }),
+            Report(631, more: new() { ["stat.data_uploaded"] = "77" }), Report(632, more: new() { ["stat.data_uploaded"] = "77" })));
+        Assert.Equal(2, match.ModeStats["captures"]);
+        Assert.Equal(77, match.ModeStats["data_uploaded"]);
     }
 
     [Fact]
@@ -164,26 +326,14 @@ public class MatchStateMachineTests
     }
 
     [Fact]
-    public void Leaving_the_result_screen_early_still_keeps_the_match_for_review()
-    {
-        var machine = Machine();
-        machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer));
-        machine.Observe(Result(600, "12", "4"));
-        var match = machine.Observe(Observation.Of(Start.AddSeconds(605), ScreenKind.Menu));
-        Assert.Equal(12, match!.Kills);
-        Assert.Contains(match.Doubts, d => d.Contains("Lesung", StringComparison.Ordinal));
-    }
-
-    [Fact]
     public void Unknown_game_is_not_stored()
     {
         var machine = Machine();
-        machine.Observe(Observation.Of(Start, ScreenKind.Loading));
-        var reading = new Observation(Start.AddSeconds(1), ScreenKind.Result, null, null, new Dictionary<string, FieldReading> { [Fields.Kills] = new("3", 1) });
-        machine.Observe(reading);
-        machine.Observe(reading with { At = Start.AddSeconds(2) });
-        var match = machine.Observe(reading with { At = Start.AddSeconds(3) });
-        Assert.Null(RecognitionLoop.ToLocal(match!));
+        var match = Assert.Single(Feed(machine,
+            Observation.Of(Start, ScreenKind.Loading),
+            Result(1, "3", "1", game: null), Result(2, "3", "1", game: null), Result(3, "3", "1", game: null),
+            Observation.Of(Start.AddSeconds(40), ScreenKind.Lobby)));
+        Assert.Null(RecognitionLoop.ToLocal(match));
     }
 }
 
@@ -426,18 +576,24 @@ public class WindowCaptureTests
 public class ResultTimingTests
 {
     [Fact]
-    public void A_short_result_screen_is_evaluated_once_it_is_gone()
+    public void A_short_result_screen_is_kept_until_the_report_comes()
     {
-        // As recorded on a real PC: the result showed for two readings, then the highlight replay (unknown screens).
+        // As recorded on a real PC: the result showed for two readings, then the highlight replay (unknown
+        // screens), then the after-action report about 25 seconds later.
         var start = DateTimeOffset.UtcNow.AddHours(-1);
         var machine = new MatchStateMachine(_ => new(["SIEG"], ["NIEDERLAGE"], []));
         machine.Observe(Observation.Of(start, ScreenKind.InMatch, Game.Mw4Multiplayer));
         var result = new Observation(start.AddMinutes(9), ScreenKind.Result, Game.Mw4Multiplayer, "r",
             new Dictionary<string, FieldReading> { [Fields.Kills] = new("19", 1), [Fields.Deaths] = new("24", 1), [Fields.Result] = new("SIEG", 1) });
+        var report = new Observation(result.At.AddSeconds(25), ScreenKind.AfterAction, Game.Mw4Multiplayer, "a",
+            new Dictionary<string, FieldReading> { [Fields.Result] = new("SIEG", 1) });
         Assert.Null(machine.Observe(result));
         Assert.Null(machine.Observe(result with { At = result.At.AddSeconds(1) }));
-        Assert.Null(machine.Observe(Observation.Of(result.At.AddSeconds(4), ScreenKind.Unknown)));
-        var match = machine.Observe(Observation.Of(result.At.AddSeconds(10), ScreenKind.Unknown));
+        Assert.Null(machine.Observe(Observation.Of(result.At.AddSeconds(10), ScreenKind.Unknown)));
+        Assert.Equal(MatchPhase.AwaitingEnd, machine.Phase);
+        Assert.Null(machine.Observe(report));
+        Assert.Null(machine.Observe(report with { At = report.At.AddSeconds(1) }));
+        var match = machine.Observe(report with { At = report.At.AddSeconds(2) });
         Assert.Equal(19, match!.Kills);
         Assert.Equal(MatchResult.Win, match.Result);
     }
@@ -481,18 +637,18 @@ public class ScoreboardTests
         var machine = new MatchStateMachine(_ => new(["VICTORY"], [], []));
         machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer));
         machine.Observe(Tab(300, "12", "5"));
-        MatchCandidate? match = null;
         for (var i = 0; i < 3; i++)
         {
-            match = machine.Observe(new Observation(Start.AddSeconds(600 + i), ScreenKind.Result, Game.Mw4Multiplayer, "res",
+            machine.Observe(new Observation(Start.AddSeconds(600 + i), ScreenKind.Result, Game.Mw4Multiplayer, "res",
                 new Dictionary<string, FieldReading> { [Fields.Kills] = new("20", 1), [Fields.Deaths] = new("9", 1), [Fields.Result] = new("VICTORY", 1) }));
         }
+        var match = machine.Observe(Observation.Of(Start.AddSeconds(640), ScreenKind.Lobby, Game.Mw4Multiplayer));
         Assert.Equal(20, match!.Kills);
         Assert.Null(machine.Observe(Observation.Of(Start.AddSeconds(700), ScreenKind.Menu)));
     }
 
     [Fact]
-    public void Leaving_without_result_keeps_the_last_scoreboard_for_review()
+    public void Leaving_mid_match_keeps_the_last_scoreboard_as_left_match()
     {
         var machine = new MatchStateMachine();
         machine.Observe(Observation.Of(Start, ScreenKind.Loading, Game.Mw4Multiplayer));
@@ -501,7 +657,8 @@ public class ScoreboardTests
         var match = machine.Observe(Observation.Of(Start.AddSeconds(500), ScreenKind.Menu));
 
         Assert.Equal(15, match!.Kills);
-        Assert.Contains(match.Doubts, d => d.Contains("Scoreboard", StringComparison.Ordinal));
+        Assert.Equal(MatchStatus.Left, match.Status);
+        Assert.Null(match.Result);
         Assert.Equal(ReviewStatus.Pending, RecognitionLoop.ToLocal(match)!.ReviewStatus);
     }
 }
