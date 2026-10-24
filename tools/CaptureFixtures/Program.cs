@@ -9,16 +9,35 @@ using System.Windows.Media.Imaging;
 using CodStats.Desktop.Capture;
 using CodStats.Desktop.Recognition;
 
-// "ocr <image> <x> <y> <width> <height>": what Windows OCR reads in a region of a saved image, with line positions.
+// "ocr <image> <x> <y> <width> <height> [white,max=80,min=300]": what Windows OCR reads in a region of a saved image, with line positions.
 if (args.Length is 6 or 7 && args[0] == "ocr")
 {
     var numbers = args[2..6].Select(a => double.Parse(a, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
     using var image = LoadImage(args[1]);
     var ocr = WindowsOcr.Create()!;
     Console.WriteLine($"OCR language: {ocr.Language}");
-    foreach (var line in await ocr.ReadLinesAsync(image, new Region(numbers[0], numbers[1], numbers[2], numbers[3]) { WhiteText = args.Length == 7 && args[6] == "white", MaxHeight = args.Length == 7 && int.TryParse(args[6], out var max) ? max : 0 }, CancellationToken.None))
+    foreach (var line in await ocr.ReadLinesAsync(image, RegionOptions(new Region(numbers[0], numbers[1], numbers[2], numbers[3]), args.Length == 7 ? args[6] : ""), CancellationToken.None))
     {
         Console.WriteLine($"x={line.Left:0.000}..{line.Left + line.Width:0.000} y={line.Top:0.000}..{line.Top + line.Height:0.000}  '{line.Text}'");
+    }
+    return;
+}
+
+// "find <folder> <word> [...]": OCR of every whole image (scaled to fit the OCR), lists images containing a word.
+// For finding result screens in recordings of modes no profile knows yet.
+if (args.Length >= 3 && args[0] == "find")
+{
+    var ocr = WindowsOcr.Create()!;
+    var words = args[2..];
+    foreach (var file in Directory.EnumerateFiles(args[1], "*.jpg").Order(StringComparer.Ordinal))
+    {
+        using var image = LoadImage(file);
+        var text = await ocr.ReadAsync(image, new Region(0, 0, 1, 1) { MaxHeight = 1400 }, CancellationToken.None);
+        var hits = words.Where(w => TextParsing.ContainsAny(text, [w])).ToList();
+        if (hits.Count > 0)
+        {
+            Console.WriteLine($"{Path.GetFileName(file)} {string.Join(",", hits)}");
+        }
     }
     return;
 }
@@ -103,9 +122,11 @@ if (args.Length >= 4 && args[0] == "import")
 if (args.Length >= 2 && args[0] == "replay")
 {
     var profiles = ProfileStore.Load([Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")]);
-    var reader = new ScreenReader(profiles, WindowsOcr.Create()!);
-    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     var names = new NameTracker();
+    // Like the client, which knows the confirmed name from earlier sessions (CODSTATS_NAME stands in for that).
+    var savedName = Environment.GetEnvironmentVariable("CODSTATS_NAME");
+    var reader = new ScreenReader(profiles, WindowsOcr.Create()!, () => names.Confirmed ?? savedName ?? names.Candidate);
+    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     var files = args[1..].SelectMany(folder => Directory.EnumerateFiles(folder, "*.jpg"))
         .OrderBy(f => Path.GetFileName(f)[..15], StringComparer.Ordinal);
     var previousPhase = machine.Phase;
@@ -129,7 +150,9 @@ if (args.Length >= 2 && args[0] == "replay")
         if (candidate is not null)
         {
             var local = RecognitionLoop.ToLocal(candidate);
-            Console.WriteLine($"  MATCH {candidate.Game} {candidate.Mode} {candidate.Result} K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} S={candidate.Score} " +
+            Console.WriteLine($"  MATCH {candidate.Game} {candidate.Status} {candidate.Mode} @ {candidate.Map} {candidate.Result} {candidate.TeamScore}:{candidate.EnemyScore} " +
+                $"K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} E={candidate.Eliminations} S={candidate.Score} P={candidate.Placement} " +
+                $"XP={candidate.Xp} L={candidate.Level} stats={string.Join(",", candidate.ModeStats.Select(s => $"{s.Key}={s.Value}"))} " +
                 $"conf={candidate.Confidence:0.00} -> {local?.ReviewStatus.ToString() ?? "not stored"} doubts: {string.Join("; ", candidate.Doubts)}");
         }
     }
@@ -157,7 +180,8 @@ if (args.Length >= 2 && args[0] == "read")
 {
     using var image = LoadImage(args[1]);
     var profiles = ProfileStore.Load([args.Length > 2 ? args[2] : Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")], Console.WriteLine);
-    var observation = await new ScreenReader(profiles, WindowsOcr.Create()!).ReadAsync(image, DateTimeOffset.Now, CancellationToken.None);
+    var knownName = Environment.GetEnvironmentVariable("CODSTATS_NAME");
+    var observation = await new ScreenReader(profiles, WindowsOcr.Create()!, () => knownName).ReadAsync(image, DateTimeOffset.Now, CancellationToken.None);
     Console.WriteLine($"{observation.Screen} {observation.Game} {observation.ProfileId} own='{observation.OwnName?.Text}'");
     foreach (var (name, field) in observation.Fields)
     {
@@ -279,9 +303,11 @@ static Frame LoadImage(string path)
 static async Task<(List<MatchCandidate> Matches, string? Name)> Replay(string[] folders)
 {
     var profiles = ProfileStore.Load([Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")]);
-    var reader = new ScreenReader(profiles, WindowsOcr.Create()!);
-    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     var names = new NameTracker();
+    // Like the client, which knows the confirmed name from earlier sessions (CODSTATS_NAME stands in for that).
+    var savedName = Environment.GetEnvironmentVariable("CODSTATS_NAME");
+    var reader = new ScreenReader(profiles, WindowsOcr.Create()!, () => names.Confirmed ?? savedName ?? names.Candidate);
+    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     var matches = new List<MatchCandidate>();
     var files = folders.SelectMany(folder => Directory.EnumerateFiles(folder, "*.jpg"))
         .OrderBy(f => Path.GetFileName(f)[..15], StringComparer.Ordinal);
@@ -306,4 +332,20 @@ static async Task<(List<MatchCandidate> Matches, string? Name)> Replay(string[] 
         matches.Add(last);
     }
     return (matches, names.Confirmed);
+}
+
+static Region RegionOptions(Region region, string options)
+{
+    foreach (var option in options.Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = option.Split('=');
+        region = parts[0] switch
+        {
+            "white" => region with { WhiteText = true },
+            "max" => region with { MaxHeight = int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) },
+            "min" => region with { MinPixelHeight = int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) },
+            _ => throw new ArgumentException($"unknown option {option}"),
+        };
+    }
+    return region;
 }

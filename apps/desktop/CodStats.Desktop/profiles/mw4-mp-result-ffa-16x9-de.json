@@ -1,0 +1,123 @@
+{
+  "id": "mw4-mp-result-ffa-16x9-de",
+  "game": "mw4_mp",
+  "screen": "result",
+  "aspect": 1.7778,
+  "verified": true,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.25,
+        "y": 0.485,
+        "width": 0.12,
+        "height": 0.04
+      },
+      "anyOf": [
+        "PLATZIERUNG",
+        "PLACEMENT"
+      ]
+    }
+  ],
+  "fields": {
+    "result": {
+      "region": {
+        "x": 0.03,
+        "y": 0.05,
+        "width": 0.3,
+        "height": 0.12,
+        "tryHeights": [
+          40,
+          80,
+          0
+        ]
+      },
+      "more": [
+        {
+          "x": 0.03,
+          "y": 0.05,
+          "width": 0.3,
+          "height": 0.12,
+          "whiteText": true,
+          "maxHeight": 40
+        }
+      ]
+    },
+    "mode": {
+      "region": {
+        "x": 0.03,
+        "y": 0.17,
+        "width": 0.3,
+        "height": 0.08
+      }
+    }
+  },
+  "ownRow": {
+    "tables": [
+      {
+        "region": {
+          "x": 0.26,
+          "y": 0.49,
+          "width": 0.48,
+          "height": 0.3,
+          "minPixelHeight": 670
+        },
+        "headerHeight": 0.03
+      }
+    ],
+    "rowHeight": 0.05,
+    "columns": {
+      "placement": [
+        "PLATZIERUNG",
+        "PLACEMENT"
+      ],
+      "score": [
+        "PUNKTE",
+        "SCORE"
+      ]
+    },
+    "rankField": "placement"
+  },
+  "winWords": [
+    "SIEG",
+    "VICTORY"
+  ],
+  "lossWords": [
+    "NIEDERLAGE",
+    "DEFEAT"
+  ],
+  "drawWords": [
+    "UNENTSCHIEDEN",
+    "DRAW"
+  ],
+  "modes": [
+    "ABSCHUSS BESTÄTIGT",
+    "KILL CONFIRMED",
+    "SUCHEN & ZERSTÖREN",
+    "SUCHEN UND ZERSTÖREN",
+    "SEARCH AND DESTROY",
+    "TEAM-DEATHMATCH",
+    "TEAM DEATHMATCH",
+    "FREI FÜR ALLE",
+    "JEDER GEGEN JEDEN",
+    "FREE-FOR-ALL",
+    "HERRSCHAFT",
+    "DOMINATION",
+    "STELLUNG",
+    "HARDPOINT",
+    "KAPERN",
+    "INFLATION",
+    "KILL BLOCK",
+    "KOLLATERAL",
+    "WAFFENSPIEL",
+    "GUN GAME",
+    "BODENKRIEG",
+    "GROUND WAR",
+    "HAUPTQUARTIER",
+    "HEADQUARTERS",
+    "KONTROLLE",
+    "CONTROL",
+    "FEUERGEFECHT",
+    "GUNFIGHT",
+    "FRONT"
+  ]
+}

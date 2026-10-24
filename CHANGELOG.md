@@ -5,11 +5,18 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Behoben
+- Windows-Client: Rundenergebnisse (Kollateral, Front, Kapern) wurden als ganzes Match gezählt; ein Match zählt jetzt erst, wenn Einsatzbericht oder Lobby folgen.
+- Windows-Client: Endergebnisse mit schwer lesbarem Banner (z. B. Kapern-Sieg) wurden verpasst.
+- Windows-Client: Tab-Scoreboard konnte die Werte des gerade ausgewählten Mitspielers übernehmen.
 - Windows-Client: Arbeitsspeicher wuchs während der Erkennung auf mehrere GB (4K-Bilder wurden nicht rechtzeitig freigegeben); jetzt ein wiederverwendeter Bildpuffer und eine feste Speichergrenze.
 - Windows-Client: Erkennung bricht bei Fehlern nicht mehr still ab, sondern startet die Aufnahme neu.
 - Windows-Client: Zeitraum-Auswahl und Tabellenüberschriften waren weiß auf weiß.
 
 ### Hinzugefügt
+- Windows-Client: Einsatzbericht wird gelesen und bestätigt das Matchende; zusätzlich erfasst: Karte, Endstand, XP, Level, Eliminierungen und Modus-Werte (z. B. Erobert, Daten hochgeladen).
+- Windows-Client: Frei für alle wird erkannt, mit Platzierung (Top 3 = Sieg wie im Spiel).
+- Windows-Client: Verlassene Matches werden als „Verlassen“ erfasst (Werte aus dem letzten Scoreboard, kein Sieg und keine Niederlage).
+- Windows-Client: Lobby und Hauptmenü werden erkannt; neue Modi Kapern, Kollateral, Kill Block, Waffenspiel.
 - Windows-Client: Protokolldatei `%LOCALAPPDATA%\CodStats\client.log` (Zustände, Matches, Fehler; keine Bilder, keine fremden Namen).
 
 ### Behoben

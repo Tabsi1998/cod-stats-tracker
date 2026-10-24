@@ -22,7 +22,11 @@ public interface ITextReader
 /// Classifies a frame with the profiles and reads its fields. Only anchors are read for frames that match
 /// nothing, so idle frames cost one OCR pass per anchor.
 /// </summary>
-public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITextReader reader)
+/// <param name="knownName">
+/// The player's name as recognised so far, for screens without a name banner (the free-for-all result): the own
+/// table row is then found by this name.
+/// </param>
+public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITextReader reader, Func<string?>? knownName = null)
 {
     public IReadOnlyList<RecognitionProfile> Profiles { get; } = profiles;
 
@@ -35,32 +39,43 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
             {
                 continue;
             }
+            // Unverified profiles are allowed to run, but what they read is never trusted fully.
+            var quality = profile.Verified ? 1.0 : 0.5;
             var fields = new Dictionary<string, FieldReading>();
             foreach (var (name, spec) in profile.Fields)
             {
-                var text = await ReadAllAsync(frame, spec.More.Prepend(spec.Region), cancel);
-                // A mode is stored by its name from the profile's list, not with whatever else the region held.
-                if (name == Recognition.Fields.Mode && profile.Modes.Count > 0)
+                if (await ReadFieldAsync(frame, profile, name, spec, cancel) is { } text)
                 {
-                    text = TextParsing.FirstOf(text, profile.Modes) ?? "";
+                    fields[name] = new FieldReading(text, quality);
                 }
-                // Unverified profiles are allowed to run, but what they read is never trusted fully.
-                fields[name] = new FieldReading(text, profile.Verified ? 1.0 : 0.5);
             }
             FieldReading? own = null;
             if (profile.OwnName is { } ownSpec)
             {
-                own = new FieldReading(await reader.ReadAsync(frame, ownSpec.Region, cancel), profile.Verified ? 1.0 : 0.5);
+                own = new FieldReading(await reader.ReadAsync(frame, ownSpec.Region, cancel), quality);
             }
-            if (profile.OwnRow is { } row && own is not null
-                && await ReadOwnRowAsync(frame, row, own, fields, profile.Verified ? 1.0 : 0.5, cancel) is { } tableName)
+            var known = knownName?.Invoke() is { Length: > 0 } knownText ? new FieldReading(knownText, quality) : null;
+            var bannerOfOther = own is not null && known is not null && !SameName(own.Text, known.Text);
+            if (bannerOfOther)
+            {
+                // The in-match scoreboard's banner shows whichever player is selected, not always the player:
+                // neither the name nor the values under it are the player's then.
+                own = null;
+            }
+            var rowName = own ?? known;
+            if (profile.OwnRow is { } row && rowName is not null
+                && await ReadOwnRowAsync(frame, row, rowName, fields, quality, cancel) is { } tableName && own is not null)
             {
                 // The table spells the name more reliably than the banner (where "]" can come out as "I").
                 own = own with { Text = tableName };
             }
-            if (profile.Labelled is { } labelled)
+            if (profile.Labelled is { } labelled && !bannerOfOther)
             {
-                await ReadLabelledAsync(frame, labelled, fields, profile.Verified ? 1.0 : 0.5, cancel);
+                await ReadLabelledAsync(frame, labelled, fields, quality, cancel);
+            }
+            if (profile.Tiles is { } tiles)
+            {
+                await ReadTilesAsync(frame, tiles, fields, quality, cancel);
             }
             return new Observation(at, profile.Screen, profile.Game, profile.Id, fields, own);
         }
@@ -113,6 +128,15 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 fields[field] = new FieldReading(cell.Text, quality);
             }
         }
+        if (row.RankField is { } rankField && !fields.ContainsKey(rankField))
+        {
+            var above = cells.Count(c => Math.Abs(c.Left - name.Left) < 0.01 && c.Middle < name.Middle - row.RowHeight / 2
+                && c.Top >= ownTable.Region.Y + ownTable.HeaderHeight);
+            if (above <= 2)
+            {
+                fields[rankField] = new FieldReading((above + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+            }
+        }
         return name.Text;
     }
 
@@ -141,6 +165,106 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 fields[field] = new FieldReading(value.Text, quality);
             }
         }
+    }
+
+    private async Task<string?> ReadFieldAsync(Frame frame, RecognitionProfile profile, string name, FieldSpec spec, CancellationToken cancel)
+    {
+        var regions = spec.More.Prepend(spec.Region).ToList();
+        if (spec.Numbers > 0)
+        {
+            var readings = new List<string>();
+            foreach (var region in regions)
+            {
+                if (TextParsing.Numbers(await reader.ReadAsync(frame, region, cancel), spec.Numbers) is { } numbers)
+                {
+                    readings.Add(string.Join(' ', numbers));
+                }
+            }
+            return MostCommon(readings);
+        }
+        if (spec.WithoutModes)
+        {
+            var lines = new List<TextLine>();
+            foreach (var region in regions)
+            {
+                lines.AddRange(await reader.ReadLinesAsync(frame, region, cancel));
+            }
+            return string.Join(' ', lines.Where(l => !TextParsing.ContainsAny(l.Text, profile.Modes)).OrderBy(l => l.Left).Select(l => l.Text.Trim()));
+        }
+        var text = await ReadAllAsync(frame, regions, cancel);
+        // A mode is stored by its name from the profile's list, not with whatever else the region held.
+        return name == Recognition.Fields.Mode && profile.Modes.Count > 0 ? TextParsing.FirstOf(text, profile.Modes) ?? "" : text;
+    }
+
+    /// <summary>The value most passes agree on; on a tie the earlier pass, which the profile lists as the better one.</summary>
+    private static T? MostCommon<T>(List<T> values) where T : notnull =>
+        values.GroupBy(v => v).OrderByDescending(g => g.Count()).ThenBy(g => values.IndexOf(g.Key)).Select(g => g.Key).FirstOrDefault();
+
+    /// <summary>
+    /// The tiles of a report: each label with the number centred above it. Labels and numbers are gathered from all
+    /// passes first, since one pass may read a label and miss its number and another the other way round; a tile's
+    /// value is the number most passes read above its label.
+    /// </summary>
+    private async Task ReadTilesAsync(Frame frame, TilesSpec spec, Dictionary<string, FieldReading> fields, double quality, CancellationToken cancel)
+    {
+        const double SameTile = 0.03;
+        var labels = new List<TextLine>();
+        var numbers = new List<(TextLine Line, int Value)>();
+        foreach (var region in spec.More.Prepend(spec.Region))
+        {
+            foreach (var line in await reader.ReadLinesAsync(frame, region, cancel))
+            {
+                if (TextParsing.Count(line.Text).Value is { } value)
+                {
+                    numbers.Add((line, value));
+                }
+                else if (TextParsing.Normalise(line.Text).Length >= 3)
+                {
+                    labels.Add(line);
+                }
+            }
+        }
+
+        foreach (var group in Cluster(labels, l => l.Center, SameTile))
+        {
+            var key = spec.Labels.FirstOrDefault(l => group.Any(t => TextParsing.ContainsAny(t.Text, l.Value))).Key;
+            if (key is null)
+            {
+                // A label no field knows: kept only when two passes read it alike, so OCR noise never becomes a value.
+                var name = group.GroupBy(t => TextParsing.Normalise(t.Text)).Where(g => g.Count() >= 2).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key;
+                key = name is null ? null : Recognition.Fields.StatPrefix + name.ToLowerInvariant();
+            }
+            var center = group.Average(l => l.Center);
+            var top = group.Min(l => l.Top);
+            var height = group.Max(l => l.Height);
+            var values = numbers
+                .Where(n => Math.Abs(n.Line.Center - center) < SameTile && n.Line.Top < top && n.Line.Top > top - height * 6)
+                .Select(n => n.Value)
+                .ToList();
+            if (key is null || values.Count == 0 || fields.ContainsKey(key))
+            {
+                continue;
+            }
+            fields[key] = new FieldReading(MostCommon(values).ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+        }
+    }
+
+    /// <summary>Groups items whose position lies within <paramref name="distance"/> of the group's first item.</summary>
+    private static List<List<T>> Cluster<T>(IEnumerable<T> items, Func<T, double> position, double distance)
+    {
+        var groups = new List<List<T>>();
+        foreach (var item in items.OrderBy(position))
+        {
+            if (groups.Count > 0 && position(item) - position(groups[^1][0]) < distance)
+            {
+                groups[^1].Add(item);
+            }
+            else
+            {
+                groups.Add([item]);
+            }
+        }
+        return groups;
     }
 
     private async Task<string> ReadAllAsync(Frame frame, IEnumerable<Region> regions, CancellationToken cancel)

@@ -1,0 +1,271 @@
+{
+  "id": "mw4-mp-aar-16x9-de",
+  "game": "mw4_mp",
+  "screen": "afterAction",
+  "aspect": 1.7778,
+  "verified": true,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.03,
+        "y": 0.03,
+        "width": 0.17,
+        "height": 0.06
+      },
+      "anyOf": [
+        "EINSATZBERICHT",
+        "AFTER ACTION"
+      ]
+    }
+  ],
+  "fields": {
+    "result": {
+      "region": {
+        "x": 0.04,
+        "y": 0.17,
+        "width": 0.25,
+        "height": 0.1,
+        "whiteText": true,
+        "maxHeight": 60
+      },
+      "more": [
+        {
+          "x": 0.04,
+          "y": 0.17,
+          "width": 0.25,
+          "height": 0.1,
+          "maxHeight": 80
+        },
+        {
+          "x": 0.04,
+          "y": 0.17,
+          "width": 0.25,
+          "height": 0.1
+        }
+      ]
+    },
+    "mode": {
+      "region": {
+        "x": 0.085,
+        "y": 0.262,
+        "width": 0.3,
+        "height": 0.034
+      }
+    },
+    "map": {
+      "region": {
+        "x": 0.085,
+        "y": 0.262,
+        "width": 0.3,
+        "height": 0.034
+      },
+      "withoutModes": true
+    },
+    "scoreline": {
+      "region": {
+        "x": 0.09,
+        "y": 0.3,
+        "width": 0.12,
+        "height": 0.07
+      },
+      "more": [
+        {
+          "x": 0.095,
+          "y": 0.305,
+          "width": 0.13,
+          "height": 0.06,
+          "maxHeight": 40
+        },
+        {
+          "x": 0.085,
+          "y": 0.3,
+          "width": 0.12,
+          "height": 0.07
+        },
+        {
+          "x": 0.09,
+          "y": 0.3,
+          "width": 0.12,
+          "height": 0.07,
+          "maxHeight": 60
+        },
+        {
+          "x": 0.085,
+          "y": 0.3,
+          "width": 0.12,
+          "height": 0.07,
+          "minPixelHeight": 200
+        }
+      ],
+      "numbers": 2
+    },
+    "xp": {
+      "region": {
+        "x": 0.2,
+        "y": 0.7,
+        "width": 0.2,
+        "height": 0.11,
+        "whiteText": true
+      },
+      "more": [
+        {
+          "x": 0.2,
+          "y": 0.7,
+          "width": 0.17,
+          "height": 0.11,
+          "whiteText": true
+        },
+        {
+          "x": 0.21,
+          "y": 0.69,
+          "width": 0.2,
+          "height": 0.12,
+          "whiteText": true
+        }
+      ],
+      "numbers": 1
+    },
+    "level": {
+      "region": {
+        "x": 0.64,
+        "y": 0.19,
+        "width": 0.15,
+        "height": 0.035
+      },
+      "more": [
+        {
+          "x": 0.64,
+          "y": 0.19,
+          "width": 0.15,
+          "height": 0.035,
+          "whiteText": true
+        }
+      ],
+      "numbers": 1
+    }
+  },
+  "tiles": {
+    "region": {
+      "x": 0.08,
+      "y": 0.485,
+      "width": 0.45,
+      "height": 0.09,
+      "whiteText": true,
+      "minPixelHeight": 400
+    },
+    "more": [
+      {
+        "x": 0.08,
+        "y": 0.485,
+        "width": 0.45,
+        "height": 0.09,
+        "minPixelHeight": 400
+      },
+      {
+        "x": 0.08,
+        "y": 0.485,
+        "width": 0.45,
+        "height": 0.09,
+        "whiteText": true,
+        "maxHeight": 80
+      }
+    ],
+    "labels": {
+      "score": [
+        "PUNKTE",
+        "SCORE"
+      ],
+      "kills": [
+        "ABSCHÜSSE",
+        "ABSCHUSSE",
+        "KILLS"
+      ],
+      "deaths": [
+        "TODE",
+        "DEATHS"
+      ],
+      "assists": [
+        "ASSISTS"
+      ],
+      "eliminations": [
+        "ELIMINIERUNGEN",
+        "ELIMINATIONS"
+      ],
+      "stat.captures": [
+        "EROBERT",
+        "CAPTURES"
+      ],
+      "stat.data_uploaded": [
+        "DATEN HOCHGELADEN",
+        "DATEN HOCH"
+      ],
+      "stat.confirms": [
+        "BESTÄTIGT",
+        "CONFIRMS"
+      ],
+      "stat.denies": [
+        "VERWEIGERT",
+        "DENIES"
+      ],
+      "stat.defends": [
+        "VERTEIDIGT",
+        "DEFENDS"
+      ],
+      "stat.objective_time": [
+        "ZIELZEIT",
+        "OBJECTIVE TIME"
+      ],
+      "stat.plants": [
+        "GELEGT",
+        "PLANTS"
+      ],
+      "stat.defuses": [
+        "ENTSCHÄRFT",
+        "DEFUSES"
+      ]
+    }
+  },
+  "winWords": [
+    "SIEG",
+    "VICTORY"
+  ],
+  "lossWords": [
+    "NIEDERLAGE",
+    "DEFEAT"
+  ],
+  "drawWords": [
+    "UNENTSCHIEDEN",
+    "DRAW"
+  ],
+  "modes": [
+    "ABSCHUSS BESTÄTIGT",
+    "KILL CONFIRMED",
+    "SUCHEN & ZERSTÖREN",
+    "SUCHEN UND ZERSTÖREN",
+    "SEARCH AND DESTROY",
+    "TEAM-DEATHMATCH",
+    "TEAM DEATHMATCH",
+    "FREI FÜR ALLE",
+    "JEDER GEGEN JEDEN",
+    "FREE-FOR-ALL",
+    "HERRSCHAFT",
+    "DOMINATION",
+    "STELLUNG",
+    "HARDPOINT",
+    "KAPERN",
+    "INFLATION",
+    "KILL BLOCK",
+    "KOLLATERAL",
+    "WAFFENSPIEL",
+    "GUN GAME",
+    "BODENKRIEG",
+    "GROUND WAR",
+    "HAUPTQUARTIER",
+    "HEADQUARTERS",
+    "KONTROLLE",
+    "CONTROL",
+    "FEUERGEFECHT",
+    "GUNFIGHT",
+    "FRONT"
+  ]
+}

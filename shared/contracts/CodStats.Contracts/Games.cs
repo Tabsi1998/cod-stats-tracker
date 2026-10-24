@@ -20,6 +20,14 @@ public enum GameGroup
     [JsonStringEnumMemberName("warzone")] Warzone,
 }
 
+/// <summary>Whether a match was played to its end. A left match has no result and does not count for the win rate.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<MatchStatus>))]
+public enum MatchStatus
+{
+    [JsonStringEnumMemberName("completed")] Completed,
+    [JsonStringEnumMemberName("left")] Left,
+}
+
 [JsonConverter(typeof(JsonStringEnumConverter<MatchResult>))]
 public enum MatchResult
 {

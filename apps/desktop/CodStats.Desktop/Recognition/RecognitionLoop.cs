@@ -9,19 +9,21 @@ namespace CodStats.Desktop.Recognition;
 /// Runs only while Call of Duty runs: grabs a frame every couple of seconds, reads it with the profiles, feeds the
 /// state machine and stores finished matches. Safe matches go up automatically; doubtful ones wait for the player.
 /// </summary>
+/// <param name="savedName">The name the player confirmed earlier, for finding the own row on screens without a name banner.</param>
 public sealed class RecognitionLoop(
     IReadOnlyList<RecognitionProfile> profiles,
     MatchStore store,
     Action<TrackerState> report,
     Action<MatchCandidate, LocalMatch> recorded,
-    Action<string> nameConfirmed) : IDisposable
+    Action<string> nameConfirmed,
+    Func<string?>? savedName = null) : IDisposable
 {
     public const string RecognizerVersion = "ocr-0.1";
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
 
     /// <summary>
-    /// MW4 shows its result scoreboard only for about four seconds (seen on a real PC): read it quickly enough
-    /// for the three readings the state machine wants.
+    /// MW4 shows its result scoreboard only for about four seconds (seen on a real PC), and a player can close the
+    /// after-action report at once: read both quickly enough for the three readings the state machine wants.
     /// </summary>
     private static readonly TimeSpan CollectingInterval = TimeSpan.FromMilliseconds(500);
 
@@ -44,7 +46,7 @@ public sealed class RecognitionLoop(
             return;
         }
         stop = new CancellationTokenSource();
-        running = Task.Run(() => RunAsync(new ScreenReader(profiles, ocr), stop.Token));
+        running = Task.Run(() => RunAsync(new ScreenReader(profiles, ocr, () => names.Confirmed ?? savedName?.Invoke() ?? names.Candidate), stop.Token));
     }
 
     public async Task StopAsync()
@@ -120,7 +122,7 @@ public sealed class RecognitionLoop(
                     capture = null;
                     report(TrackerState.Uncertain);
                 }
-                await Task.Delay(machine.Phase == MatchPhase.Collecting ? CollectingInterval : Interval, cancel);
+                await Task.Delay(machine.Phase is MatchPhase.Collecting or MatchPhase.AwaitingEnd or MatchPhase.Reporting ? CollectingInterval : Interval, cancel);
             }
         }
         finally
@@ -145,7 +147,7 @@ public sealed class RecognitionLoop(
 
         report(observation.Screen switch
         {
-            ScreenKind.Result => TrackerState.Evaluating,
+            ScreenKind.Result or ScreenKind.AfterAction => TrackerState.Evaluating,
             ScreenKind.InMatch or ScreenKind.Loading => TrackerState.MatchRunning,
             _ when observation.Game?.IsWarzone() == true => TrackerState.WarzoneDetected,
             _ when observation.Game == Game.Mw4Multiplayer => TrackerState.Mw4Detected,
@@ -161,7 +163,7 @@ public sealed class RecognitionLoop(
     private void Record(MatchCandidate candidate)
     {
         Diagnostics.Log($"match: {candidate.Game} {candidate.Mode} {candidate.Result} K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} " +
-            $"S={candidate.Score} confidence={candidate.Confidence:0.00} doubts={string.Join("; ", candidate.Doubts)}");
+            $"S={candidate.Score} status={candidate.Status} map={candidate.Map} xp={candidate.Xp} confidence={candidate.Confidence:0.00} doubts={string.Join("; ", candidate.Doubts)}");
         var match = ToLocal(candidate);
         if (match is null)
         {

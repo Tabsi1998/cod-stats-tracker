@@ -59,6 +59,31 @@ public static class TextParsing
         return (int.Parse(digits.ToString(), CultureInfo.InvariantCulture), repaired == 0 ? 1.0 : 0.8);
     }
 
+    /// <summary>
+    /// The numbers in a text such as "XP GESAMT 12410" (count 1: the first) or "300 | 0" (count 2: the last two,
+    /// since an emblem left of a score line can read as a number). The bar between two scores is often read as "1"
+    /// ("300 1 0"), so a lone 1 between other numbers is dropped. Null when there are not enough numbers.
+    /// </summary>
+    public static IReadOnlyList<int>? Numbers(string? text, int count)
+    {
+        var numbers = System.Text.RegularExpressions.Regex.Split(text ?? "", @"[^\p{L}\p{N}]+")
+            .Select(token => Count(token).Value)
+            .OfType<int>()
+            .ToList();
+        for (var i = numbers.Count - 2; i >= 1 && numbers.Count > count; i--)
+        {
+            if (numbers[i] == 1)
+            {
+                numbers.RemoveAt(i);
+            }
+        }
+        if (numbers.Count < count)
+        {
+            return null;
+        }
+        return count == 1 ? [numbers[0]] : numbers[^count..];
+    }
+
     /// <summary>Placement texts like "#3", "3rd", "3." or "PLATZ 3".</summary>
     public static (int? Value, double Quality) Placement(string? text)
     {
