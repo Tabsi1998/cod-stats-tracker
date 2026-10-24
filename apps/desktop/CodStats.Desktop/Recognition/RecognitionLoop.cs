@@ -12,7 +12,6 @@ namespace CodStats.Desktop.Recognition;
 public sealed class RecognitionLoop(
     IReadOnlyList<RecognitionProfile> profiles,
     MatchStore store,
-    IReadOnlyList<string> processNames,
     Action<TrackerState> report,
     Action<MatchCandidate, LocalMatch> recorded,
     Action<string> nameConfirmed) : IDisposable
@@ -72,7 +71,7 @@ public sealed class RecognitionLoop(
         {
             while (!cancel.IsCancellationRequested)
             {
-                capture ??= WindowCapture.Start(FindGameWindow());
+                capture ??= WindowCapture.Start(GameWatcher.FindGameWindow());
                 if (capture is null)
                 {
                     await Task.Delay(Interval, cancel);
@@ -157,24 +156,6 @@ public sealed class RecognitionLoop(
         var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;
-    }
-
-    private IntPtr FindGameWindow()
-    {
-        foreach (var name in processNames)
-        {
-            foreach (var process in Process.GetProcessesByName(name))
-            {
-                using (process)
-                {
-                    if (process.MainWindowHandle != IntPtr.Zero)
-                    {
-                        return process.MainWindowHandle;
-                    }
-                }
-            }
-        }
-        return IntPtr.Zero;
     }
 
     public void Dispose() => stop?.Dispose();

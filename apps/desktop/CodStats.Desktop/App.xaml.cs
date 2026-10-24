@@ -63,7 +63,7 @@ public partial class App : Application
         Sync = new SyncService(Store, Identity, CreateClient, Paths.Identity);
 
         var profiles = ProfileStore.Load([Path.Combine(AppContext.BaseDirectory, "profiles"), Paths.Profiles]);
-        Recognition = new RecognitionLoop(profiles, Store, Watcher.ProcessNames,
+        Recognition = new RecognitionLoop(profiles, Store,
             state => Dispatcher.BeginInvoke(() => SetTracker(state)),
             (_, _) => Dispatcher.BeginInvoke(async () =>
             {

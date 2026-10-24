@@ -25,7 +25,7 @@ public sealed class NameTracker
     /// <summary>Feeds an own-name reading. Returns true when this reading confirmed a (new) name.</summary>
     public bool Observe(FieldReading? reading)
     {
-        var shown = reading?.Text.Trim();
+        var shown = reading is null ? null : CodStats.Contracts.DisplayNames.WithoutClanTag(reading.Text);
         if (reading is null || reading.Quality < MinQuality || CodStats.Contracts.DisplayNames.Normalise(shown) is not { } name)
         {
             return false;
