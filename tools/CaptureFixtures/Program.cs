@@ -23,6 +23,32 @@ if (args.Length is 6 or 7 && args[0] == "ocr")
     return;
 }
 
+// "import <server> <client data folder> <folder> [...]": replays the recordings, stores every recognised match
+// in a client database (as confirmed by the player) and syncs it through the real client code to a server.
+// For a demo on a local test server; never against a public server with someone else's recordings.
+if (args.Length >= 4 && args[0] == "import")
+{
+    var server = new Uri(args[1].TrimEnd('/') + "/");
+    var paths = new CodStats.Desktop.AppPaths(Path.GetFullPath(args[2]));
+    paths.Ensure();
+    var store = new CodStats.Desktop.Storage.MatchStore(paths.Database);
+    store.Initialise();
+    var (matches, name) = await Replay(args[3..]);
+    foreach (var candidate in matches)
+    {
+        if (RecognitionLoop.ToLocal(candidate) is { } local)
+        {
+            var stored = store.Add(local with { ReviewStatus = CodStats.Contracts.ReviewStatus.Confirmed });
+            Console.WriteLine($"{(stored ? "stored " : "already")} {local.PlayedAt:HH:mm} {local.Game} {local.Mode} {local.Result} K={local.Kills} D={local.Deaths} A={local.Assists} S={local.Score}");
+        }
+    }
+    using var identity = CodStats.Desktop.Identity.DeviceIdentity.LoadOrCreate(paths.Identity);
+    using var sync = new CodStats.Desktop.Sync.SyncService(store, identity, () => new CodStats.Desktop.Sync.ApiClient(server, identity), paths.Identity);
+    var status = await sync.RunAsync(new CodStats.Desktop.Sync.ProfileWish(name, name is not null, true), CancellationToken.None);
+    Console.WriteLine($"sync: {status.Text} {status.Detail} profile={identity.ProfileId} name={name}");
+    return;
+}
+
 // "replay <folder> [<folder> ...]": the recorded frames in time order through the real state machine, as the
 // client would see them while playing; prints every match it would store.
 if (args.Length >= 2 && args[0] == "replay")
@@ -199,4 +225,36 @@ static Frame LoadImage(string path)
     source.CopyPixels(pixels, source.PixelWidth * 4, 0);
     pixels.CopyTo(frame.Pixels);
     return frame;
+}
+
+static async Task<(List<MatchCandidate> Matches, string? Name)> Replay(string[] folders)
+{
+    var profiles = ProfileStore.Load([Path.Combine("apps", "desktop", "CodStats.Desktop", "profiles")]);
+    var reader = new ScreenReader(profiles, WindowsOcr.Create()!);
+    var machine = new MatchStateMachine(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
+    var names = new NameTracker();
+    var matches = new List<MatchCandidate>();
+    var files = folders.SelectMany(folder => Directory.EnumerateFiles(folder, "*.jpg"))
+        .OrderBy(f => Path.GetFileName(f)[..15], StringComparer.Ordinal);
+    foreach (var file in files)
+    {
+        var at = DateTime.ParseExact(Path.GetFileName(file)[..15], "yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        using var image = LoadImage(file);
+        var observation = await reader.ReadAsync(image, new DateTimeOffset(at), CancellationToken.None);
+        var before = machine.Phase;
+        if (machine.Observe(observation) is { } candidate)
+        {
+            matches.Add(candidate);
+        }
+        if (before != MatchPhase.Playing && machine.Phase == MatchPhase.Playing)
+        {
+            names.NextMatch();
+        }
+        names.Observe(observation.OwnName);
+    }
+    if (machine.Reset() is { } last)
+    {
+        matches.Add(last);
+    }
+    return (matches, names.Confirmed);
 }
