@@ -23,7 +23,11 @@
         "y": 0.05,
         "width": 0.3,
         "height": 0.12,
-        "maxHeight": 40
+        "tryHeights": [
+          40,
+          80,
+          0
+        ]
       },
       "more": [
         {
@@ -31,7 +35,11 @@
           "y": 0.05,
           "width": 0.3,
           "height": 0.12,
-          "maxHeight": 40
+          "tryHeights": [
+            40,
+            80,
+            0
+          ]
         }
       ],
       "anyOf": [
@@ -51,7 +59,11 @@
         "y": 0.05,
         "width": 0.3,
         "height": 0.12,
-        "maxHeight": 40
+        "tryHeights": [
+          40,
+          80,
+          0
+        ]
       },
       "more": [
         {
@@ -59,7 +71,11 @@
           "y": 0.05,
           "width": 0.3,
           "height": 0.12,
-          "maxHeight": 40
+          "tryHeights": [
+            40,
+            80,
+            0
+          ]
         }
       ]
     },
@@ -87,7 +103,8 @@
           "x": 0.05,
           "y": 0.548,
           "width": 0.455,
-          "height": 0.31
+          "height": 0.31,
+          "minPixelHeight": 670
         },
         "headerHeight": 0.03
       },
@@ -96,7 +113,8 @@
           "x": 0.51,
           "y": 0.548,
           "width": 0.455,
-          "height": 0.31
+          "height": 0.31,
+          "minPixelHeight": 670
         },
         "headerHeight": 0.03
       }

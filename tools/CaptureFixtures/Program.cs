@@ -185,8 +185,15 @@ static void SaveJpeg(Frame frame, string file)
 
 static Frame LoadImage(string path)
 {
+    // CODSTATS_WIDTH scales images down, to see how a capture would read at 1440p or 1080p.
     var decoder = BitmapDecoder.Create(new Uri(Path.GetFullPath(path)), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-    var source = new FormatConvertedBitmap(decoder.Frames[0], PixelFormats.Bgra32, null, 0);
+    BitmapSource image = decoder.Frames[0];
+    if (int.TryParse(Environment.GetEnvironmentVariable("CODSTATS_WIDTH"), out var width) && width != image.PixelWidth)
+    {
+        var scale = (double)width / image.PixelWidth;
+        image = new TransformedBitmap(image, new ScaleTransform(scale, scale));
+    }
+    var source = new FormatConvertedBitmap(image, PixelFormats.Bgra32, null, 0);
     var frame = new Frame(source.PixelWidth, source.PixelHeight);
     var pixels = new byte[frame.Pixels.Length];
     source.CopyPixels(pixels, source.PixelWidth * 4, 0);

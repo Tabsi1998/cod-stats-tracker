@@ -43,13 +43,15 @@ public sealed class Frame : IDisposable
     /// A copy of a region, scaled so its height is at least <paramref name="minHeight"/> pixels (OCR reads small
     /// HUD text much better when it is larger). The caller disposes it.
     /// </summary>
-    public Frame Crop(Region region, int minHeight = 48)
+    public Frame Crop(Region region, int minHeight = 48, int maxDimension = int.MaxValue)
     {
         var (x, y, w, h) = ToPixels(region);
         // Up for small HUD text, down for huge banners (MaxHeight); nearest neighbour is enough for the OCR.
         var scale = region.MaxHeight > 0 && h > region.MaxHeight
             ? (double)region.MaxHeight / h
-            : Math.Clamp(Math.Ceiling((double)minHeight / h), 1, 4);
+            : Math.Clamp(Math.Ceiling((double)Math.Max(minHeight, region.MinPixelHeight) / h), 1, 4);
+        // Never larger than the OCR accepts.
+        scale = Math.Min(scale, Math.Max(1.0, (double)maxDimension / Math.Max(w, h)));
         var crop = new Frame(Math.Max(1, (int)(w * scale)), Math.Max(1, (int)(h * scale)));
         var source = Pixels;
         var target = crop.Pixels;

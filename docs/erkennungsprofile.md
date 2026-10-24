@@ -54,6 +54,8 @@ Erste Profile in `apps/desktop/CodStats.Desktop/profiles/`, gemessen an 3840×21
 | SIEG steht links, NIEDERLAGE rechts | `more`: zweiter Bereich für Anker und Feld |
 | Weißer HUD-Text auf hellem Himmel | `whiteText: true`: nur fast weiße Pixel bleiben |
 | Ergebnisbildschirm nur ~4 s sichtbar, danach Wiederholung „Beste Aktion“ | Client liest dort alle 0,5 s; Auswertung 8 s nach dem Ende des Ergebnisses |
+| Bei 1440p und 1080p liest die OCR das Banner bei anderen Größen | `tryHeights: [40, 80, 0]`: in drei Größen lesen, alle Texte zählen |
+| Tabellenschrift bei 1080p nur ~13 px hoch | `minPixelHeight`: Bereich vorher vergrößern (höchstens bis zur OCR-Grenze) |
 | Eliminierungen = Abschüsse + Assists | gespeichert werden Abschüsse als Kills; die K/D im Spiel („Elim/T-Quote“) rechnet mit Eliminierungen |
 
 Werkzeug dazu: `tools/CaptureFixtures` (Aufnehmen, `ocr`, `read`, `scan`, `replay`).
