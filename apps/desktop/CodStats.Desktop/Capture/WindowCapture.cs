@@ -26,11 +26,18 @@ public sealed partial class WindowCapture : IDisposable
     /// </summary>
     private byte[] buffer = [];
 
+    /// <summary>
+    /// The size the frame pool was made for. Not the item's size: that already reports the new size when the window
+    /// changes, while the pool keeps cutting frames to the old one until it is recreated.
+    /// </summary>
+    private Windows.Graphics.SizeInt32 poolSize;
+
     private WindowCapture(IntPtr window)
     {
         device = CreateDevice();
         item = CreateItem(window);
-        pool = Direct3D11CaptureFramePool.CreateFreeThreaded(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, item.Size);
+        poolSize = item.Size;
+        pool = Direct3D11CaptureFramePool.CreateFreeThreaded(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, poolSize);
         session = pool.CreateCaptureSession(item);
         session.IsCursorCaptureEnabled = false;
         // Windows 11: no yellow border around the game. Windows 10 does not know the property and shows the border.
@@ -59,6 +66,16 @@ public sealed partial class WindowCapture : IDisposable
                 captured?.Dispose();
                 captured = next;
             }
+            if (captured is not null && (captured.ContentSize.Width != poolSize.Width || captured.ContentSize.Height != poolSize.Height))
+            {
+                // The game changed its window size (it often starts small and then goes to full resolution): the
+                // frame is cut to the old size. Recreate the pool and wait for a frame of the new size.
+                poolSize = captured.ContentSize;
+                captured.Dispose();
+                captured = null;
+                pool.Recreate(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, poolSize);
+                Diagnostics.Log($"capture resized to {poolSize.Width}x{poolSize.Height}");
+            }
             if (captured is not null)
             {
                 break;
@@ -72,11 +89,6 @@ public sealed partial class WindowCapture : IDisposable
 
         using (captured)
         {
-            if (captured.ContentSize.Width != item.Size.Width || captured.ContentSize.Height != item.Size.Height)
-            {
-                // The window was resized: the pool follows on the next frame.
-                pool.Recreate(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, captured.ContentSize);
-            }
             using var bitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(captured.Surface, BitmapAlphaMode.Premultiplied).AsTask(cancel);
             var size = bitmap.PixelWidth * bitmap.PixelHeight * 4;
             if (buffer.Length != size)
