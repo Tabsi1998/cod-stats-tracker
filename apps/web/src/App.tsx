@@ -4,6 +4,7 @@ import { Home } from './pages/Home'
 import { Leaderboards } from './pages/Leaderboards'
 import { Search, SearchBox } from './pages/Search'
 import { Message, Skeleton } from './ui'
+import { scrollToTop } from './scroll'
 
 // Profile and match pages carry the charts; they load when first opened.
 const Player = lazy(() => import('./pages/Player').then((m) => ({ default: m.Player })))
@@ -23,7 +24,9 @@ function Mark() {
 export function App() {
   const location = useLocation()
   // A new page starts at the top, as a link to another match should.
-  useEffect(() => window.scrollTo({ top: 0 }), [location.pathname])
+  useEffect(() => {
+    scrollToTop()
+  }, [location.pathname])
 
   const nav = ({ isActive }: { isActive: boolean }) =>
     `display relative px-1 py-1 text-lg font-bold tracking-[0.1em] transition-colors duration-200 ${isActive ? 'text-text' : 'text-muted hover:text-text'}`
