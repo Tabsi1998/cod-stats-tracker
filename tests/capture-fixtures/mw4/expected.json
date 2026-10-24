@@ -1,0 +1,52 @@
+{
+  "_info": "Erwartete Werte zu den Bildern in diesem Ordner (Bilder sind nicht im Repo, nur lokal). Aufgenommen am 24.10.2026, 3840x2160, deutsche Oberfläche.",
+  "result_niederlage_herrschaft_a.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "HERRSCHAFT",
+    "kills": 14,
+    "deaths": 17,
+    "score": 2010,
+    "ownName": "Tabsi98"
+  },
+  "result_niederlage_herrschaft_b.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "HERRSCHAFT",
+    "kills": 14,
+    "deaths": 17,
+    "score": 2010,
+    "ownName": "Tabsi98"
+  },
+  "inmatch_herrschaft.jpg": {
+    "screen": "inMatch",
+    "game": "mw4_mp"
+  },
+  "loading_lithium_inflation.jpg": {
+    "screen": "unknown"
+  },
+  "splash_niederlage.jpg": {
+    "screen": "unknown"
+  },
+  "einsatzbericht.jpg": {
+    "screen": "unknown"
+  },
+  "lobby_kartenabstimmung.jpg": {
+    "screen": "unknown"
+  },
+  "tab_stellung.jpg": {
+    "screen": "inMatch",
+    "game": "mw4_mp",
+    "mode": "STELLUNG",
+    "kills": 6,
+    "deaths": 5,
+    "score": 1230,
+    "ownName": "Tabsi98"
+  },
+  "inmatch_stellung.jpg": {
+    "screen": "inMatch",
+    "game": "mw4_mp"
+  }
+}

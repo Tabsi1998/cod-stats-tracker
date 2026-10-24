@@ -8,6 +8,12 @@ namespace CodStats.Desktop.Recognition;
 /// <summary>A rectangle relative to the game's client area: 0..1 in both directions, so it works at any resolution.</summary>
 public sealed record Region(double X, double Y, double Width, double Height)
 {
+    /// <summary>
+    /// HUD text is white over the game world. With this set, only near-white pixels are kept, as black text on
+    /// white, so a bright sky or a dark wall behind the text no longer matters to the OCR.
+    /// </summary>
+    public bool WhiteText { get; init; }
+
     public bool IsValid => X >= 0 && Y >= 0 && Width > 0 && Height > 0 && X + Width <= 1.0001 && Y + Height <= 1.0001;
 }
 
@@ -15,6 +21,18 @@ public sealed record Region(double X, double Y, double Width, double Height)
 public sealed record Anchor(Region Region, IReadOnlyList<string> AnyOf);
 
 public sealed record FieldSpec(Region Region);
+
+/// <summary>An area with labels and their values below them (field name → label words).</summary>
+public sealed record LabelledValuesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Values);
+
+/// <summary>A scoreboard table: its area including the heading row, and how tall that heading row is.</summary>
+public sealed record TableSpec(Region Region, double HeaderHeight);
+
+/// <summary>
+/// The player's own scoreboard row: searched by name in the tables, values read from the columns whose heading
+/// contains one of the words (field name → heading words).
+/// </summary>
+public sealed record OwnRowSpec(IReadOnlyList<TableSpec> Tables, double RowHeight, IReadOnlyDictionary<string, IReadOnlyList<string>> Columns);
 
 /// <summary>
 /// How one screen of one game looks at one aspect ratio. Profiles are data, not code, so a season update that
@@ -35,9 +53,18 @@ public sealed record RecognitionProfile
     public required IReadOnlyList<Anchor> Anchors { get; init; }
     public IReadOnlyDictionary<string, FieldSpec> Fields { get; init; } = new Dictionary<string, FieldSpec>();
     public FieldSpec? OwnName { get; init; }
+
+    /// <summary>Fields read from the scoreboard row that carries <see cref="OwnName"/>.</summary>
+    public OwnRowSpec? OwnRow { get; init; }
+
+    /// <summary>Values printed under a label ("TODE" over "17"), read as one area.</summary>
+    public LabelledValuesSpec? Labelled { get; init; }
     public IReadOnlyList<string> WinWords { get; init; } = [];
     public IReadOnlyList<string> LossWords { get; init; } = [];
     public IReadOnlyList<string> DrawWords { get; init; } = [];
+
+    /// <summary>Known mode names; the mode field is stored as the first of these it contains.</summary>
+    public IReadOnlyList<string> Modes { get; init; } = [];
 
     public bool FitsAspect(double aspect) => Math.Abs(aspect - Aspect) / Aspect <= 0.02;
 
@@ -53,6 +80,8 @@ public sealed record RecognitionProfile
             if (!region.IsValid) yield return $"Bereich außerhalb 0..1: {region}";
         }
         if (Screen == ScreenKind.Result && Game is null) yield return "Ergebnisprofil ohne Spiel";
+        if (OwnRow is not null && OwnName is null) yield return "ownRow braucht ownName";
+        if (OwnRow is { } row && (row.Tables.Count == 0 || row.Tables.Any(t => !t.Region.IsValid) || row.RowHeight is <= 0 or > 0.2)) yield return "ownRow unplausibel";
     }
 }
 

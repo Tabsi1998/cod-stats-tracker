@@ -1,0 +1,44 @@
+{
+  "id": "mw4-mp-inmatch-16x9-de",
+  "game": "mw4_mp",
+  "screen": "inMatch",
+  "aspect": 1.7778,
+  "verified": false,
+  "anchors": [
+    {
+      "region": {
+        "x": 0.07,
+        "y": 0.283,
+        "width": 0.1,
+        "height": 0.03,
+        "whiteText": true
+      },
+      "anyOf": [
+        "HERRSCHAFT",
+        "DOMINATION",
+        "TEAM-DEATHMATCH",
+        "TEAM DEATHMATCH",
+        "ABSCHUSS BESTÄTIGT",
+        "KILL CONFIRMED",
+        "STELLUNG",
+        "HARDPOINT",
+        "SUCHEN UND ZERSTÖREN",
+        "SEARCH AND DESTROY",
+        "JEDER GEGEN JEDEN",
+        "FREE-FOR-ALL",
+        "INFLATION",
+        "KILL BLOCK",
+        "KOLLATERAL",
+        "BODENKRIEG",
+        "GROUND WAR",
+        "HAUPTQUARTIER",
+        "HEADQUARTERS",
+        "KONTROLLE",
+        "CONTROL",
+        "FEUERGEFECHT",
+        "GUNFIGHT",
+        "FRONT"
+      ]
+    }
+  ]
+}

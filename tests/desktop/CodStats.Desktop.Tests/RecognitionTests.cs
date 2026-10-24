@@ -297,6 +297,9 @@ public class ProfileTests
     private sealed class FakeText(Func<Region, string> text) : ITextReader
     {
         public Task<string> ReadAsync(Frame frame, Region region, CancellationToken cancel) => Task.FromResult(text(region));
+
+        public Task<IReadOnlyList<TextLine>> ReadLinesAsync(Frame frame, Region region, CancellationToken cancel) =>
+            Task.FromResult<IReadOnlyList<TextLine>>([new TextLine(text(region), region.X, region.Y, region.Width, region.Height)]);
     }
 }
 

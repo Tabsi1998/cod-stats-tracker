@@ -19,6 +19,12 @@ public sealed class RecognitionLoop(
     public const string RecognizerVersion = "ocr-0.1";
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
 
+    /// <summary>
+    /// MW4 shows its result scoreboard only for about four seconds (seen on a real PC): read it quickly enough
+    /// for the three readings the state machine wants.
+    /// </summary>
+    private static readonly TimeSpan CollectingInterval = TimeSpan.FromMilliseconds(500);
+
     private readonly MatchStateMachine machine = new(id => profiles.FirstOrDefault(p => p.Id == id)?.Words ?? ProfileWords.None);
     private readonly NameTracker names = new();
     private CancellationTokenSource? stop;
@@ -85,7 +91,7 @@ public sealed class RecognitionLoop(
                         Handle(observation);
                     }
                 }
-                await Task.Delay(Interval, cancel);
+                await Task.Delay(machine.Phase == MatchPhase.Collecting ? CollectingInterval : Interval, cancel);
             }
         }
         catch (Exception error) when (error is System.Runtime.InteropServices.COMException or ArgumentException or InvalidOperationException)

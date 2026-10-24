@@ -59,7 +59,26 @@ public sealed class Frame : IDisposable
                 source.Slice(sourceRow + (x + column / scale) * 4, 4).CopyTo(target.Slice(targetRow + column * 4, 4));
             }
         }
+        if (region.WhiteText)
+        {
+            KeepWhiteText(crop.Pixels);
+        }
         return crop;
+    }
+
+    private const byte WhiteThreshold = 215;
+
+    private static void KeepWhiteText(Span<byte> bgra)
+    {
+        for (var i = 0; i < bgra.Length; i += 4)
+        {
+            var white = bgra[i] >= WhiteThreshold && bgra[i + 1] >= WhiteThreshold && bgra[i + 2] >= WhiteThreshold;
+            var value = white ? (byte)0 : (byte)255;
+            bgra[i] = value;
+            bgra[i + 1] = value;
+            bgra[i + 2] = value;
+            bgra[i + 3] = 255;
+        }
     }
 
     public void Dispose()
