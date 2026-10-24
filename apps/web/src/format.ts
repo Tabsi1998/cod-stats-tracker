@@ -9,6 +9,9 @@ export const dash = '–'
 
 export const formatCount = (value: number | null | undefined) => (value == null ? dash : number.format(value))
 export const formatKd = (value: number | null | undefined) => (value == null ? dash : decimal.format(value))
+const oneDecimal = new Intl.NumberFormat('de-AT', { maximumFractionDigits: 1 })
+/** Averages of counts: one decimal at most ("23" or "20,3"). */
+export const formatAverage = (value: number | null | undefined) => (value == null ? dash : oneDecimal.format(value))
 export const formatPercent = (value: number | null | undefined) =>
   value == null ? dash : `${new Intl.NumberFormat('de-AT', { maximumFractionDigits: 1 }).format(value * 100)} %`
 export const formatDate = (iso: string | null | undefined) => (iso ? date.format(new Date(iso)) : dash)

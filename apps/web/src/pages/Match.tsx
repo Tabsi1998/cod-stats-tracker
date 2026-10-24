@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router'
-import { api, type PublicMatch, type Stats } from '../api'
-import { dash, formatCount, formatKd, formatLongDate, formatTime, gameLabels, matchKd, modeStatLabel, outcomeLabels, outcomeOf, outcomeText } from '../format'
+import { api, type PublicMatch, type Stats, type StatsBreakdown } from '../api'
+import { dash, formatAverage, formatCount, formatKd, formatLongDate, formatTime, gameLabels, matchKd, modeStatLabel, outcomeLabels, outcomeOf, outcomeText } from '../format'
 import { useLoad, type Load } from '../load'
 import { Bracket, CommunityNote, Figure, Icon, Message, Skeleton } from '../ui'
 
@@ -60,26 +60,29 @@ function Report({ match, playerId, playerName }: { match: PublicMatch; playerId:
     { label: 'Assists', value: match.assists, format: count },
     { label: 'Eliminierungen', value: d?.eliminations ?? null, format: count },
   ]
+  const anyValue = tiles.some((tile) => tile.value != null)
   const modeStats = Object.entries(d?.modeStats ?? {})
+  const mode = match.mode?.toUpperCase()
+  const sameMode = average.state === 'ready' && mode ? average.data.byMode?.find((row) => row.name === mode) : undefined
 
   return (
-    <article className="space-y-10">
+    <article className="space-y-12">
       <header className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
         <div className="rise space-y-4">
-          <p className="text-muted">
-            {formatLongDate(match.playedAt)} · {formatTime(match.playedAt)} Uhr · {gameLabels[match.game]}
-            {playerName && <> · {playerName}</>}
-          </p>
           <h1 className={`flare display text-7xl font-extrabold sm:text-9xl ${outcomeText[outcome]}`}>{outcomeLabels[outcome]}</h1>
           <div className="flex flex-wrap items-center gap-3">
             {match.mode && <span className="display bg-text px-3 py-1 text-xl font-bold tracking-[0.14em] text-bg">{match.mode}</span>}
             {match.map && <span className="display text-xl font-bold tracking-[0.14em] text-muted">{match.map}</span>}
             {freeForAll && <span className="display text-xl font-bold tracking-[0.14em] text-you">Platz {match.placement}</span>}
           </div>
+          <p className="text-muted">
+            {formatLongDate(match.playedAt)} · {formatTime(match.playedAt)} Uhr · {gameLabels[match.game]}
+            {playerName && <> · {playerName}</>}
+          </p>
           {outcome === 'left' && (
             <p className="max-w-[60ch] text-muted">
-              Vor dem Ende verlassen. Die Werte stammen vom letzten Scoreboard; das Match zählt für K/D und Kills, nicht für
-              die Siegquote.
+              Vor dem Ende verlassen. Das Match zählt nicht für die Siegquote
+              {anyValue ? '; die Werte stammen vom letzten Scoreboard und zählen für K/D und Kills.' : '.'}
             </p>
           )}
         </div>
@@ -94,83 +97,97 @@ function Report({ match, playerId, playerName }: { match: PublicMatch; playerId:
         )}
       </header>
 
-      <Bracket tone={tone} className="rise grid grid-cols-2 gap-x-6 gap-y-8 px-5 py-8 sm:grid-cols-3 sm:px-8 lg:grid-cols-6" style={{ '--i': 2 } as CSSProperties} label="Werte">
-        {tiles.map((tile) => (
-          <Figure key={tile.label} value={tile.value} format={tile.format} label={tile.label} size="lg" tone={tile.you && tile.value != null ? 'you' : undefined} />
-        ))}
-      </Bracket>
+      {anyValue ? (
+        <Bracket
+          tone={tone}
+          className="rise grid grid-cols-2 gap-x-6 gap-y-8 bg-surface/50 px-5 py-8 shadow-[0_24px_48px_-28px_rgb(0_0_0/0.9)] sm:grid-cols-3 sm:px-8 lg:grid-cols-6"
+          style={{ '--i': 2 } as CSSProperties}
+          label="Werte"
+        >
+          {tiles.map((tile) => (
+            <Figure key={tile.label} value={tile.value} format={tile.format} label={tile.label} size="lg" tone={tile.you && tile.value != null ? 'you' : undefined} />
+          ))}
+        </Bracket>
+      ) : (
+        <p className="border-y border-line py-5 text-lg text-muted">
+          Keine Werte lesbar: Beim Verlassen konnte der Client keine Zahlen von der Anzeige ablesen.
+        </p>
+      )}
 
-      {average.state === 'ready' && match.status === 'completed' && average.data.matches > 1 && <Comparison match={match} stats={average.data} />}
+      {sameMode && sameMode.matches > 1 && match.status === 'completed' && <Comparison match={match} baseline={sameMode} />}
 
-      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-        <section className="rise" style={{ '--i': 3 } as CSSProperties}>
-          <h2 className="display mb-4 text-2xl font-bold">Modus-Werte</h2>
-          {modeStats.length > 0 ? (
-            <dl className="grid grid-cols-2 border-t border-l border-line sm:grid-cols-3">
-              {modeStats.map(([key, value]) => (
-                <div key={key} className="border-r border-b border-line px-4 py-4">
-                  <dt className="text-sm text-faint">{modeStatLabel(key)}</dt>
-                  <dd className="display mt-1 text-4xl font-bold">{formatCount(value)}</dd>
-                </div>
-              ))}
+      {(modeStats.length > 0 || d?.xp != null || d?.level != null) && (
+        <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
+          <section>
+            <h2 className="display mb-4 text-2xl font-bold">Modus-Werte</h2>
+            {modeStats.length > 0 ? (
+              <dl className="flex flex-wrap gap-x-12 gap-y-6 border-t border-line pt-5">
+                {modeStats.map(([key, value]) => (
+                  <div key={key} className="flex flex-col-reverse">
+                    <dt className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">{modeStatLabel(key)}</dt>
+                    <dd className="display text-5xl font-bold">{formatCount(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="border-t border-line pt-5 text-muted">Für dieses Match wurden keine Modus-Werte erfasst.</p>
+            )}
+          </section>
+          <section>
+            <h2 className="display mb-4 text-2xl font-bold">Fortschritt</h2>
+            <dl className="flex flex-wrap gap-x-12 gap-y-6 border-t border-line pt-5">
+              <div className="flex flex-col-reverse">
+                <dt className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">XP gesamt</dt>
+                <dd className="display text-5xl font-bold text-you">
+                  {d?.xp != null ? (
+                    <>
+                      {formatCount(d.xp)} <span className="text-3xl text-muted">XP</span>
+                    </>
+                  ) : (
+                    dash
+                  )}
+                </dd>
+              </div>
+              <div className="flex flex-col-reverse">
+                <dt className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">Level danach</dt>
+                <dd className="display text-5xl font-bold">{d?.level ?? dash}</dd>
+              </div>
             </dl>
-          ) : (
-            <p className="text-muted">Für dieses Match wurden keine Modus-Werte erfasst.</p>
-          )}
-        </section>
-        <section className="rise" style={{ '--i': 4 } as CSSProperties}>
-          <h2 className="display mb-4 text-2xl font-bold">Fortschritt</h2>
-          <dl className="space-y-4 border-t border-line pt-4">
-            <div>
-              <dt className="text-sm text-faint">XP gesamt</dt>
-              <dd className="display text-5xl font-bold text-you">
-                {d?.xp != null ? (
-                  <>
-                    {formatCount(d.xp)} <span className="text-3xl text-muted">XP</span>
-                  </>
-                ) : (
-                  dash
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm text-faint">Level nach dem Match</dt>
-              <dd className="display text-4xl font-bold">{d?.level != null ? `Level ${d.level}` : dash}</dd>
-            </div>
-          </dl>
-        </section>
-      </div>
+          </section>
+        </div>
+      )}
     </article>
   )
 }
 
-/** This match against the player's own average: what made it a good or a bad one. */
-function Comparison({ match, stats }: { match: PublicMatch; stats: Stats }) {
-  const allKd = stats.kdRatio
+/** This match against the player's average in the same mode: points and kills differ too much between modes. */
+function Comparison({ match, baseline }: { match: PublicMatch; baseline: StatsBreakdown }) {
   const rows: { label: string; value: number | null; average: number | null; format: (v: number) => string }[] = [
-    { label: 'Kills', value: match.kills, average: stats.averageKills, format: (v) => formatKd(v) },
-    { label: 'K/D', value: matchKd(match.kills, match.deaths), average: allKd, format: (v) => formatKd(v) },
-    { label: 'Punkte', value: match.score, average: stats.averageScore, format: (v) => formatCount(Math.round(v)) },
-    { label: 'XP', value: match.details?.xp ?? null, average: stats.averageXp, format: (v) => formatCount(Math.round(v)) },
+    { label: 'Kills', value: match.kills, average: baseline.averageKills, format: (v) => formatAverage(v) },
+    { label: 'K/D', value: matchKd(match.kills, match.deaths), average: baseline.kdRatio, format: (v) => formatKd(v) },
+    { label: 'Punkte', value: match.score, average: baseline.averageScore, format: (v) => formatCount(Math.round(v)) },
   ]
   const shown = rows.filter((row) => row.value != null && row.average != null && row.average > 0)
   if (shown.length === 0) return null
   return (
-    <section className="rise" style={{ '--i': 3 } as CSSProperties}>
-      <h2 className="display mb-4 text-2xl font-bold">Gegenüber deinem Schnitt</h2>
-      <dl className="grid grid-cols-2 gap-px bg-line sm:grid-cols-4">
+    <section>
+      <h2 className="display mb-4 text-2xl font-bold">
+        Gegenüber deinem Schnitt in {baseline.name}{' '}
+        <span className="font-sans text-base font-medium tracking-normal text-faint normal-case">({baseline.matches} Matches)</span>
+      </h2>
+      <dl className="flex flex-wrap gap-x-12 gap-y-6 border-t border-line pt-5">
         {shown.map((row) => {
           const delta = (row.value! - row.average!) / row.average!
-          const up = delta >= 0
+          const even = Math.abs(delta) < 0.05
           return (
-            <div key={row.label} className="bg-bg px-4 py-4">
-              <dt className="text-sm text-faint">
-                {row.label} · Ø {row.format(row.average!)}
+            <div key={row.label} className="flex flex-col-reverse">
+              <dt className="mt-2 text-sm text-faint">
+                {row.label}: {row.format(row.value!)} statt im Schnitt {row.format(row.average!)}
               </dt>
-              <dd className={`display mt-1 text-4xl font-bold ${Math.abs(delta) < 0.05 ? 'text-muted' : up ? 'text-win' : 'text-loss'}`}>
-                {up ? '+' : '−'}
+              <dd className={`display text-5xl font-bold ${even ? 'text-muted' : delta > 0 ? 'text-win' : 'text-loss'}`}>
+                {even ? '±' : delta > 0 ? '+' : '−'}
                 {Math.round(Math.abs(delta) * 100)}
-                <span className="ml-0.5 text-2xl">%</span>
+                <span className="ml-0.5 text-3xl">%</span>
               </dd>
             </div>
           )

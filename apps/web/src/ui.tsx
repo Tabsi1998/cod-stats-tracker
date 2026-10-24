@@ -115,7 +115,7 @@ export function Segmented<T extends string>({
   label: string
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex max-w-full overflow-x-auto border border-line bg-deep/70">
+    <div role="radiogroup" aria-label={label} className="flex max-w-full flex-wrap border border-line bg-deep/70">
       {options.map((option) => {
         const active = option.value === value
         return (
@@ -210,18 +210,13 @@ export function OutcomeTag({ outcome, className = '' }: { outcome: Outcome; clas
   return <span className={`display inline-block px-2 py-0.5 text-sm font-bold tracking-[0.1em] ${tones[outcome]} ${className}`}>{outcomeLabels[outcome]}</span>
 }
 
-/** The last results, oldest left: one cell per match, height by kills when known. */
-export function FormStrip({ results }: { results: { outcome: Outcome; kills: number | null; id: string }[] }) {
-  const most = Math.max(1, ...results.map((r) => r.kills ?? 0))
+/** The last results, oldest left: one equal cell per match in the outcome's colour. */
+export function FormStrip({ results }: { results: { outcome: Outcome; id: string }[] }) {
   return (
     <div>
-      <div className="flex h-24 items-end gap-1" aria-hidden="true">
+      <div className="grid grid-cols-10 gap-1.5" aria-hidden="true">
         {results.map((result, i) => (
-          <span
-            key={result.id}
-            className={`cell-in block max-w-12 min-w-[6px] flex-1 ${outcomeFill[result.outcome]}`}
-            style={{ height: `${result.kills == null ? 30 : 30 + 70 * (result.kills / most)}%`, '--i': i } as CSSProperties}
-          />
+          <span key={result.id} className={`cell-in block aspect-square ${outcomeFill[result.outcome]}`} style={{ '--i': i } as CSSProperties} />
         ))}
       </div>
       <p className="sr-only">

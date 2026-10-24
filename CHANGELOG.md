@@ -10,10 +10,15 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Auswertung nach Modus und nach Karte (Matches, Siegquote, K/D, Ø Kills, Ø Punkte).
 - Öffentlicher Endpunkt für ein einzelnes Match (`/api/v1/public/players/{id}/matches/{matchId}`) für die Match-Detailseite.
 - Ranglisten lassen sich auf einen Modus begrenzen (`mode=`).
+- Webseite: Match-Detailseite im Stil des Einsatzberichts (Ergebnis, Modus, Karte, Endstand, alle Werte, Modus-Werte, XP, Level, Vergleich mit dem eigenen Schnitt im selben Modus).
+- Webseite: Profil mit Bilanz (K/D, Siegquote, Kills, Matches), Form der letzten 20 Matches, längster Serie, bester Runde, Verlassen-Quote und den Tabs Übersicht, Matches, Modi, Karten.
+- Webseite: Ranglisten lassen sich nach Modus filtern; Startseite mit Top K/D und meisten Kills.
 
 ### Geändert
 - Verlassene Matches gehen automatisch hoch, wenn der Matchbeginn erkannt wurde; sie zählen für K/D und Kills, nicht für die Siegquote.
 - Windows-Client: Match-Liste zeigt „Verlassen“.
+- Webseite: neues Design „Taktisches HUD“ (eigene Schriften, Eckwinkel-Rahmen wie im Einsatzbericht, Cyan = Sieg, Orange = Niederlage, Gelb = du), Animationen beim ersten Anzeigen; mit „Bewegung reduzieren“ im System bleibt alles ruhig.
+- Webseite: Profil- und Match-Seiten laden ihre Diagramme erst bei Bedarf (kleinerer erster Download).
 
 ## [0.1.2] - 2026-10-24
 

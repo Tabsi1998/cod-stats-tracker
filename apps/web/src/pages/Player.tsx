@@ -5,6 +5,7 @@ import { api, type GameGroup, type Page, type Period, type PublicMatch, type Sta
 import {
   axisLabel,
   dash,
+  formatAverage,
   formatCount,
   formatDate,
   formatKd,
@@ -15,6 +16,7 @@ import {
   outcomeOf,
 } from '../format'
 import { useLoad, type Load } from '../load'
+import { prefersReducedMotion } from '../motion'
 import { Bracket, CommunityNote, Figure, FormStrip, GameSwitch, Icon, Message, OutcomeTag, Segmented, Skeleton, Tabs } from '../ui'
 
 type PeriodKey = 'all' | 'last10' | 'last25' | 'last50' | 'last100' | 'days7' | 'days30'
@@ -130,7 +132,11 @@ function Debrief({ stats, recent, playerId }: { stats: Load<Stats>; recent: Load
 
   const form = recent.state === 'ready' ? [...recent.data.items].reverse() : []
   return (
-    <Bracket className="rise grid gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[1.1fr_1fr]" style={{ '--i': 2 } as CSSProperties} label="Bilanz">
+    <Bracket
+      className="rise grid gap-8 bg-surface/50 px-5 py-7 shadow-[0_24px_48px_-28px_rgb(0_0_0/0.9)] sm:px-8 lg:grid-cols-[1.1fr_1fr]"
+      style={{ '--i': 2 } as CSSProperties}
+      label="Bilanz"
+    >
       <div className="grid grid-cols-2 gap-x-6 gap-y-8">
         <Figure value={s.kdRatio} format={ratio} label="K/D" size="xl" tone="you" hint="Kills gesamt ÷ Tode gesamt" />
         <Figure
@@ -141,7 +147,7 @@ function Debrief({ stats, recent, playerId }: { stats: Load<Stats>; recent: Load
           tone={s.winRate == null ? undefined : s.winRate >= 0.5 ? 'win' : 'loss'}
           hint={`${formatCount(s.wins)} von ${formatCount(s.matchesWithResult)} gewonnen`}
         />
-        <Figure value={s.kills} format={count} label="Kills" size="lg" hint={`Ø ${formatKd(s.averageKills)} pro Match`} />
+        <Figure value={s.kills} format={count} label="Kills" size="lg" hint={`${formatAverage(s.averageKills)} pro Match`} />
         <Figure
           value={s.matches}
           format={count}
@@ -150,18 +156,18 @@ function Debrief({ stats, recent, playerId }: { stats: Load<Stats>; recent: Load
           hint={s.leftMatches > 0 ? `davon ${formatCount(s.leftMatches)} verlassen` : 'keins verlassen'}
         />
       </div>
-      <div className="flex flex-col justify-between gap-6">
+      <div className="flex flex-col gap-8">
         <div>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h2 className="display text-lg font-bold tracking-[0.1em] text-muted">Form · letzte {form.length || ''} Matches</h2>
             <Legend />
           </div>
           {form.length > 0 ? (
-            <FormStrip results={form.map((m) => ({ id: m.id, outcome: outcomeOf(m), kills: m.kills }))} />
+            <FormStrip results={form.map((m) => ({ id: m.id, outcome: outcomeOf(m) }))} />
           ) : (
-            <Skeleton className="h-24" />
+            <Skeleton className="h-16" />
           )}
-          <p className="mt-2 text-sm text-faint">Höhe = Kills im Match, älteste links.</p>
+          <p className="mt-2 text-sm text-faint">Älteste links, neueste rechts.</p>
         </div>
         <dl className="grid grid-cols-3 gap-4 border-t border-line pt-5">
           <MiniStat label="Längste Serie" value={s.longestWinStreak == null ? dash : `${s.longestWinStreak} Siege`} />
@@ -214,6 +220,8 @@ function MiniStat({ label, value, to }: { label: string; value: string; to?: str
 
 function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
   const navigate = useNavigate()
+  // The charts draw themselves in, unless the player asked the system for less motion.
+  const animate = !prefersReducedMotion()
   const label = axisLabel(stats.series.map((point) => point.playedAt))
   const series = stats.series.map((point) => ({
     id: point.matchId,
@@ -227,22 +235,24 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
     ['Tode', formatCount(stats.deaths)],
     ['Assists', formatCount(stats.assists)],
     ['Eliminierungen', formatCount(stats.eliminations)],
-    ['Ø Punkte', formatCount(stats.averageScore == null ? null : Math.round(stats.averageScore))],
-    ['Ø XP pro Match', formatCount(stats.averageXp == null ? null : Math.round(stats.averageXp))],
-    ['XP gesamt', formatCount(stats.totalXp)],
+    ['Punkte pro Match', formatCount(stats.averageScore == null ? null : Math.round(stats.averageScore))],
+    ['XP pro Match', formatCount(stats.averageXp == null ? null : Math.round(stats.averageXp))],
   ]
-  if (stats.averagePlacement != null) details.push(['Ø Platzierung', String(stats.averagePlacement)])
+  if (stats.averagePlacement != null) details.push(['Platzierung im Schnitt', formatAverage(stats.averagePlacement)])
 
   return (
-    <div className="space-y-10">
-      <dl className="grid grid-cols-2 border-t border-l border-line sm:grid-cols-3 lg:grid-cols-6">
-        {details.map(([name, value], i) => (
-          <div key={name} className="rise border-r border-b border-line px-4 py-4" style={{ '--i': i } as CSSProperties}>
-            <dt className="text-sm text-faint">{name}</dt>
-            <dd className="display mt-1 text-3xl font-bold">{value}</dd>
-          </div>
-        ))}
-      </dl>
+    <div className="space-y-12">
+      <Bracket className="grid gap-8 bg-surface/50 px-5 py-6 shadow-[0_24px_48px_-28px_rgb(0_0_0/0.9)] sm:px-8 lg:grid-cols-[auto_1fr] lg:items-end" label="Weitere Werte">
+        <Figure value={stats.totalXp} format={count} label="XP gesamt" size="lg" tone="you" />
+        <dl className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 lg:flex lg:justify-end lg:gap-x-10">
+          {details.map(([name, value]) => (
+            <div key={name} className="flex flex-col-reverse">
+              <dt className="text-sm text-faint">{name}</dt>
+              <dd className="display text-3xl font-bold">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Bracket>
 
       {series.length > 1 ? (
         <div className="grid gap-10 lg:grid-cols-2">
@@ -254,7 +264,7 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
               <Tooltip {...tooltip} cursor={{ fill: 'var(--color-raised)' }} formatter={(value) => [formatCount(Number(value)), 'Kills']} />
               <Bar
                 dataKey="kills"
-                animationDuration={900}
+                animationDuration={900} isAnimationActive={animate}
                 cursor="pointer"
                 onClick={(entry: { payload?: { id: string } }) => entry.payload && navigate(`/player/${playerId}/match/${entry.payload.id}`)}
               >
@@ -273,7 +283,7 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
               <XAxis dataKey="day" stroke="var(--color-faint)" fontSize={13} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--color-faint)" fontSize={13} width={40} tickLine={false} axisLine={false} />
               <Tooltip {...tooltip} formatter={(value) => [formatKd(Number(value)), 'K/D']} />
-              <Line type="monotone" dataKey="kd" stroke="var(--color-you)" dot={false} strokeWidth={2.5} animationDuration={900} />
+              <Line type="monotone" dataKey="kd" stroke="var(--color-you)" dot={false} strokeWidth={2.5} animationDuration={900} isAnimationActive={animate} />
             </LineChart>
           </Chart>
           <Chart title="Siegquote-Verlauf" note="in %, verlassene Matches zählen nicht">
@@ -282,7 +292,7 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
               <XAxis dataKey="day" stroke="var(--color-faint)" fontSize={13} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--color-faint)" fontSize={13} width={40} domain={[0, 100]} tickLine={false} axisLine={false} />
               <Tooltip {...tooltip} formatter={(value) => [`${value} %`, 'Siegquote']} />
-              <Line type="monotone" dataKey="winRate" stroke="var(--color-win)" dot={false} strokeWidth={2.5} animationDuration={900} />
+              <Line type="monotone" dataKey="winRate" stroke="var(--color-win)" dot={false} strokeWidth={2.5} animationDuration={900} isAnimationActive={animate} />
             </LineChart>
           </Chart>
         </div>
@@ -374,15 +384,14 @@ function MatchList({ playerId, game }: { playerId: string; game: GameGroup }) {
             </tr>
           </thead>
           <tbody>
-            {page?.items.map((match, i) => {
+            {page?.items.map((match) => {
               const href = `/player/${playerId}/match/${match.id}`
               const d = match.details
               return (
                 <tr
                   key={match.id}
                   onClick={() => navigate(href)}
-                  className="rise group cursor-pointer border-b border-line/60 transition-colors duration-200 hover:bg-surface"
-                  style={{ '--i': Math.min(i, 10) } as CSSProperties}
+                  className="group cursor-pointer border-b border-line/60 transition-colors duration-200 hover:bg-surface"
                 >
                   <td className="py-3 pr-4 whitespace-nowrap">
                     <Link to={href} className="outline-none focus-visible:underline">
@@ -450,8 +459,8 @@ function Breakdown({ rows, kind, empty }: { rows: StatsBreakdown[]; kind: string
     { key: 'matches', label: 'Matches' },
     { key: 'winRate', label: 'Siegquote' },
     { key: 'kdRatio', label: 'K/D' },
-    { key: 'averageKills', label: 'Ø Kills' },
-    { key: 'averageScore', label: 'Ø Punkte' },
+    { key: 'averageKills', label: 'Kills/Match' },
+    { key: 'averageScore', label: 'Punkte/Match' },
   ]
   return (
     <div className="overflow-x-auto">
@@ -475,19 +484,21 @@ function Breakdown({ rows, kind, empty }: { rows: StatsBreakdown[]; kind: string
         </thead>
         <tbody>
           {sorted.map((row, i) => (
-            <tr key={row.name} className="rise border-b border-line/60" style={{ '--i': Math.min(i, 10) } as CSSProperties}>
+            <tr key={row.name} className="border-b border-line/60">
               <td className="display py-3 pr-4 text-xl font-bold">{row.name}</td>
               <td className="py-3 pr-4 text-right text-lg">{formatCount(row.matches)}</td>
               <td className="py-3 pr-4 text-right">
                 <span className="inline-flex items-center justify-end gap-3">
-                  <span aria-hidden="true" className="hidden h-1.5 w-24 bg-loss/40 sm:block">
-                    <span className="bar-in block h-full bg-win" style={{ width: `${(row.winRate ?? 0) * 100}%`, '--i': i } as CSSProperties} />
+                  <span aria-hidden="true" className={`hidden h-1.5 w-24 sm:block ${row.winRate == null ? '' : 'bg-loss/40'}`}>
+                    {row.winRate != null && (
+                      <span className="bar-in block h-full bg-win" style={{ width: `${row.winRate * 100}%`, '--i': i } as CSSProperties} />
+                    )}
                   </span>
                   <span className="w-16 text-lg">{formatPercent(row.winRate)}</span>
                 </span>
               </td>
               <td className="py-3 pr-4 text-right text-lg font-semibold">{formatKd(row.kdRatio)}</td>
-              <td className="py-3 pr-4 text-right text-lg">{formatKd(row.averageKills)}</td>
+              <td className="py-3 pr-4 text-right text-lg">{formatAverage(row.averageKills)}</td>
               <td className="py-3 text-right text-lg text-muted">{formatCount(row.averageScore == null ? null : Math.round(row.averageScore))}</td>
             </tr>
           ))}
