@@ -53,6 +53,43 @@ public class StatsTests
         new(Guid.NewGuid(), Game.Mw4Multiplayer, DateTimeOffset.UnixEpoch.AddMinutes(minute), kills, deaths, null, result, null);
 
     [Fact]
+    public void Longest_win_streak_skips_left_matches_and_breaks_on_losses()
+    {
+        MatchFacts Left(int minute) => Mw4(5, 5, null, minute) with { Status = MatchStatus.Left };
+        var stats = StatsCalculator.Compute(GameGroup.Mw4, [
+            Mw4(5, 5, MatchResult.Win, 1), Mw4(5, 5, MatchResult.Win, 2), Mw4(5, 5, MatchResult.Loss, 3),
+            Mw4(5, 5, MatchResult.Win, 4), Left(5), Mw4(5, 5, MatchResult.Win, 6), Mw4(5, 5, MatchResult.Win, 7),
+        ]);
+        Assert.Equal(3, stats.LongestWinStreak);
+        Assert.Equal(1, stats.LeftMatches);
+        Assert.Equal(5.0 / 6, stats.WinRate!.Value, 3);
+    }
+
+    [Fact]
+    public void Best_match_is_the_newest_with_the_most_kills_and_averages_skip_unknowns()
+    {
+        var first = Mw4(30, 5, MatchResult.Win, 1) with { Score = 4000, Xp = 10_000 };
+        var second = Mw4(30, 9, MatchResult.Loss, 2) with { Score = 2000 };
+        var stats = StatsCalculator.Compute(GameGroup.Mw4, [first, second, Mw4(3, 9, MatchResult.Loss, 3)]);
+        Assert.Equal(second.Id, stats.BestMatchId);
+        Assert.Equal(3000, stats.AverageScore);
+        Assert.Equal(10_000, stats.AverageXp);
+    }
+
+    [Fact]
+    public void Breakdown_groups_names_regardless_of_case()
+    {
+        var stats = StatsCalculator.Compute(GameGroup.Mw4, [
+            Mw4(10, 5, MatchResult.Win, 1) with { Mode = "Kapern" }, Mw4(10, 10, MatchResult.Loss, 2) with { Mode = "KAPERN" },
+            Mw4(1, 1, MatchResult.Win, 3) with { Mode = null },
+        ]);
+        var kapern = Assert.Single(stats.ByMode!);
+        Assert.Equal("KAPERN", kapern.Name);
+        Assert.Equal(2, kapern.Matches);
+        Assert.Equal(1.33, kapern.KdRatio);
+    }
+
+    [Fact]
     public void Kd_is_total_kills_over_total_deaths_not_the_average_of_ratios()
     {
         // Match ratios 10.0 and 0.0 average to 5.0; the correct K/D is 10 / 11.
@@ -169,7 +206,25 @@ public class MatchRuleTests
         Valid() with { Game = Game.WarzoneBattleRoyale, Placement = 1, Result = MatchResult.Loss },
         Valid() with { Game = Game.WarzoneBattleRoyale, Placement = 0 },
         Valid() with { Game = Game.WarzoneResurgence, Placement = 4, Result = MatchResult.Draw },
+        Valid() with { Status = MatchStatus.Left },
+        Valid() with { Details = new(Xp: -1) },
+        Valid() with { Details = new(Level: 0) },
+        Valid() with { Details = new(TeamScore: 1_000_000) },
+        Valid() with { Details = new(ModeStats: new Dictionary<string, int> { ["Captures!"] = 2 }) },
+        Valid() with { Details = new(ModeStats: new Dictionary<string, int> { ["captures"] = -2 }) },
+        Valid() with { Details = new(ModeStats: Enumerable.Range(0, 13).ToDictionary(i => $"s{i}", i => i)) },
     };
+
+    [Fact]
+    public void A_match_with_all_details_is_plausible() =>
+        Assert.Empty(MatchRules.Validate(Valid() with
+        {
+            Details = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }),
+        }, Now));
+
+    [Fact]
+    public void A_left_match_without_result_is_plausible() =>
+        Assert.Empty(MatchRules.Validate(Valid() with { Status = MatchStatus.Left, Result = null }, Now));
 
     [Theory]
     [InlineData("  ShadowPlayer  ", "ShadowPlayer")]

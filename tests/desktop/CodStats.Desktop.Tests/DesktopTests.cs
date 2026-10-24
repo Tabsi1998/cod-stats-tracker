@@ -99,6 +99,57 @@ public class MatchStoreTests
     }
 }
 
+public class MatchStoreUpgradeTests
+{
+    [Fact]
+    public void Status_and_details_are_stored_and_read_back()
+    {
+        using var temp = new TempFolder();
+        var store = new MatchStore(temp.File("m.db"));
+        store.Initialise();
+        var details = new MatchDetails(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2 });
+        var left = Local.Mw4(3, 5) with { Result = null, Status = MatchStatus.Left };
+        store.Add(left);
+        store.Add(Local.Mw4(8, 8) with { Details = details });
+
+        var read = store.All().ToDictionary(m => m.Kills!.Value);
+        Assert.Equal(MatchStatus.Left, read[3].Status);
+        Assert.Null(read[3].Details);
+        Assert.Equal(12410, read[8].Details!.Xp);
+        Assert.Equal(2, read[8].ToUpload().Details!.ModeStats!["captures"]);
+    }
+
+    [Fact]
+    public void A_database_of_an_older_client_is_upgraded()
+    {
+        using var temp = new TempFolder();
+        var path = temp.File("old.db");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            // The table as v0.1.x created it, with one match in it.
+            command.CommandText = """
+                CREATE TABLE matches (id TEXT PRIMARY KEY, game TEXT NOT NULL, mode TEXT, played_at TEXT NOT NULL, kills INTEGER,
+                    deaths INTEGER, assists INTEGER, result TEXT, placement INTEGER, map TEXT, score INTEGER, confidence REAL NOT NULL,
+                    review_status TEXT NOT NULL, recognizer_version TEXT, sync_state TEXT NOT NULL, sync_error TEXT, created_at TEXT NOT NULL);
+                INSERT INTO matches VALUES ('8e5a6c1f-31b1-4a8b-9d1e-1c2b3a4d5e6f', 'mw4_mp', 'TDM', '2026-10-24T10:00:00.0000000+00:00',
+                    25, 12, 5, 'win', NULL, NULL, 3585, 0.97, 'auto', 'ocr-0.1', 'Synced', NULL, '2026-10-24T10:05:00.0000000+00:00');
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var store = new MatchStore(path);
+        store.Initialise();
+        store.Initialise(); // a second start must not add the columns again
+
+        var old = Assert.Single(store.All());
+        Assert.Equal(MatchStatus.Completed, old.Status);
+        Assert.Null(old.Details);
+        Assert.True(store.Add(Local.Mw4(1, 1) with { Details = new MatchDetails(Xp: 900) }));
+    }
+}
+
 public class IdentityTests
 {
     [Fact]

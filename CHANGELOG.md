@@ -4,6 +4,17 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Hinzugefügt
+- Server und Client speichern alle erkannten Werte: Status (beendet/verlassen), Eliminierungen, Endstand, XP, Level und Modus-Werte; ältere Clients laden weiter ohne sie hoch.
+- Auswertung: Verlassen-Quote, längste Siegesserie, bestes Match, Ø Punkte, Ø XP, XP gesamt, Eliminierungen gesamt.
+- Auswertung nach Modus und nach Karte (Matches, Siegquote, K/D, Ø Kills, Ø Punkte).
+- Öffentlicher Endpunkt für ein einzelnes Match (`/api/v1/public/players/{id}/matches/{matchId}`) für die Match-Detailseite.
+- Ranglisten lassen sich auf einen Modus begrenzen (`mode=`).
+
+### Geändert
+- Verlassene Matches gehen automatisch hoch, wenn der Matchbeginn erkannt wurde; sie zählen für K/D und Kills, nicht für die Siegquote.
+- Windows-Client: Match-Liste zeigt „Verlassen“.
+
 ### Behoben
 - Windows-Client: Rundenergebnisse (Kollateral, Front, Kapern) wurden als ganzes Match gezählt; ein Match zählt jetzt erst, wenn Einsatzbericht oder Lobby folgen.
 - Windows-Client: Endergebnisse mit schwer lesbarem Banner (z. B. Kapern-Sieg) wurden verpasst.
