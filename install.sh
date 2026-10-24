@@ -55,6 +55,18 @@ if [[ "$MODE" == "proxy" ]]; then
   [[ "$PROXY_IP" =~ ^[0-9A-Za-z_.:/\ ]+$ ]] || die "Ungültige Proxy-Adresse: $PROXY_IP"
 fi
 
+# Other services may already run on this server: refuse a taken port before anything is set up.
+case "$MODE" in
+  local) NEEDED=(8080) ;;
+  proxy) NEEDED=("$PORT") ;;
+  domain) NEEDED=(80 443) ;;
+esac
+for p in "${NEEDED[@]}"; do
+  if port_in_use "$p"; then
+    die "Port $p ist auf diesem Server schon belegt. Anderen Port wählen, z. B. ./install.sh --behind-proxy --port 8095"
+  fi
+done
+
 # 32 zufällige Bytes, ohne Zeichen, die in einer Verbindungszeichenkette stören.
 PASSWORD="$(head -c 32 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40)"
 
@@ -64,8 +76,6 @@ case "$MODE" in
     cat >"$ENV_FILE" <<EOF
 SITE_ADDRESS=http://localhost
 HTTP_PORT=8080
-HTTPS_BIND=127.0.0.1
-HTTPS_PORT=8443
 POSTGRES_PASSWORD=$PASSWORD
 LEADERBOARD_MIN_MATCHES=3
 EOF
@@ -74,8 +84,6 @@ EOF
     cat >"$ENV_FILE" <<EOF
 SITE_ADDRESS=:80
 HTTP_PORT=$PORT
-HTTPS_BIND=127.0.0.1
-HTTPS_PORT=8443
 TRUSTED_PROXIES=$PROXY_IP
 POSTGRES_PASSWORD=$PASSWORD
 LEADERBOARD_MIN_MATCHES=20

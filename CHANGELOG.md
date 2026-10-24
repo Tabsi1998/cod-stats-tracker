@@ -9,6 +9,7 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ### Behoben
 - Release-Notizen auf GitHub zeigen Umlaute richtig.
+- Hinter eigenem Reverse Proxy wird kein HTTPS-Port mehr geöffnet; `install.sh` bricht bei einem schon belegten Port mit klarer Meldung ab.
 
 ## [0.1.0] - 2026-10-24
 
