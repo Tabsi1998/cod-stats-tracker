@@ -4,6 +4,10 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Behoben
+- Webseite: Nach jedem Seitenwechsel blieb die Seite dunkel und leer (neuere Chrome-Versionen); Neuladen war nötig.
+- Webseite: Eine fehlerhafte Seite zeigt jetzt eine Meldung mit „Neu laden“ statt einer leeren Fläche; nach einem Update lädt die Seite fehlende Dateien selbst neu, und die Startseite wird nicht mehr zwischengespeichert.
+
 ### Geändert
 - Sichtbarkeit pro Match: Öffentlich schalten zeigt alle bisherigen Matches; privat schalten lässt bereits gezeigte Matches stehen und zeigt nur neue nicht mehr. Hochgeladen wird immer.
 - Windows-Client: Bei der Einrichtung ist „Zustimmen, öffentlich zeigen“ die hervorgehobene Standardwahl; „nur für mich“ bleibt eine Taste daneben und ist jederzeit in den Einstellungen änderbar.

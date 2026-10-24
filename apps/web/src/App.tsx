@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation } from 'react-router'
 import { Home } from './pages/Home'
 import { Leaderboards } from './pages/Leaderboards'
 import { Search, SearchBox } from './pages/Search'
+import { PageErrorBoundary } from './errors'
 import { Message, Skeleton } from './ui'
 
 // Profile and match pages carry the charts; they load when first opened.
@@ -22,8 +23,11 @@ function Mark() {
 
 export function App() {
   const location = useLocation()
-  // A new page starts at the top, as a link to another match should.
-  useEffect(() => window.scrollTo({ top: 0 }), [location.pathname])
+  // A new page starts at the top, as a link to another match should. A block, not an expression: newer browsers
+  // return a promise from scrollTo, which React would take for a cleanup function and crash on the next page.
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [location.pathname])
 
   const nav = ({ isActive }: { isActive: boolean }) =>
     `display relative px-1 py-1 text-lg font-bold tracking-[0.1em] transition-colors duration-200 ${isActive ? 'text-text' : 'text-muted hover:text-text'}`
@@ -51,16 +55,18 @@ export function App() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 sm:px-6">
-        <Suspense fallback={<Skeleton className="mt-10 h-96" />}>
-          <Routes>
-            <Route index element={<Home />} />
-            <Route path="search" element={<Search />} />
-            <Route path="player/:id" element={<Player />} />
-            <Route path="player/:id/match/:matchId" element={<MatchPage />} />
-            <Route path="leaderboards" element={<Leaderboards />} />
-            <Route path="*" element={<Message>Diese Seite gibt es nicht.</Message>} />
-          </Routes>
-        </Suspense>
+        <PageErrorBoundary key={location.pathname}>
+          <Suspense fallback={<Skeleton className="mt-10 h-96" />}>
+            <Routes>
+              <Route index element={<Home />} />
+              <Route path="search" element={<Search />} />
+              <Route path="player/:id" element={<Player />} />
+              <Route path="player/:id/match/:matchId" element={<MatchPage />} />
+              <Route path="leaderboards" element={<Leaderboards />} />
+              <Route path="*" element={<Message>Diese Seite gibt es nicht.</Message>} />
+            </Routes>
+          </Suspense>
+        </PageErrorBoundary>
       </main>
       <footer className="border-t border-line/70 bg-deep/60">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-6 text-sm text-faint sm:flex-row sm:justify-between sm:px-6">
