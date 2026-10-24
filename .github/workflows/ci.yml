@@ -71,6 +71,13 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Shellcheck
         run: shellcheck -x -S warning install.sh update.sh backup.sh restore.sh start.sh stop.sh scripts/server-common.sh
+      - name: install.sh refuses a port that is already taken
+        run: |
+          python3 -m http.server 8095 >/dev/null 2>&1 &
+          sleep 1
+          if ./install.sh --behind-proxy --port 8095; then echo "installed on a taken port"; exit 1; fi
+          test ! -f deploy/.env
+          kill %1
       - name: install.sh behind a reverse proxy (Fabian's setup), as on a fresh server
         run: ./install.sh --behind-proxy --port 8080
       - name: End-to-end checks
@@ -92,6 +99,8 @@ jobs:
           ./update.sh --skip-pull
           test "$(ls -1 backups/*.dump | wc -l)" -ge 2
           curl -fs http://localhost:8080/health
+      - name: No HTTPS port behind a proxy
+        run: "! docker ps --format '{{.Ports}}' | grep -q ':443->'"
       - name: stop.sh and start.sh
         run: |
           ./stop.sh

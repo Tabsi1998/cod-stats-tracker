@@ -40,6 +40,9 @@ jobs:
       - run: python scripts/local_check.py --only desktop --release --version ${{ steps.version.outputs.version }}
       - name: Release notes from CHANGELOG.md
         shell: bash
+        env:
+          # Python on the Windows runner writes cp1252 otherwise, which garbled the umlauts of v0.1.0.
+          PYTHONIOENCODING: utf-8
         run: |
           python - "${{ steps.version.outputs.version }}" > notes.md <<'EOF'
           import re, sys

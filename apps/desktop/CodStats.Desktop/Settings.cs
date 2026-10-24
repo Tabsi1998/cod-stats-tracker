@@ -6,7 +6,8 @@ namespace CodStats.Desktop;
 
 public sealed class Settings
 {
-    public string ServerUrl { get; set; } = "https://stats.example.com";
+    /// <summary>The project's own server. Self-hosters change it in the setup window or the settings.</summary>
+    public string ServerUrl { get; set; } = "https://codstats.tabelander.co.at";
 
     /// <summary>When the player agreed to screen recognition and upload. Nothing runs before.</summary>
     public DateTimeOffset? ConsentGivenAt { get; set; }

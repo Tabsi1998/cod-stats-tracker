@@ -14,7 +14,16 @@ red()    { printf "\033[0;31m%s\033[0m\n" "$1" >&2; }
 die()    { red "✗ $1"; exit 1; }
 
 compose() {
-  docker compose --project-directory "$DEPLOY_DIR" -f "$DEPLOY_DIR/docker-compose.yml" --env-file "$ENV_FILE" "$@"
+  local files=(-f "$DEPLOY_DIR/docker-compose.yml")
+  if grep -qE '^HTTPS_PORT=' "$ENV_FILE" 2>/dev/null; then
+    files+=(-f "$DEPLOY_DIR/docker-compose.https.yml")
+  fi
+  docker compose --project-directory "$DEPLOY_DIR" "${files[@]}" --env-file "$ENV_FILE" "$@"
+}
+
+# True when something on this server already listens on the TCP port.
+port_in_use() {
+  command -v ss >/dev/null 2>&1 && ss -Hltn "sport = :$1" 2>/dev/null | grep -q .
 }
 
 require_tools() {

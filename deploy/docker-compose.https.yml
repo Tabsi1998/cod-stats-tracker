@@ -1,0 +1,6 @@
+# Added by the scripts only when deploy/.env sets HTTPS_PORT: this server terminates HTTPS itself (install.sh
+# --domain). Behind your own reverse proxy no HTTPS port is opened at all.
+services:
+  web:
+    ports:
+      - "${HTTPS_BIND:-0.0.0.0}:${HTTPS_PORT:-443}:443"
