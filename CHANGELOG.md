@@ -4,6 +4,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-24
+
 ### Hinzugefügt
 - Server und Client speichern alle erkannten Werte: Status (beendet/verlassen), Eliminierungen, Endstand, XP, Level und Modus-Werte; ältere Clients laden weiter ohne sie hoch.
 - Auswertung: Verlassen-Quote, längste Siegesserie, bestes Match, Ø Punkte, Ø XP, XP gesamt, Eliminierungen gesamt.
@@ -19,6 +21,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Windows-Client: Match-Liste zeigt „Verlassen“.
 - Webseite: neues Design „Taktisches HUD“ (eigene Schriften, Eckwinkel-Rahmen wie im Einsatzbericht, Cyan = Sieg, Orange = Niederlage, Gelb = du), Animationen beim ersten Anzeigen; mit „Bewegung reduzieren“ im System bleibt alles ruhig.
 - Webseite: Profil- und Match-Seiten laden ihre Diagramme erst bei Bedarf (kleinerer erster Download).
+
+### Behoben
+- Windows-Client: Wechselte das Spiel nach dem Start des Clients seine Auflösung (z. B. von 2560x1440 auf 3840x2160), wurde nur noch ein Bildausschnitt aufgenommen und kein Match mehr erkannt; die Aufnahme folgt jetzt jeder Größenänderung.
 
 ## [0.1.2] - 2026-10-24
 
@@ -68,7 +73,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Tabsi1998/cod-stats-tracker/releases/tag/v0.1.0
