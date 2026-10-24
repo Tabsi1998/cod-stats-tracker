@@ -1,4 +1,4 @@
-import type { Game, GameGroup, LeaderboardMetric, MatchResult } from './api'
+import type { Game, GameGroup, LeaderboardMetric, MatchResult, PublicMatch } from './api'
 
 const number = new Intl.NumberFormat('de-AT')
 const decimal = new Intl.NumberFormat('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -35,6 +35,64 @@ export const gameLabels: Record<Game, string> = {
 
 export const resultLabels: Record<MatchResult, string> = { win: 'Sieg', loss: 'Niederlage', draw: 'Unentschieden' }
 
+/** How a match ended, for colour and label: the game's own words. */
+export type Outcome = MatchResult | 'left' | 'unknown'
+
+export function outcomeOf(match: Pick<PublicMatch, 'status' | 'result'>): Outcome {
+  if (match.status === 'left') return 'left'
+  return match.result ?? 'unknown'
+}
+
+export const outcomeLabels: Record<Outcome, string> = { ...resultLabels, left: 'Verlassen', unknown: 'Ohne Ergebnis' }
+
+/** Text colour per outcome (Tailwind classes from the theme). */
+export const outcomeText: Record<Outcome, string> = {
+  win: 'text-win',
+  loss: 'text-loss',
+  draw: 'text-draw',
+  left: 'text-left',
+  unknown: 'text-muted',
+}
+
+/** Background per outcome, for form cells and tags. */
+export const outcomeFill: Record<Outcome, string> = {
+  win: 'bg-win',
+  loss: 'bg-loss',
+  draw: 'bg-draw',
+  left: 'bg-left',
+  unknown: 'bg-line',
+}
+
+/** Mode values as the after-action report names them. Unknown keys are shown in readable form. */
+const modeStatLabels: Record<string, string> = {
+  captures: 'Erobert',
+  data_uploaded: 'Daten hochgeladen',
+  confirms: 'Bestätigt',
+  denies: 'Verweigert',
+  defends: 'Verteidigt',
+  objective_time: 'Zielzeit',
+  plants: 'Gelegt',
+  defuses: 'Entschärft',
+}
+
+export function modeStatLabel(key: string): string {
+  const known = modeStatLabels[key]
+  if (known) return known
+  const words = key.replaceAll('_', ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/** K/D of one match; null when either value is unknown. With 0 deaths it is the kill count, as in the totals. */
+export function matchKd(kills: number | null, deaths: number | null): number | null {
+  if (kills == null || deaths == null) return null
+  return deaths > 0 ? Math.round((kills / deaths) * 100) / 100 : kills
+}
+
+const weekday = new Intl.DateTimeFormat('de-AT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const clock = new Intl.DateTimeFormat('de-AT', { hour: '2-digit', minute: '2-digit' })
+export const formatLongDate = (iso: string) => weekday.format(new Date(iso))
+export const formatTime = (iso: string) => clock.format(new Date(iso))
+
 export const metricLabels: Record<LeaderboardMetric, string> = {
   kd: 'Höchste K/D',
   kills: 'Meiste Kills',
@@ -52,3 +110,19 @@ export function formatMetric(metric: LeaderboardMetric, value: number): string {
       return formatCount(value)
   }
 }
+
+/** MW4 modes the client recognises, as the game writes them. */
+export const mw4Modes = [
+  'TEAM-DEATHMATCH',
+  'HERRSCHAFT',
+  'STELLUNG',
+  'ABSCHUSS BESTÄTIGT',
+  'FREI FÜR ALLE',
+  'KAPERN',
+  'FRONT',
+  'KOLLATERAL',
+  'INFLATION',
+  'KILL BLOCK',
+  'SUCHEN & ZERSTÖREN',
+  'WAFFENSPIEL',
+] as const

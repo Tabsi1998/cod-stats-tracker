@@ -1,19 +1,21 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { api, type GameGroup, type LeaderboardMetric } from '../api'
-import { formatCount, formatMetric, groupLabels, metricLabels } from '../format'
+import { formatCount, formatMetric, groupLabels, metricLabels, mw4Modes } from '../format'
 import { useLoad } from '../load'
-import { Card, CommunityNote, GameSwitch, Message, Segmented } from '../ui'
+import { Bracket, CommunityNote, GameSwitch, Message, Segmented, Skeleton } from '../ui'
 
 export function Leaderboards() {
   const [game, setGame] = useState<GameGroup>('mw4')
   const [metric, setMetric] = useState<LeaderboardMetric>('kd')
-  const board = useLoad(() => api.leaderboard(game, metric), [game, metric])
+  const [mode, setMode] = useState('')
+  const board = useLoad(() => api.leaderboard(game, metric, mode || undefined), [game, metric, mode])
+  const top = board.state === 'ready' ? Math.max(...board.data.entries.map((e) => e.value), 0) : 0
 
   return (
-    <div className="space-y-6">
-      <h1 className="pt-4 text-3xl font-bold tracking-tight">Rankings</h1>
-      <div className="flex flex-wrap gap-3">
+    <div className="space-y-8 pt-10">
+      <h1 className="display text-5xl font-extrabold">Rankings</h1>
+      <div className="flex flex-wrap items-center gap-3">
         <GameSwitch value={game} onChange={setGame} />
         <Segmented
           label="Wertung"
@@ -21,44 +23,74 @@ export function Leaderboards() {
           onChange={setMetric}
           options={(Object.keys(metricLabels) as LeaderboardMetric[]).map((key) => ({ value: key, label: metricLabels[key] }))}
         />
-      </div>
-      <Card>
-        <h2 className="mb-1 font-semibold">
-          {metricLabels[metric]} · {groupLabels[game]}
-        </h2>
-        {board.state === 'ready' && (
-          <p className="mb-3 text-xs text-muted">Nur Spieler mit mindestens {board.data.minMatches} erfassten Matches.</p>
-        )}
-        {board.state === 'loading' && <Message>Wird geladen …</Message>}
-        {board.state === 'error' && <Message>Rankings konnten nicht geladen werden.</Message>}
-        {board.state === 'ready' && board.data.entries.length === 0 && <Message>Noch niemand erfüllt die Mindestanzahl.</Message>}
-        {board.state === 'ready' && board.data.entries.length > 0 && (
-          <table className="tabular w-full text-sm">
-            <thead className="text-left text-xs uppercase text-muted">
-              <tr>
-                <th className="w-12 py-2 font-medium">#</th>
-                <th className="py-2 font-medium">Spieler</th>
-                <th className="py-2 text-right font-medium">Matches</th>
-                <th className="py-2 text-right font-medium">Wert</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {board.data.entries.map((entry) => (
-                <tr key={entry.playerId}>
-                  <td className="py-2 text-muted">{entry.rank}</td>
-                  <td className="py-2">
-                    <Link to={`/player/${entry.playerId}`} className="hover:text-accent">
-                      {entry.displayName}
-                    </Link>
-                  </td>
-                  <td className="py-2 text-right text-muted">{formatCount(entry.matches)}</td>
-                  <td className="py-2 text-right font-medium">{formatMetric(metric, entry.value)}</td>
-                </tr>
+        {game !== 'warzone' && (
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Modus</span>
+            <select
+              value={mode}
+              onChange={(event) => setMode(event.target.value)}
+              className="display border border-line bg-deep/70 px-3 py-2 text-[0.95rem] font-semibold tracking-[0.06em] text-text outline-none focus:border-you"
+            >
+              <option value="">Alle Modi</option>
+              {mw4Modes.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </label>
         )}
-      </Card>
+      </div>
+
+      <Bracket className="px-1 py-2 sm:px-3" label={`${metricLabels[metric]}, ${groupLabels[game]}`}>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 px-3 pt-3">
+          <h2 className="display text-2xl font-bold">
+            {metricLabels[metric]} · {mode || groupLabels[game]}
+          </h2>
+          {board.state === 'ready' && <p className="text-sm text-faint">ab {board.data.minMatches} erfassten Matches</p>}
+        </div>
+        {board.state === 'loading' && (
+          <div className="space-y-px p-3">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
+        )}
+        {board.state === 'error' && <Message>Rankings konnten nicht geladen werden.</Message>}
+        {board.state === 'ready' && board.data.entries.length === 0 && (
+          <Message>Noch niemand hat genug Matches{mode ? ` in ${mode}` : ''} für ein Ranking.</Message>
+        )}
+        {board.state === 'ready' && board.data.entries.length > 0 && (
+          <ol className="mt-2">
+            {board.data.entries.map((entry, i) => {
+              const podium = entry.rank <= 3
+              return (
+                <li key={entry.playerId} className="rise" style={{ '--i': Math.min(i, 12) } as CSSProperties}>
+                  <Link
+                    to={`/player/${entry.playerId}`}
+                    className="group relative grid grid-cols-[3rem_1fr_auto] items-center gap-3 px-3 py-3 transition-colors duration-200 hover:bg-surface sm:grid-cols-[4rem_1fr_7rem_8rem]"
+                  >
+                    <span className={`display text-3xl font-extrabold ${entry.rank === 1 ? 'text-you' : podium ? 'text-text' : 'text-faint'}`}>
+                      {entry.rank}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="display block truncate text-xl font-bold group-hover:text-you">{entry.displayName}</span>
+                      <span aria-hidden="true" className="mt-1.5 block h-1 bg-line/50">
+                        <span
+                          className={`bar-in block h-full ${entry.rank === 1 ? 'bg-you' : 'bg-win/70'}`}
+                          style={{ width: `${top > 0 ? (entry.value / top) * 100 : 0}%`, '--i': Math.min(i, 12) } as CSSProperties}
+                        />
+                      </span>
+                    </span>
+                    <span className="hidden text-right text-muted sm:block">{formatCount(entry.matches)} Matches</span>
+                    <span className="display text-right text-3xl font-bold">{formatMetric(metric, entry.value)}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+      </Bracket>
       <CommunityNote />
     </div>
   )
