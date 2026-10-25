@@ -185,6 +185,14 @@ public class GameWatcherTests
         watcher.SetEnabled(false);
         Assert.Equal(TrackerState.TrackingOff, watcher.State);
     }
+
+    [Theory]
+    [InlineData(1, 2, 1, true)] // the splash window was replaced by the game window: as seen live on 25.10.
+    [InlineData(1, 1, 1, false)] // a moment without a frame on the same window
+    [InlineData(1, 0, 1, false)] // the game is closing: nothing to switch to
+    [InlineData(1, 1, RecognitionLoop.MaxMissedFrames, true)]
+    public void Capture_starts_over_on_a_new_window_or_a_long_silence(int captured, int current, int missed, bool expected) =>
+        Assert.Equal(expected, RecognitionLoop.NeedsNewCapture(captured, current, missed));
 }
 
 public class ProcessNameTests

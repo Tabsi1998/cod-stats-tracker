@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Behoben
+- Windows-Client: Startete er, während das Spiel noch sein kleines Startfenster zeigte, erkannte er danach nichts mehr (das Spiel öffnet ein neues Hauptfenster). Die Aufnahme wechselt jetzt auf das neue Fenster und startet nach 10 Sekunden ohne Bild neu.
+
 ### Hinzugefügt
 - Lobby-Vergleich: Der Client liest auf dem End-Scoreboard, wie viele Spieler in der Lobby waren und auf welchem Platz du nach Punkten gelandet bist. Übertragen werden nur diese zwei Zahlen, keine Namen und keine Werte anderer Spieler. Die Match-Seite zeigt „Platz 3 von 12“, das Profil den Anteil der Lobby hinter dir (über alle Matches summiert). Bei unsicherer Lesung bleibt die Lobby leer, das Match zählt trotzdem.
 - Top-Waffe und Waffenklasse aus dem Einsatzbericht (TOPLEISTUNG), auf der Match-Seite angezeigt. Gespeichert wird nur ein Name aus der Waffenliste des Erkennungsprofils; eine unbekannte Waffe bleibt leer und steht im Client-Log.
