@@ -15,7 +15,9 @@ public sealed record MatchFacts(
     string? Map = null,
     int? Score = null,
     int? Eliminations = null,
-    int? Xp = null);
+    int? Xp = null,
+    int? LobbySize = null,
+    int? LobbyRank = null);
 
 /// <summary>Which matches a statistic covers. At most one of Last and Days/From/To should be set.</summary>
 public sealed record StatsFilter(GameGroup Game = GameGroup.All, int? Last = null, int? Days = null,
@@ -83,13 +85,21 @@ public static class StatsCalculator
     public static double? WinRate(int wins, int withResult) =>
         withResult > 0 ? Math.Round((double)wins / withResult, 4) : null;
 
+    /// <summary>
+    /// Share of the other players in the player's lobbies who ended with fewer points: summed over the matches
+    /// (players behind / other players), like K/D, never the average of per-match shares.
+    /// </summary>
+    public static double? LobbyShare(long behind, long others) =>
+        others > 0 ? Math.Round((double)behind / others, 4) : null;
+
     public static StatsResponse Compute(GameGroup group, IReadOnlyList<MatchFacts> matchesOldestFirst)
     {
         ArgumentNullException.ThrowIfNull(matchesOldestFirst);
         int kdKills = 0, kdDeaths = 0, kills = 0, deaths = 0, assists = 0, wins = 0, withResult = 0;
         int killMatches = 0, placementSum = 0, placementMatches = 0;
         int left = 0, eliminations = 0, streak = 0, longestStreak = 0;
-        long scoreSum = 0, xpSum = 0;
+        long scoreSum = 0, xpSum = 0, lobbyBehind = 0, lobbyOthers = 0;
+        int lobbyMatches = 0;
         int scoreMatches = 0, xpMatches = 0;
         int? best = null;
         Guid? bestMatch = null;
@@ -114,6 +124,12 @@ public static class StatsCalculator
             {
                 xpSum += xp;
                 xpMatches++;
+            }
+            if (match.LobbySize is { } size && match.LobbyRank is { } rank && size > 1 && rank >= 1 && rank <= size)
+            {
+                lobbyMatches++;
+                lobbyBehind += size - rank;
+                lobbyOthers += size - 1;
             }
             if (match.Kills is { } k)
             {
@@ -177,7 +193,9 @@ public static class StatsCalculator
             bestMatch,
             withResult > 0 ? longestStreak : null,
             Breakdown(matchesOldestFirst, m => m.Mode),
-            Breakdown(matchesOldestFirst, m => m.Map));
+            Breakdown(matchesOldestFirst, m => m.Map),
+            lobbyMatches,
+            LobbyShare(lobbyBehind, lobbyOthers));
     }
 
     /// <summary>

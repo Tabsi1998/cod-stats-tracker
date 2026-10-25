@@ -239,6 +239,7 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
     ['XP pro Match', formatCount(stats.averageXp == null ? null : Math.round(stats.averageXp))],
   ]
   if (stats.averagePlacement != null) details.push(['Platzierung im Schnitt', formatAverage(stats.averagePlacement)])
+  if (stats.lobbyMatches > 0) details.push(['Lobby hinter dir', formatPercent(stats.lobbyShare)])
 
   return (
     <div className="space-y-12">
