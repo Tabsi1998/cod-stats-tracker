@@ -59,7 +59,44 @@
         "width": 0.3,
         "height": 0.034
       },
-      "withoutModes": true
+      "more": [
+        {
+          "x": 0.085,
+          "y": 0.262,
+          "width": 0.3,
+          "height": 0.034,
+          "maxHeight": 40
+        },
+        {
+          "x": 0.085,
+          "y": 0.262,
+          "width": 0.3,
+          "height": 0.034,
+          "minPixelHeight": 120
+        }
+      ],
+      "oneOf": [
+        "CACHETTE",
+        "COAL",
+        "LITHIUM",
+        "LOTUS",
+        "MUMBAI",
+        "MUNITION",
+        "NAUTICAL",
+        "REACTOR U92",
+        "ROOFTOPS",
+        "SENTRY",
+        "SILKWORM",
+        "TRANSIT 213",
+        "SHIPMENT",
+        "CAFE",
+        "LIBRARY",
+        "NYC",
+        "SMUGGLER",
+        "FOREST",
+        "IMJIN FARMLAND",
+        "WOLVES STADIUM"
+      ]
     },
     "scoreline": {
       "region": {
@@ -244,6 +281,64 @@
         "WERFER",
         "NAHKAMPF"
       ]
+    },
+    "teamScore": {
+      "region": {
+        "x": 0.05,
+        "y": 0.26,
+        "width": 0.25,
+        "height": 0.15,
+        "textColour": "cyan",
+        "maxHeight": 120
+      },
+      "more": [
+        {
+          "x": 0.05,
+          "y": 0.26,
+          "width": 0.25,
+          "height": 0.15,
+          "textColour": "cyan",
+          "maxHeight": 160
+        },
+        {
+          "x": 0.05,
+          "y": 0.26,
+          "width": 0.25,
+          "height": 0.15,
+          "textColour": "cyan",
+          "maxHeight": 200
+        }
+      ],
+      "numbers": 1
+    },
+    "enemyScore": {
+      "region": {
+        "x": 0.05,
+        "y": 0.26,
+        "width": 0.25,
+        "height": 0.15,
+        "textColour": "orange",
+        "maxHeight": 120
+      },
+      "more": [
+        {
+          "x": 0.05,
+          "y": 0.26,
+          "width": 0.25,
+          "height": 0.15,
+          "textColour": "orange",
+          "maxHeight": 160
+        },
+        {
+          "x": 0.05,
+          "y": 0.26,
+          "width": 0.25,
+          "height": 0.15,
+          "textColour": "orange",
+          "maxHeight": 200
+        }
+      ],
+      "numbers": 1
     }
   },
   "tiles": {

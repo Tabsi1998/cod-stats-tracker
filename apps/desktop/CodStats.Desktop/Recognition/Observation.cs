@@ -57,6 +57,10 @@ public static class Fields
     /// The final score as "300 0": the own team's, then the enemy's (free-for-all: the player's, then the leader's).
     /// </summary>
     public const string Scoreline = "scoreline";
+
+    /// <summary>The two scores of the report read each in its team colour (see <see cref="TextColour"/>).</summary>
+    public const string TeamScore = "teamScore";
+    public const string EnemyScore = "enemyScore";
     public const string Xp = "xp";
     public const string Level = "level";
 

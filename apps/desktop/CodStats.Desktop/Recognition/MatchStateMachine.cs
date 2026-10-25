@@ -330,6 +330,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         {
             notes.Add($"Waffe nicht in der Liste: '{unread}'");
         }
+        scoreline = Scoreline(scoreline, ColourScore(Fields.TeamScore), ColourScore(Fields.EnemyScore), notes);
         var freeForAll = game?.IsWarzone() != true && TextParsing.ContainsAny(mode ?? "", FreeForAllModes);
         if (!freeForAll && scoreline is [var own, var enemy] && result is { } outcome
             && (outcome == MatchResult.Win ? own <= enemy : outcome == MatchResult.Loss ? own >= enemy : own != enemy))
@@ -399,6 +400,28 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         Phase = MatchPhase.Recorded;
         sawStart = false;
         return candidate;
+    }
+
+    /// <summary>A score of the report read in its team colour, voted over the report's frames; an extra, never a doubt.</summary>
+    private int? ColourScore(string field) =>
+        Vote(reports.Select(r => r.Fields.GetValueOrDefault(field) is { } f ? TextParsing.Count(f.Text).Value : null), out _);
+
+    /// <summary>
+    /// The final score from the line read as a whole and from the two scores read each in its colour: the line when
+    /// the colours agree with it, the colours when the line is unread. When they disagree, neither is trusted.
+    /// </summary>
+    internal static IReadOnlyList<int>? Scoreline(IReadOnlyList<int>? line, int? own, int? enemy, List<string> notes)
+    {
+        if (line is [var a, var b])
+        {
+            if ((own is { } o && o != a) || (enemy is { } e && e != b))
+            {
+                notes.Add($"Endstand {a}:{b} und Farben {(own is { } shownOwn ? shownOwn : "?")}:{(enemy is { } shownEnemy ? shownEnemy : "?")} verschieden, verworfen");
+                return null;
+            }
+            return line;
+        }
+        return own is { } team && enemy is { } other ? [team, other] : null;
     }
 
     /// <summary>What the weapon block held besides its heading (the block is empty until the report loads it).</summary>

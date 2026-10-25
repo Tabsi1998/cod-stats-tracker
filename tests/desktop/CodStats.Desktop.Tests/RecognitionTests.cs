@@ -54,7 +54,7 @@ public class TextParsingTests
         Assert.False(TextParsing.ContainsAny("WIM", ["WIN"]));
     }
 
-    private static readonly string[] Weapons = ["HAN 86", "SANG 9MM", "M4", "KASTOV 762", "PPSH-41"];
+    private static readonly string[] Weapons = ["HAN 86", "SANG 9MM", "M4", "KASTOV 762", "PPSH-41", "REACTOR U92"];
 
     [Theory]
     [InlineData("SANG SMM", "SANG 9MM")] // as read on a real report
@@ -64,6 +64,8 @@ public class TextParsingTests
     [InlineData("KAST0V 762", "KASTOV 762")]
     [InlineData("PPSH 41", "PPSH-41")]
     [InlineData("M4", "M4")]
+    [InlineData("REACTOR IJ92", "REACTOR U92")] // a U read as two strokes
+    [InlineData("REACTOR 1.192", "REACTOR U92")]
     public void A_weapon_is_read_despite_look_alike_characters(string read, string weapon) =>
         Assert.Equal(weapon, TextParsing.OneOf(read, Weapons));
 
@@ -94,6 +96,18 @@ public class TextParsingTests
 
 public class DerivedValueTests
 {
+    [Fact]
+    public void The_final_score_comes_from_the_line_or_from_both_colours()
+    {
+        var notes = new List<string>();
+        Assert.Equal([200, 174], MatchStateMachine.Scoreline([200, 174], 200, null, notes));
+        Assert.Equal([100, 95], MatchStateMachine.Scoreline(null, 100, 95, notes)); // as on 25.10.: the line unread
+        Assert.Null(MatchStateMachine.Scoreline(null, 250, null, notes));
+        Assert.Empty(notes);
+        Assert.Null(MatchStateMachine.Scoreline([0, 174], 200, 174, notes)); // the line misread "200" as "0"
+        Assert.Single(notes);
+    }
+
     [Theory]
     [InlineData(null, 45, 1.67, 27)] // live on 25.10.: the 27 unread, the ratio says it
     [InlineData(27, 45, 1.67, 27)]

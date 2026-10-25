@@ -15,6 +15,12 @@ public sealed record Region(double X, double Y, double Width, double Height)
     public bool WhiteText { get; init; }
 
     /// <summary>
+    /// Like <see cref="WhiteText"/> for coloured text: "cyan" keeps the own team's score, "orange" the enemy's (the
+    /// report prints "100 | 95" in the team colours over a golden background, where the orange is hard to read).
+    /// </summary>
+    public TextColour? TextColour { get; init; }
+
+    /// <summary>
     /// For very large text (the "SIEG" banner is ~190 px tall at 4K): the OCR does not read letters that big, so the
     /// region is scaled to at most this many pixels high before reading. 0 = no limit.
     /// </summary>
@@ -33,6 +39,13 @@ public sealed record Region(double X, double Y, double Width, double Height)
     public int MinPixelHeight { get; init; }
 
     public bool IsValid => X >= 0 && Y >= 0 && Width > 0 && Height > 0 && X + Width <= 1.0001 && Y + Height <= 1.0001;
+}
+
+/// <summary>The team colours of the report's scores.</summary>
+public enum TextColour
+{
+    Cyan,
+    Orange,
 }
 
 /// <summary>
