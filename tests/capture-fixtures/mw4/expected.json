@@ -49,7 +49,9 @@
       "captures": 1
     },
     "weapon": "HAN 86",
-    "weaponClass": "STURMGEWEHR"
+    "weaponClass": "STURMGEWEHR",
+    "teamScore": 101,
+    "enemyScore": 200
   },
   "lobby_kartenabstimmung.jpg": {
     "screen": "lobby",
@@ -142,7 +144,9 @@
       "data_uploaded": 77
     },
     "weapon": "HAN 86",
-    "weaponClass": "STURMGEWEHR"
+    "weaponClass": "STURMGEWEHR",
+    "teamScore": 300,
+    "enemyScore": 0
   },
   "aar_sieg_ffa.jpg": {
     "screen": "afterAction",
@@ -157,7 +161,9 @@
     "xp": 18894,
     "level": 27,
     "weapon": "HAN 86",
-    "weaponClass": "STURMGEWEHR"
+    "weaponClass": "STURMGEWEHR",
+    "teamScore": 25,
+    "enemyScore": 29
   },
   "result_sieg_kapern.jpg": {
     "screen": "result",
@@ -252,7 +258,9 @@
     "absent": [
       "weapon",
       "weaponClass"
-    ]
+    ],
+    "teamScore": 81,
+    "enemyScore": 100
   },
   "aar_niederlage_ffa.jpg": {
     "screen": "afterAction",
@@ -267,7 +275,9 @@
     "level": 43,
     "_note": "OCR reads the weapon as \"SANG SMM\". The cyan \"21\" of the scoreline \"21 | 30\" is read at 4K only (empty below, never wrong): no scoreline expected.",
     "weapon": "SANG 9MM",
-    "weaponClass": "PISTOLE"
+    "weaponClass": "PISTOLE",
+    "teamScore": 21,
+    "enemyScore": 30
   },
   "result_sieg_herrschaft_raw7.jpg": {
     "screen": "result",
@@ -300,7 +310,9 @@
       "weapon",
       "weaponClass"
     ],
-    "_note": "White-filtered passes read the XP as 931; LEVEL 46 is green after a level-up. The map (\"REACTOR U92\") reads differently per size: not checked."
+    "_note": "White-filtered passes read the XP as 931; LEVEL 46 is green after a level-up. The map reads \"REACTOR 092\" at 1080p (unread, not wrong): not checked.",
+    "teamScore": 100,
+    "enemyScore": 95
   },
   "aar_sieg_stellung_sang.jpg": {
     "screen": "afterAction",
@@ -310,7 +322,10 @@
     "xp": 11434,
     "level": 46,
     "weapon": "SANG 9MM",
-    "weaponClass": "PISTOLE"
+    "weaponClass": "PISTOLE",
+    "teamScore": 250,
+    "enemyScore": 211,
+    "map": "MUMBAI"
   },
   "aar_sieg_herrschaft_raw7.jpg": {
     "screen": "afterAction",
@@ -324,6 +339,9 @@
     "stats": {
       "captures": 4
     },
-    "_note": "The kills tile \"34\" stays unread at 1440p (never wrong); the result screen has the kills."
+    "_note": "The kills tile \"34\" stays unread at 1440p (never wrong); the result screen has the kills.",
+    "teamScore": 200,
+    "enemyScore": 174,
+    "map": "REACTOR U92"
   }
 }

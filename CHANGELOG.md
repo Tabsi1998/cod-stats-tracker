@@ -5,6 +5,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Behoben
+- Endstand im Einsatzbericht: Die beiden Zahlen werden zusätzlich je in ihrer Teamfarbe gelesen (Cyan eigenes Team, Orange Gegner, mit Farbfilter). Fehlt die gemeinsame Zeile, setzt sich der Endstand aus beiden Farben zusammen; widersprechen sich die Lesungen, bleibt er leer.
+- Karten werden nur noch als Name aus der offiziellen MW4-Kartenliste gespeichert (z. B. „REACTOR U92“ statt „REACTOR IJ92“); ein unbekannter Name bleibt leer und steht im Client-Log.
 - Tode fehlten oft (z. B. Herrschaft): Die Leiste unter dem Ergebnis wird jetzt in drei Durchgängen gelesen, und die ELIM/T-QUOTE prüft die Tode gegen (45 Eliminierungen bei 1.67 sind nur mit 27 Toden möglich). Fehlen die Tode, aber passt genau ein Wert zur Quote, wird er übernommen; passt der gelesene nicht, kommt das Match zur Prüfung.
 - XP wurden manchmal falsch gelesen (931 statt 9311): mehr Durchgänge ohne Weißfilter, und XP unter den Punkten gelten als Lesefehler und werden verworfen.
 - Level nach einem Level-Up (grüne Schrift) wurde nicht gelesen.

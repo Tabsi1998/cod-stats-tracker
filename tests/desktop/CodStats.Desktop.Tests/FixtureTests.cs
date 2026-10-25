@@ -100,6 +100,14 @@ public class FixtureTests
         {
             Assert.Equal(scoreline.GetString(), Field(Fields.Scoreline));
         }
+        // The scores read in their team colours: often unread, never wrong.
+        foreach (var key in new[] { Fields.TeamScore, Fields.EnemyScore })
+        {
+            if (expected.TryGetProperty(key, out _) && Field(key) != "")
+            {
+                Number(key, key);
+            }
+        }
         foreach (var key in new[] { "map", Fields.Weapon, Fields.WeaponClass })
         {
             if (expected.TryGetProperty(key, out var text))
