@@ -4,8 +4,7 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
-### Behoben
-- Windows-Client: Startete er, während das Spiel noch sein kleines Startfenster zeigte, erkannte er danach nichts mehr (das Spiel öffnet ein neues Hauptfenster). Die Aufnahme wechselt jetzt auf das neue Fenster und startet nach 10 Sekunden ohne Bild neu.
+## [0.2.3] - 2026-10-25
 
 ### Hinzugefügt
 - Lobby-Vergleich: Der Client liest auf dem End-Scoreboard, wie viele Spieler in der Lobby waren und auf welchem Platz du nach Punkten gelandet bist. Übertragen werden nur diese zwei Zahlen, keine Namen und keine Werte anderer Spieler. Die Match-Seite zeigt „Platz 3 von 12“, das Profil den Anteil der Lobby hinter dir (über alle Matches summiert). Bei unsicherer Lesung bleibt die Lobby leer, das Match zählt trotzdem.
@@ -25,6 +24,7 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Assists fehlten in den meisten Modi: Ohne Assist-Spalte rechnet der Client sie aus Eliminierungen − Abschüsse. Passen die drei Werte nicht zusammen, kommt das Match zur Prüfung.
 - Tode kommen aus der eigenen Tabellenzeile, wenn die Tabelle sie zeigt; die Leiste darunter zeigt manchmal einen anderen Spieler.
 - Frei für alle: Ein Platz, der dem Ergebnis (Sieg = Top 3) oder dem Endstand im Einsatzbericht widerspricht, wird verworfen statt gespeichert; ist der Platz unlesbar, aber der Endstand eindeutig vorn, gilt Platz 1.
+- Windows-Client: Startete er, während das Spiel noch sein kleines Startfenster zeigte, erkannte er danach nichts mehr (das Spiel öffnet ein neues Hauptfenster). Die Aufnahme wechselt jetzt auf das neue Fenster und startet nach 10 Sekunden ohne Bild neu.
 
 ## [0.2.2] - 2026-10-24
 
@@ -113,7 +113,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...v0.2.0
