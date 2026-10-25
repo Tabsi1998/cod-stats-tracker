@@ -118,7 +118,7 @@ function Report({ match, playerId, playerName }: { match: PublicMatch; playerId:
 
       {d?.lobbySize != null && d.lobbyRank != null && <Lobby size={d.lobbySize} rank={d.lobbyRank} />}
 
-      {(modeStats.length > 0 || d?.xp != null || d?.level != null) && (
+      {(modeStats.length > 0 || d?.xp != null || d?.level != null || d?.weapon != null) && (
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
           <section>
             <h2 className="display mb-4 text-2xl font-bold">Modus-Werte</h2>
@@ -154,6 +154,14 @@ function Report({ match, playerId, playerName }: { match: PublicMatch; playerId:
                 <dt className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">Level danach</dt>
                 <dd className="display text-5xl font-bold">{d?.level ?? dash}</dd>
               </div>
+              {d?.weapon != null && (
+                <div className="flex flex-col-reverse">
+                  <dt className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">
+                    Top-Waffe{d.weaponClass != null && <span className="text-faint"> · {d.weaponClass}</span>}
+                  </dt>
+                  <dd className="display text-5xl font-bold">{d.weapon}</dd>
+                </div>
+              )}
             </dl>
           </section>
         </div>

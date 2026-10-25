@@ -94,7 +94,7 @@ public class FixtureTests
         {
             Assert.True(placement.GetInt32() == TextParsing.Placement(Field(Fields.Placement)).Value, $"placement: expected {placement}, read '{Field(Fields.Placement)}'");
         }
-        foreach (var key in new[] { "map", "scoreline" })
+        foreach (var key in new[] { "map", "scoreline", Fields.Weapon, Fields.WeaponClass })
         {
             if (expected.TryGetProperty(key, out var text))
             {

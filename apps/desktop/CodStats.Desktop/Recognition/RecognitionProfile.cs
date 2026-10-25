@@ -65,6 +65,13 @@ public sealed record FieldSpec(Region Region)
     /// The text of the lines that do not hold a mode name: the map sits beside the mode ("KAPERN  MUNITION").
     /// </summary>
     public bool WithoutModes { get; init; }
+
+    /// <summary>
+    /// The value is one of these names, as written here ("SANG 9MM" for an OCR "SANG SMM"): every region is a pass,
+    /// each pass must fit exactly one entry (see <see cref="TextParsing.OneOf"/>) and the entry most passes fit wins.
+    /// A text that fits none stays out of the field; new names are added to the profile, not guessed.
+    /// </summary>
+    public IReadOnlyList<string> OneOf { get; init; } = [];
 }
 
 /// <summary>An area with labels and their values below them (field name → label words).</summary>
@@ -159,6 +166,14 @@ public sealed record RecognitionProfile
         if (Screen is ScreenKind.Result or ScreenKind.AfterAction && Game is null) yield return "Ergebnisprofil ohne Spiel";
         if (Fields.Values.Any(f => f.Numbers is < 0 or > 2)) yield return "numbers nur 1 oder 2";
         if (OwnRow is { } row && (row.Tables.Count == 0 || row.Tables.Any(t => !t.Region.IsValid) || row.RowHeight is <= 0 or > 0.2)) yield return "ownRow unplausibel";
+        foreach (var (name, field) in Fields)
+        {
+            // Two entries that look alike to OCR could never be told apart.
+            foreach (var same in field.OneOf.GroupBy(TextParsing.LookAlike).Where(g => g.Count() > 1 || g.Key.Length == 0))
+            {
+                yield return $"{name}.oneOf nicht unterscheidbar: {string.Join(" / ", same)}";
+            }
+        }
     }
 }
 

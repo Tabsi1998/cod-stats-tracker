@@ -153,7 +153,8 @@ if (args.Length >= 2 && args[0] == "replay")
             Console.WriteLine($"  MATCH {candidate.Game} {candidate.Status} {candidate.Mode} @ {candidate.Map} {candidate.Result} {candidate.TeamScore}:{candidate.EnemyScore} " +
                 $"K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} E={candidate.Eliminations} S={candidate.Score} P={candidate.Placement} " +
                 $"XP={candidate.Xp} L={candidate.Level} lobby={candidate.LobbyRank}/{candidate.LobbySize} stats={string.Join(",", candidate.ModeStats.Select(s => $"{s.Key}={s.Value}"))} " +
-                $"conf={candidate.Confidence:0.00} -> {local?.ReviewStatus.ToString() ?? "not stored"} doubts: {string.Join("; ", candidate.Doubts)}");
+                $"weapon={candidate.Weapon}/{candidate.WeaponClass} conf={candidate.Confidence:0.00} -> {local?.ReviewStatus.ToString() ?? "not stored"} " +
+                $"doubts: {string.Join("; ", candidate.Doubts)} notes: {string.Join("; ", candidate.Notes)}");
         }
     }
     Console.WriteLine($"name: confirmed={names.Confirmed ?? "-"} candidate={names.Candidate ?? "-"}");

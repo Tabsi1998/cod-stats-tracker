@@ -178,6 +178,27 @@
       "stat.data_uploaded": [
         "DATEN",
         "DATA"
+      ],
+      "deaths": [
+        "TODE",
+        "DEATHS"
+      ],
+      "stat.confirms": [
+        "BESTÄTIGT",
+        "BESTATIGT",
+        "CONFIRMS"
+      ],
+      "stat.objective_time": [
+        "ZIELZEIT",
+        "OBJECTIVE"
+      ],
+      "stat.plants": [
+        "PLATZIERUNGEN",
+        "PLANTS"
+      ],
+      "stat.defuses": [
+        "ENTSCH",
+        "DEFUSES"
       ]
     }
   },
