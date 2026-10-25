@@ -51,6 +51,8 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             match.Property(m => m.Id).ValueGeneratedNever();
             match.Property(m => m.Mode).HasMaxLength(MatchRules.MaxTextLength);
             match.Property(m => m.Map).HasMaxLength(MatchRules.MaxTextLength);
+            match.Property(m => m.Weapon).HasMaxLength(MatchRules.MaxNameLength);
+            match.Property(m => m.WeaponClass).HasMaxLength(MatchRules.MaxNameLength);
             match.Property(m => m.RecognizerVersion).HasMaxLength(MatchRules.MaxTextLength);
             // Rows from before the status existed are matches played to the end.
             match.Property(m => m.Status).HasDefaultValue(MatchStatus.Completed).HasSentinel((MatchStatus)(-1));

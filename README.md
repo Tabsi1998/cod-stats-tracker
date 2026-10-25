@@ -6,7 +6,8 @@ Live: https://codstats.tabelander.co.at
 
 ## Funktionen
 
-- **Automatische Erkennung (MW4 Multiplayer):** Ergebnisbildschirm, Frei für alle mit Platzierung, Einsatzbericht, Tab-Scoreboard als Rückfallebene, verlassene Matches. Gelesen werden Ergebnis, Modus, Karte, Abschüsse, Tode, Assists, Eliminierungen, Punkte, Endstand, XP, Level und Modus-Werte.
+- **Automatische Erkennung (MW4 Multiplayer):** Ergebnisbildschirm, Frei für alle mit Platzierung, Einsatzbericht, Tab-Scoreboard als Rückfallebene, verlassene Matches. Gelesen werden Ergebnis, Modus, Karte, Abschüsse, Tode, Assists, Eliminierungen, Punkte, Endstand, XP, Level, Modus-Werte und die Top-Waffe.
+- **Lobby-Vergleich:** dein Platz nach Punkten im End-Scoreboard („Platz 3 von 12“). Übertragen werden nur Lobbygröße und Platz, keine fremden Namen oder Werte.
 - **Nur sichere Werte gehen automatisch hoch.** Unsichere Matches bleiben im Client zur Prüfung; nicht Gelesenes bleibt „unbekannt“ statt 0.
 - **Windows-Client im Tray:** eigenes Dashboard mit Filtern und Diagrammen, Match von Hand nachtragen oder korrigieren, Offline-Speicher mit Synchronisierung, Autostart.
 - **Webseite:** Spielersuche, Profile mit Bilanz, Form, Serien, Auswertung nach Modus und Karte, eine eigene Seite je Match, Ranglisten (auch je Modus).

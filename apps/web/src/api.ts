@@ -61,6 +61,9 @@ export interface Stats {
   longestWinStreak: number | null
   byMode: StatsBreakdown[] | null
   byMap: StatsBreakdown[] | null
+  /** Matches with a lobby read, and the share of other players in them who ended with fewer points (summed). */
+  lobbyMatches: number
+  lobbyShare: number | null
 }
 
 /** The figures of the matches in one mode or on one map. */
@@ -84,6 +87,12 @@ export interface MatchDetails {
   xp: number | null
   level: number | null
   modeStats: Record<string, number> | null
+  /** Players on the final scoreboard and the player's place among them by score; no one else's values. */
+  lobbySize?: number | null
+  lobbyRank?: number | null
+  /** The report's top weapon and its class, e.g. "HAN 86" and "STURMGEWEHR". */
+  weapon?: string | null
+  weaponClass?: string | null
 }
 
 export interface PublicMatch {

@@ -157,6 +157,7 @@
       }
     ],
     "rowHeight": 0.03,
+    "lobby": true,
     "columns": {
       "score": [
         "PUNKTE",
@@ -177,6 +178,27 @@
       "stat.data_uploaded": [
         "DATEN",
         "DATA"
+      ],
+      "deaths": [
+        "TODE",
+        "DEATHS"
+      ],
+      "stat.confirms": [
+        "BESTÄTIGT",
+        "BESTATIGT",
+        "CONFIRMS"
+      ],
+      "stat.objective_time": [
+        "ZIELZEIT",
+        "OBJECTIVE"
+      ],
+      "stat.plants": [
+        "PLATZIERUNGEN",
+        "PLANTS"
+      ],
+      "stat.defuses": [
+        "ENTSCH",
+        "DEFUSES"
       ]
     }
   },

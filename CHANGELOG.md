@@ -4,8 +4,18 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Hinzugefügt
+- Lobby-Vergleich: Der Client liest auf dem End-Scoreboard, wie viele Spieler in der Lobby waren und auf welchem Platz du nach Punkten gelandet bist. Übertragen werden nur diese zwei Zahlen, keine Namen und keine Werte anderer Spieler. Die Match-Seite zeigt „Platz 3 von 12“, das Profil den Anteil der Lobby hinter dir (über alle Matches summiert). Bei unsicherer Lesung bleibt die Lobby leer, das Match zählt trotzdem.
+- Top-Waffe und Waffenklasse aus dem Einsatzbericht (TOPLEISTUNG), auf der Match-Seite angezeigt. Gespeichert wird nur ein Name aus der Waffenliste des Erkennungsprofils; eine unbekannte Waffe bleibt leer und steht im Client-Log.
+- Modus-Werte aus der Endtabelle: Bestätigt (Abschuss bestätigt), Zielzeit (Stellung), Platzierungen und Entschärfungen (Kollateral).
+
 ### Geändert
 - README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
+
+### Behoben
+- Assists fehlten in den meisten Modi: Ohne Assist-Spalte rechnet der Client sie aus Eliminierungen − Abschüsse. Passen die drei Werte nicht zusammen, kommt das Match zur Prüfung.
+- Tode kommen aus der eigenen Tabellenzeile, wenn die Tabelle sie zeigt; die Leiste darunter zeigt manchmal einen anderen Spieler.
+- Frei für alle: Ein Platz, der dem Ergebnis (Sieg = Top 3) oder dem Endstand im Einsatzbericht widerspricht, wird verworfen statt gespeichert; ist der Platz unlesbar, aber der Endstand eindeutig vorn, gilt Platz 1.
 
 ## [0.2.2] - 2026-10-24
 
