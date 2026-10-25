@@ -50,6 +50,9 @@ public static class Fields
     public const string Map = "map";
     public const string Eliminations = "eliminations";
 
+    /// <summary>The banner's ELIM/T-QUOTE ("1.67"): eliminations ÷ deaths, a check on both and a source of the deaths.</summary>
+    public const string EliminationRatio = "eliminationRatio";
+
     /// <summary>
     /// The final score as "300 0": the own team's, then the enemy's (free-for-all: the player's, then the leader's).
     /// </summary>

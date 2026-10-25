@@ -94,7 +94,13 @@ public class FixtureTests
         {
             Assert.True(placement.GetInt32() == TextParsing.Placement(Field(Fields.Placement)).Value, $"placement: expected {placement}, read '{Field(Fields.Placement)}'");
         }
-        foreach (var key in new[] { "map", "scoreline", Fields.Weapon, Fields.WeaponClass })
+        // The final score in team colours is read reliably at the capture's own resolution only; scaled down it may stay
+        // unknown, never wrong.
+        if (expected.TryGetProperty("scoreline", out var scoreline) && (width == captured || Field(Fields.Scoreline) != ""))
+        {
+            Assert.Equal(scoreline.GetString(), Field(Fields.Scoreline));
+        }
+        foreach (var key in new[] { "map", Fields.Weapon, Fields.WeaponClass })
         {
             if (expected.TryGetProperty(key, out var text))
             {

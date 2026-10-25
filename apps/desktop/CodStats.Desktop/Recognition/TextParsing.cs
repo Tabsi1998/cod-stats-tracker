@@ -111,6 +111,16 @@ public static class TextParsing
         return hits.Count == 1 ? hits[0] : null;
     }
 
+    /// <summary>A ratio with two decimals as the game prints it ("1.67", "0,85"); null for anything else.</summary>
+    public static double? Ratio(string? text)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(text ?? "", @"^\s*(\d{1,3})[.,](\d{2})\s*$");
+        return match.Success
+            ? int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)
+                + int.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) / 100.0
+            : null;
+    }
+
     /// <summary>Upper case, letters and digits only, so "Victory!" and "VICTORY" compare equal.</summary>
     public static string Normalise(string? text) =>
         new((text ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());

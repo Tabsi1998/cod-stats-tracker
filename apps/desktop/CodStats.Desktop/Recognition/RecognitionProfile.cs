@@ -75,7 +75,14 @@ public sealed record FieldSpec(Region Region)
 }
 
 /// <summary>An area with labels and their values below them (field name → label words).</summary>
-public sealed record LabelledValuesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Values);
+public sealed record LabelledValuesSpec(Region Region, IReadOnlyDictionary<string, IReadOnlyList<string>> Values)
+{
+    /// <summary>
+    /// More passes over the same area with other options. A lone short number ("27" under TODE) is missed by one pass
+    /// and read by another; each value is the one most passes read.
+    /// </summary>
+    public IReadOnlyList<Region> More { get; init; } = [];
+}
 
 /// <summary>
 /// Tiles of a number above a label, as on the after-action report ("1225 / PUNKTE", "2 / EROBERT"). Which tiles a

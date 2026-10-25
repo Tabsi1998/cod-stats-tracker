@@ -297,6 +297,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         var assists = Count(Fields.Assists, TextParsing.Count, doubts, out _);
         var score = Count(Fields.Score, TextParsing.Count, doubts, out _);
         var eliminations = Count(Fields.Eliminations, TextParsing.Count, doubts, out _);
+        deaths = Deaths(deaths, eliminations, Text(results, Fields.EliminationRatio) is { } ratio ? TextParsing.Ratio(ratio) : null, doubts);
         assists = Assists(kills, assists, eliminations, doubts);
         var lobby = Lobby();
         var placement = Count(Fields.Placement, TextParsing.Placement, doubts, out var placementConfidence);
@@ -318,12 +319,26 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         var mode = Text(reports, Fields.Mode) ?? Text(results, Fields.Mode);
         var map = Text(reports, Fields.Map) ?? Text(results, Fields.Map);
         var notes = new List<string>();
+        // A match's XP include its points: fewer XP than points is a misread number ("931" for 9311), not a value.
+        if (xp is { } readXp && score is { } readScore && readXp < readScore)
+        {
+            notes.Add($"XP {readXp} kleiner als Punkte {readScore}, verworfen");
+            xp = null;
+        }
         var weapon = Text(reports, Fields.Weapon);
         if (weapon is null && UnreadWeapon(Text(reports, Fields.Weapon + Fields.UnreadSuffix)) is { } unread)
         {
             notes.Add($"Waffe nicht in der Liste: '{unread}'");
         }
-        if (game?.IsWarzone() != true && TextParsing.ContainsAny(mode ?? "", FreeForAllModes))
+        var freeForAll = game?.IsWarzone() != true && TextParsing.ContainsAny(mode ?? "", FreeForAllModes);
+        if (!freeForAll && scoreline is [var own, var enemy] && result is { } outcome
+            && (outcome == MatchResult.Win ? own <= enemy : outcome == MatchResult.Loss ? own >= enemy : own != enemy))
+        {
+            // A team wins with more points: "0 174" for a won 200:174 is a misread, not a score.
+            notes.Add($"Endstand {own}:{enemy} passt nicht zum Ergebnis, verworfen");
+            scoreline = null;
+        }
+        if (freeForAll)
         {
             placement = FreeForAllPlacement(placement, result, scoreline, doubts);
         }
@@ -418,6 +433,33 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             }
         }
         return placement;
+    }
+
+    /// <summary>
+    /// The deaths against the banner's ELIM/T-QUOTE: the deaths whose eliminations ÷ deaths, rounded to two decimals,
+    /// give the printed ratio. Read deaths that are not among them are a doubt; unread deaths are taken when exactly one
+    /// value fits (45 eliminations at 1.67: only 27). With no deaths the game shows the eliminations as the ratio.
+    /// </summary>
+    internal static int? Deaths(int? deaths, int? eliminations, double? ratio, List<string> doubts)
+    {
+        if (eliminations is not { } e || ratio is not { } q || e == 0)
+        {
+            return deaths;
+        }
+        var fitting = Enumerable.Range(1, e * 4).Where(d => Math.Abs(Math.Round((double)e / d, 2) - q) < 0.001).ToList();
+        if (Math.Abs(e - q) < 0.001)
+        {
+            fitting.Insert(0, 0);
+        }
+        if (deaths is { } read)
+        {
+            if (fitting.Count > 0 && !fitting.Contains(read))
+            {
+                doubts.Add($"Tode {read} passen nicht zu {e} Eliminierungen und Quote {q:0.00}");
+            }
+            return read;
+        }
+        return fitting.Count == 1 ? fitting[0] : null;
     }
 
     /// <summary>

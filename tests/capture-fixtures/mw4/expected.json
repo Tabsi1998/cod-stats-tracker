@@ -268,5 +268,62 @@
     "_note": "OCR reads the weapon as \"SANG SMM\". The cyan \"21\" of the scoreline \"21 | 30\" is read at 4K only (empty below, never wrong): no scoreline expected.",
     "weapon": "SANG 9MM",
     "weaponClass": "PISTOLE"
+  },
+  "result_sieg_herrschaft_raw7.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "HERRSCHAFT",
+    "kills": 34,
+    "deaths": 27,
+    "eliminations": 45,
+    "score": 5080,
+    "lobbySize": 12,
+    "lobbyRank": 1,
+    "stats": {
+      "captures": 4
+    },
+    "_note": "The 27 under TODE is missed by a single OCR pass (live on 25.10. the match was stored without deaths)."
+  },
+  "aar_sieg_tdm_levelup.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "TEAM-DEATHMATCH",
+    "score": 2040,
+    "kills": 14,
+    "assists": 4,
+    "deaths": 21,
+    "xp": 9311,
+    "level": 46,
+    "absent": [
+      "weapon",
+      "weaponClass"
+    ],
+    "_note": "White-filtered passes read the XP as 931; LEVEL 46 is green after a level-up. The map (\"REACTOR U92\") reads differently per size: not checked."
+  },
+  "aar_sieg_stellung_sang.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "STELLUNG",
+    "xp": 11434,
+    "level": 46,
+    "weapon": "SANG 9MM",
+    "weaponClass": "PISTOLE"
+  },
+  "aar_sieg_herrschaft_raw7.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "win",
+    "mode": "HERRSCHAFT",
+    "scoreline": "200 174",
+    "score": 5080,
+    "xp": 14773,
+    "level": 46,
+    "stats": {
+      "captures": 4
+    },
+    "_note": "The kills tile \"34\" stays unread at 1440p (never wrong); the result screen has the kills."
   }
 }

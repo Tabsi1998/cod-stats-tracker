@@ -95,6 +95,39 @@ public class TextParsingTests
 public class DerivedValueTests
 {
     [Theory]
+    [InlineData(null, 45, 1.67, 27)] // live on 25.10.: the 27 unread, the ratio says it
+    [InlineData(27, 45, 1.67, 27)]
+    [InlineData(null, 18, 2.00, 9)]
+    [InlineData(null, 45, null, null)]
+    [InlineData(5, 0, 0.00, 5)]
+    public void Deaths_come_from_the_ratio_when_exactly_one_value_fits(int? deaths, int? eliminations, double? ratio, int? expected)
+    {
+        var doubts = new List<string>();
+        Assert.Equal(expected, MatchStateMachine.Deaths(deaths, eliminations, ratio, doubts));
+        Assert.Empty(doubts);
+    }
+
+    [Fact]
+    public void Deaths_that_do_not_fit_the_ratio_are_a_doubt()
+    {
+        var doubts = new List<string>();
+        Assert.Equal(21, MatchStateMachine.Deaths(21, 45, 1.67, doubts));
+        Assert.Single(doubts);
+        // 12 eliminations at 12.00 fit both 0 and 1 death (the game prints the eliminations without deaths): unknown.
+        Assert.Null(MatchStateMachine.Deaths(null, 12, 12.00, []));
+        // Several fits (50 / 100 and 50 / 101 both print 0.50): the deaths stay unknown.
+        Assert.Null(MatchStateMachine.Deaths(null, 50, 0.50, []));
+    }
+
+    [Theory]
+    [InlineData("1.67", 1.67)]
+    [InlineData(" 0,85 ", 0.85)]
+    [InlineData("12.00", 12.0)]
+    [InlineData("1.6", null)]
+    [InlineData("ELIM", null)]
+    public void Ratios_are_read_with_two_decimals(string text, double? expected) => Assert.Equal(expected, TextParsing.Ratio(text));
+
+    [Theory]
     [InlineData(25, null, 30, 5)] // TDM: 30 eliminations, 25 kills
     [InlineData(19, null, 31, 12)] // Stellung shows no assists column
     [InlineData(10, 7, 17, 7)]
