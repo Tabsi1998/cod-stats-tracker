@@ -44,6 +44,19 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
             var fields = new Dictionary<string, FieldReading>();
             foreach (var (name, spec) in profile.Fields)
             {
+                if (spec.OneOf.Count > 0)
+                {
+                    var (choice, unread) = await ReadChoiceAsync(frame, spec, cancel);
+                    if (choice is not null)
+                    {
+                        fields[name] = new FieldReading(choice, quality);
+                    }
+                    else if (unread is not null)
+                    {
+                        fields[name + Recognition.Fields.UnreadSuffix] = new FieldReading(unread, quality);
+                    }
+                    continue;
+                }
                 if (await ReadFieldAsync(frame, profile, name, spec, cancel) is { } text)
                 {
                     fields[name] = new FieldReading(text, quality);
@@ -220,9 +233,10 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                     && l.Center >= label.Left - label.Width && l.Center <= label.Left + label.Width * 2)
                 .OrderBy(l => Math.Abs(l.Center - label.Center))
                 .FirstOrDefault();
+            // The table row, found by name, wins over the banner: the banner may show another player.
             if (value is not null)
             {
-                fields[field] = new FieldReading(value.Text, quality);
+                fields.TryAdd(field, new FieldReading(value.Text, quality));
             }
         }
     }
@@ -254,6 +268,31 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         var text = await ReadAllAsync(frame, regions, cancel);
         // A mode is stored by its name from the profile's list, not with whatever else the region held.
         return name == Recognition.Fields.Mode && profile.Modes.Count > 0 ? TextParsing.FirstOf(text, profile.Modes) ?? "" : text;
+    }
+
+    /// <summary>
+    /// A name from <see cref="FieldSpec.OneOf"/>: each pass on its own, the entry most passes fit. A pass reads a
+    /// block ("TOPLEISTUNG / HAN 86 / STURMGEWEHR"; OCR reads a lone short line badly) and counts only when exactly one
+    /// of its lines fits an entry. When no pass fits, the block read most often comes back as unread, for the log.
+    /// </summary>
+    private async Task<(string? Choice, string? Unread)> ReadChoiceAsync(Frame frame, FieldSpec spec, CancellationToken cancel)
+    {
+        var blocks = new List<string>();
+        var choices = new List<string>();
+        foreach (var region in spec.More.Prepend(spec.Region))
+        {
+            var lines = await reader.ReadLinesAsync(frame, region, cancel);
+            var fits = lines.Select(l => TextParsing.OneOf(l.Text, spec.OneOf)).OfType<string>().Distinct().ToList();
+            if (fits.Count == 1)
+            {
+                choices.Add(fits[0]);
+            }
+            if (lines.Count > 0)
+            {
+                blocks.Add(string.Join(" / ", lines.Select(l => l.Text.Trim())));
+            }
+        }
+        return choices.Count > 0 ? (MostCommon(choices), null) : (null, MostCommon(blocks));
     }
 
     /// <summary>The value most passes agree on; on a tie the earlier pass, which the profile lists as the better one.</summary>

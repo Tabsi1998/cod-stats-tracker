@@ -90,6 +90,9 @@ export interface MatchDetails {
   /** Players on the final scoreboard and the player's place among them by score; no one else's values. */
   lobbySize?: number | null
   lobbyRank?: number | null
+  /** The report's top weapon and its class, e.g. "HAN 86" and "STURMGEWEHR". */
+  weapon?: string | null
+  weaponClass?: string | null
 }
 
 export interface PublicMatch {

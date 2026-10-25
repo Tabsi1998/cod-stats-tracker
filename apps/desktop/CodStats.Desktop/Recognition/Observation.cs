@@ -63,6 +63,13 @@ public static class Fields
 
     /// <summary>Mode values such as "stat.captures" come with this prefix.</summary>
     public const string StatPrefix = "stat.";
+
+    /// <summary>The report's top weapon and its class, each as written in the profile's list (see <see cref="FieldSpec.OneOf"/>).</summary>
+    public const string Weapon = "weapon";
+    public const string WeaponClass = "weaponClass";
+
+    /// <summary>What a <see cref="FieldSpec.OneOf"/> field read when it fits no entry, as "weapon.unread": for the log only.</summary>
+    public const string UnreadSuffix = ".unread";
 }
 
 /// <summary>A match the state machine assembled from several result frames.</summary>
@@ -93,4 +100,12 @@ public sealed record MatchCandidate(
 
     /// <summary>Mode values from the scoreboard and the after-action report, such as captures or data uploaded.</summary>
     public IReadOnlyDictionary<string, int> ModeStats { get; init; } = new Dictionary<string, int>();
+    public string? Weapon { get; init; }
+    public string? WeaponClass { get; init; }
+
+    /// <summary>
+    /// Extras left out, such as a weapon missing from the list: logged, but unlike <see cref="Doubts"/> they never
+    /// make the match unsure.
+    /// </summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
 }

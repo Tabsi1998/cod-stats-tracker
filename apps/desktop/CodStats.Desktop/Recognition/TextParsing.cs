@@ -115,6 +115,38 @@ public static class TextParsing
     public static string Normalise(string? text) =>
         new((text ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
 
+    /// <summary>
+    /// The one name of the list the text is, comparing look-alike characters as one (9/5/3 and S, 0/D/Q and O, 1/L
+    /// and I, 8 and B, 2 and Z, 6 and G) and ignoring spaces and punctuation; null when it fits none or several.
+    /// No other spelling error is allowed: a new weapon close to a known one must not count as the known one.
+    /// </summary>
+    public static string? OneOf(string? text, IReadOnlyList<string> names)
+    {
+        var read = LookAlike(text);
+        if (read.Length == 0)
+        {
+            return null;
+        }
+        var hits = names.Where(n => LookAlike(n) == read).Distinct().ToList();
+        return hits.Count == 1 ? hits[0] : null;
+    }
+
+    /// <summary>The text with look-alike characters made one (see <see cref="OneOf"/>).</summary>
+    public static string LookAlike(string? text) =>
+        new(Normalise(text).Select(c => c switch
+        {
+            '9' or '5' or '3' => 'S',
+            '0' or 'D' or 'Q' => 'O',
+            '1' or 'L' => 'I',
+            '8' => 'B',
+            '2' => 'Z',
+            '6' => 'G',
+            'Ä' => 'A',
+            'Ö' => 'O',
+            'Ü' => 'U',
+            _ => c,
+        }).ToArray());
+
     /// <summary>The first of the words the text contains (see <see cref="ContainsAny"/>), as written in the list.</summary>
     public static string? FirstOf(string? text, IEnumerable<string> words) =>
         words.FirstOrDefault(word => ContainsAny(text, [word]));

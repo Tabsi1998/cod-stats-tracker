@@ -163,7 +163,8 @@ public sealed class RecognitionLoop(
     private void Record(MatchCandidate candidate)
     {
         Diagnostics.Log($"match: {candidate.Game} {candidate.Mode} {candidate.Result} K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} " +
-            $"S={candidate.Score} status={candidate.Status} map={candidate.Map} xp={candidate.Xp} confidence={candidate.Confidence:0.00} doubts={string.Join("; ", candidate.Doubts)}");
+            $"S={candidate.Score} P={candidate.Placement} status={candidate.Status} map={candidate.Map} xp={candidate.Xp} weapon={candidate.Weapon}/{candidate.WeaponClass} " +
+            $"lobby={candidate.LobbyRank}/{candidate.LobbySize} confidence={candidate.Confidence:0.00} doubts={string.Join("; ", candidate.Doubts)} notes={string.Join("; ", candidate.Notes)}");
         var match = ToLocal(candidate);
         if (match is null)
         {
@@ -189,7 +190,8 @@ public sealed class RecognitionLoop(
             candidate.Assists, candidate.Result, candidate.Placement, candidate.Map, candidate.Score,
             Math.Clamp(candidate.Confidence, 0, 1), ReviewStatus.Pending, RecognizerVersion, SyncState.Waiting, null, candidate.Status,
             new MatchDetails(candidate.Eliminations, candidate.TeamScore, candidate.EnemyScore, candidate.Xp, candidate.Level,
-                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null, candidate.LobbySize, candidate.LobbyRank));
+                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null, candidate.LobbySize, candidate.LobbyRank,
+                candidate.Weapon, candidate.WeaponClass));
         var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;

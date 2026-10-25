@@ -38,6 +38,10 @@ Die Werte oben sind **Beispiele, keine echten Koordinaten**.
 
 `"lobby": true` in `ownRow` liest aus denselben Tabellen zusätzlich die Lobby: Anzahl der Zeilen und wie viele davon mehr Punkte haben. Eine Zeile ist alles, was auf gleicher Höhe liegt (innerhalb einer halben `rowHeight`), egal in welcher Spalte; jede Zeile braucht genau einen Zahlenwert unter der Punkte-Überschrift (`columns.score`), sonst bleibt die Lobby leer. Fehlt die Überschrift in einer Tabelle, gilt ihre Position aus der anderen (gleicher Abstand vom linken Rand). Nur für das End-Scoreboard einschalten, wo beide Teams vollständig sind. Ergebnis in den Feldern `lobby.size` und `lobby.rank`; in `expected.json` als `lobbySize` und `lobbyRank` prüfbar.
 
+### Namen aus einer Liste (`oneOf`)
+
+Ein Feld mit `"oneOf": [...]` (Top-Waffe `weapon`, Klasse `weaponClass` im Einsatzbericht) speichert nur einen Namen aus dieser Liste, so wie er dort steht. Jeder Bereich (`region`, `more`) ist ein Durchgang über einen Block mehrerer Zeilen; ein Durchgang zählt, wenn genau eine seiner Zeilen zu genau einem Eintrag passt. Verglichen wird ohne Leer- und Satzzeichen, und Zeichen, die die Texterkennung verwechselt, gelten als gleich (9/5/3 und S, 0/D/Q und O, 1/L und I, 8 und B, 2 und Z, 6 und G, Umlaute): „SANG SMM“ ist „SANG 9MM“. Jeder andere Fehler bleibt ein Fehler, damit eine neue Waffe nie als ähnliche bekannte zählt. Passt nichts, bleibt das Feld leer und das Gelesene steht als `weapon.unread` im Client-Log („Waffe nicht in der Liste“). Neue Waffen kommen in die Liste des Profils; zwei Einträge, die sich nur in verwechselbaren Zeichen unterscheiden, lehnt der Client ab.
+
 ## Neues Profil erstellen
 
 1. Screenshots in `tests/capture-fixtures/<spiel>/<auflösung>/` ablegen, mit gleichnamiger `.json` der richtigen Werte.

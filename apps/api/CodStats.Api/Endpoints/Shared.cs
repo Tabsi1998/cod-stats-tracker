@@ -44,6 +44,8 @@ public static class Mapping
         ModeStats = upload.Details?.ModeStats is { Count: > 0 } stats ? new Dictionary<string, int>(stats) : null,
         LobbySize = upload.Details?.LobbySize,
         LobbyRank = upload.Details?.LobbyRank,
+        Weapon = upload.Details?.Weapon,
+        WeaponClass = upload.Details?.WeaponClass,
         Confidence = upload.Confidence,
         ReviewStatus = upload.ReviewStatus,
         RecognizerVersion = upload.RecognizerVersion,
@@ -63,6 +65,7 @@ public static class Mapping
         && a.Assists == b.Assists && a.Result == b.Result && a.Placement == b.Placement && a.Map == b.Map && a.Score == b.Score
         && a.Status == b.Status && a.Eliminations == b.Eliminations && a.TeamScore == b.TeamScore && a.EnemyScore == b.EnemyScore
         && a.Xp == b.Xp && a.Level == b.Level && a.LobbySize == b.LobbySize && a.LobbyRank == b.LobbyRank
+        && a.Weapon == b.Weapon && a.WeaponClass == b.WeaponClass
         && (a.ModeStats ?? []).Count == (b.ModeStats ?? []).Count && !(a.ModeStats ?? []).Except(b.ModeStats ?? []).Any();
 
     public static bool IsDuplicate(Match a, Match b) =>
@@ -78,7 +81,8 @@ public static class Mapping
     /// <summary>The extra values, or null when the match has none (uploaded by an older client).</summary>
     public static MatchDetails? Details(Match m)
     {
-        var details = new MatchDetails(m.Eliminations, m.TeamScore, m.EnemyScore, m.Xp, m.Level, m.ModeStats, m.LobbySize, m.LobbyRank);
+        var details = new MatchDetails(m.Eliminations, m.TeamScore, m.EnemyScore, m.Xp, m.Level, m.ModeStats, m.LobbySize, m.LobbyRank,
+            m.Weapon, m.WeaponClass);
         return details.IsEmpty ? null : details;
     }
 

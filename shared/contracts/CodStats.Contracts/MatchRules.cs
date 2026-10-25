@@ -7,6 +7,7 @@ public static class MatchRules
     public const int MaxPlacement = 150;
     public const int MaxScore = 100_000;
     public const int MaxTextLength = 64;
+    public const int MaxNameLength = 32;
     public const int MaxXp = 1_000_000;
     public const int MaxLevel = 1_000;
     public const int MaxModeStats = 12;
@@ -95,6 +96,8 @@ public static class MatchRules
                 problems.Add("lobbyRank must be between 1 and lobbySize");
             }
         }
+        CheckName(problems, "weapon", details.Weapon);
+        CheckName(problems, "weaponClass", details.WeaponClass);
         if (details.ModeStats is { } stats)
         {
             if (stats.Count > MaxModeStats)
@@ -185,6 +188,15 @@ public static class MatchRules
         if (value is < 0 or > MaxCount)
         {
             problems.Add($"{name} must be between 0 and {MaxCount}");
+        }
+    }
+
+    /// <summary>A weapon or class name: letters, digits and " .-/", at most <see cref="MaxNameLength"/> characters.</summary>
+    private static void CheckName(List<string> problems, string name, string? value)
+    {
+        if (value is not null && (value.Length is 0 or > MaxNameLength || !value.All(c => char.IsLetterOrDigit(c) || c is ' ' or '.' or '-' or '/')))
+        {
+            problems.Add($"{name} must be 1–{MaxNameLength} letters, digits, spaces or .-/");
         }
     }
 

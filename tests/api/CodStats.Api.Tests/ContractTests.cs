@@ -232,13 +232,18 @@ public class MatchRuleTests
         Valid() with { Details = new(LobbySize: 1, LobbyRank: 1) },
         Valid() with { Details = new(LobbySize: 151, LobbyRank: 1) },
         Valid() with { Details = new(LobbySize: 12, LobbyRank: 0) },
+        Valid() with { Details = new(Weapon: "") },
+        Valid() with { Details = new(Weapon: new string('M', 33)) },
+        Valid() with { Details = new(Weapon: "<script>") },
+        Valid() with { Details = new(WeaponClass: "STURM\nGEWEHR") },
     };
 
     [Fact]
     public void A_match_with_all_details_is_plausible() =>
         Assert.Empty(MatchRules.Validate(Valid() with
         {
-            Details = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }, 12, 3),
+            Details = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }, 12, 3,
+                "WZ.55 STRIGA", "SCHARFSCHÜTZENGEWEHR"),
         }, Now));
 
     [Fact]

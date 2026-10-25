@@ -186,6 +186,16 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("uploaded_at");
 
+                    b.Property<string>("Weapon")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("weapon");
+
+                    b.Property<string>("WeaponClass")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("weapon_class");
+
                     b.Property<int?>("Xp")
                         .HasColumnType("integer")
                         .HasColumnName("xp");
