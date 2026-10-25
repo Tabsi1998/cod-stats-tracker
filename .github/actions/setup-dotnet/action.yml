@@ -1,0 +1,16 @@
+# The .NET SDK from Microsoft's current download server. actions/setup-dotnet still fetched from the old storage
+# account, which refuses public access since 25.10.2026 ("PublicAccessNotPermitted"): every job failed at setup.
+name: Set up .NET
+description: Installs the .NET 10 SDK with the official dotnet-install script from builds.dotnet.microsoft.com.
+runs:
+  using: composite
+  steps:
+    - name: Install .NET 10 SDK
+      shell: pwsh
+      run: |
+        $dir = Join-Path $env:RUNNER_TEMP 'dotnet'
+        $script = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
+        Invoke-WebRequest -Uri 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1' -OutFile $script
+        & $script -Channel 10.0 -InstallDir $dir -AzureFeed 'https://builds.dotnet.microsoft.com/dotnet'
+        Add-Content -Path $env:GITHUB_PATH -Value $dir
+        Add-Content -Path $env:GITHUB_ENV -Value "DOTNET_ROOT=$dir"
