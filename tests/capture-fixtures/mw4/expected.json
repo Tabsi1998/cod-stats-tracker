@@ -8,7 +8,9 @@
     "kills": 14,
     "deaths": 17,
     "score": 2010,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 12
   },
   "result_niederlage_herrschaft_b.jpg": {
     "screen": "result",
@@ -18,7 +20,9 @@
     "kills": 14,
     "deaths": 17,
     "score": 2010,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 12
   },
   "inmatch_herrschaft.jpg": {
     "screen": "inMatch",
@@ -70,7 +74,9 @@
     "kills": 19,
     "deaths": 24,
     "score": 4115,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 11,
+    "lobbyRank": 3
   },
   "result_sieg_tdm.jpg": {
     "screen": "result",
@@ -81,7 +87,9 @@
     "assists": 5,
     "deaths": 12,
     "score": 3585,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 1
   },
   "splash_sieg.jpg": {
     "screen": "unknown"
@@ -94,7 +102,9 @@
     "kills": 23,
     "deaths": 14,
     "score": 4420,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 3
   },
   "rundensieg_front_1440.jpg": {
     "screen": "result",
@@ -110,7 +120,9 @@
     "assists": 4,
     "deaths": 21,
     "score": 3815,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 11,
+    "lobbyRank": 1
   },
   "aar_sieg_kapern.jpg": {
     "screen": "afterAction",
@@ -152,7 +164,9 @@
     "ownName": "Tabsi98",
     "stats": {
       "captures": 2
-    }
+    },
+    "lobbySize": 11,
+    "lobbyRank": 5
   },
   "rundensieg_kapern.jpg": {
     "screen": "result",

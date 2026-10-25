@@ -48,7 +48,8 @@ public class FixtureTests
         {
             return; // Image only on the PC it was captured on.
         }
-        if (width > BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth)
+        var captured = BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth;
+        if (width > captured)
         {
             return; // Scaling a capture up says nothing about a real higher resolution.
         }
@@ -79,8 +80,14 @@ public class FixtureTests
         Number("assists", Fields.Assists);
         Number("eliminations", Fields.Eliminations);
         // The lobby: players on the final scoreboard and the own place by score. Add both to expected.json per capture.
-        Number("lobbySize", Fields.LobbySize);
-        Number("lobbyRank", Fields.LobbyRank);
+        // Never wrong; read at the capture's own resolution, scaled down it may stay unknown (a match has several frames).
+        foreach (var (key, field) in new[] { ("lobbySize", Fields.LobbySize), ("lobbyRank", Fields.LobbyRank) })
+        {
+            if (width == captured || Field(field) != "")
+            {
+                Number(key, field);
+            }
+        }
         Number("xp", Fields.Xp);
         Number("level", Fields.Level);
         if (expected.TryGetProperty("placement", out var placement))

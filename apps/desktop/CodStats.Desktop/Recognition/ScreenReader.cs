@@ -148,10 +148,12 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
     }
 
     /// <summary>
-    /// The lobby from the tables already read: every row's score (under the score heading, beside a name in the
-    /// name column) and how many are higher than the player's. Only these two numbers leave here, never a name or
-    /// another player's value. Any doubt (a table without score heading, a name without a score or the other way
-    /// round, a score that is no number) and the lobby stays unknown rather than wrong.
+    /// The lobby from the tables already read: one score per row (under the score heading) and how many are higher
+    /// than the player's. Only these two numbers leave here, never a name or another player's value.
+    /// Rows are found by height, whatever column a line is in: a stray glyph beside a name (4K reads a "4." there)
+    /// joins its row instead of becoming a player, and an indented name ("ꞵy ZBK") still has its row. Any doubt (a
+    /// score heading in no table, a row without exactly one score, a score that is no number) and the lobby stays
+    /// unknown rather than wrong.
     /// </summary>
     internal static (int Size, int Rank)? Lobby(IReadOnlyList<(TableSpec Table, IReadOnlyList<TextLine> Lines)> tables, OwnRowSpec row,
         TableSpec ownTable, TextLine ownName)
@@ -160,34 +162,32 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         {
             return null;
         }
-        // Both tables have the same layout: the name column sits at the same offset from each table's left edge.
-        var nameOffset = ownName.Left - ownTable.Region.X;
+        // Both tables have the same layout, so a heading the OCR dropped in one (1440p loses "PUNKTE" now and then)
+        // is where the other table has it, measured from the table's left edge.
+        var headings = tables.Select(t => t.Lines.FirstOrDefault(l =>
+                l.Top < t.Table.Region.Y + t.Table.HeaderHeight && TextParsing.ContainsAny(l.Text, scoreWords)) is { } h
+                ? (Offset: h.Left - t.Table.Region.X, h.Width)
+                : ((double Offset, double Width)?)null).ToList();
+        if (headings.FirstOrDefault(h => h is not null) is not { } known)
+        {
+            return null;
+        }
         var scores = new List<int>();
         int? own = null;
-        foreach (var (table, lines) in tables)
+        foreach (var ((table, lines), found) in tables.Zip(headings))
         {
             var bodyTop = table.Region.Y + table.HeaderHeight;
-            var heading = lines.FirstOrDefault(l => l.Top < bodyTop && TextParsing.ContainsAny(l.Text, scoreWords));
-            if (heading is null)
+            var (offset, width) = found ?? known;
+            var left = table.Region.X + offset;
+            foreach (var line in Cluster(lines.Where(l => l.Top >= bodyTop), l => l.Middle, row.RowHeight / 2))
             {
-                return null;
-            }
-            var body = lines.Where(l => l.Top >= bodyTop).ToList();
-            var names = body.Where(l => Math.Abs(l.Left - (table.Region.X + nameOffset)) < 0.01).ToList();
-            var cells = body.Where(l => l.Left >= heading.Left - 0.012 && l.Left <= heading.Left + heading.Width).ToList();
-            if (names.Count != cells.Count)
-            {
-                return null;
-            }
-            foreach (var name in names)
-            {
-                var cell = cells.Where(c => Math.Abs(c.Middle - name.Middle) < row.RowHeight / 2).ToList();
-                if (cell.Count != 1 || TextParsing.Count(cell[0].Text).Value is not { } value)
+                var cells = line.Where(l => l.Left >= left - 0.012 && l.Left <= left + width).ToList();
+                if (cells.Count != 1 || TextParsing.Count(cells[0].Text).Value is not { } value)
                 {
                     return null;
                 }
                 scores.Add(value);
-                if (ReferenceEquals(name, ownName))
+                if (line.Any(l => ReferenceEquals(l, ownName)))
                 {
                     own = value;
                 }

@@ -61,6 +61,19 @@ public class LobbyTests
     }
 
     [Fact]
+    public void A_stray_glyph_beside_a_name_and_an_indented_name_do_not_change_the_lobby()
+    {
+        // As read at 4K: "4." just left of a name in another row, and "ꞵy ZBK" whose tag is not read starts further right.
+        var left = Table(Left, ("Anna", "2875"), ("Ben", "2650"), ("Cleo", "2255"), ("Tabsi98", "1225"), ("Dan", "1185"), ("Eve", "1030"));
+        left.Add(new TextLine("4.", Left.Region.X + 0.042, 0.59 + 2 * RowHeight, 0.005, 0.012));
+        var indented = left.Single(l => l.Text == "Eve");
+        left[left.IndexOf(indented)] = indented with { Left = indented.Left + 0.02 };
+        var right = Table(Right, ("Fay", "1485"), ("Gus", "995"), ("Hal", "685"), ("Ida", "500"), ("Jon", "490"));
+
+        Assert.Equal((11, 5), Lobby(left, right));
+    }
+
+    [Fact]
     public void An_unread_score_leaves_the_lobby_unknown()
     {
         var left = Table(Left, ("Anna", "3200"), ("Tabsi98", "2010"));
@@ -70,13 +83,22 @@ public class LobbyTests
     }
 
     [Fact]
-    public void A_score_that_is_no_number_or_a_missing_heading_leaves_it_unknown()
+    public void A_score_that_is_no_number_or_no_heading_at_all_leaves_it_unknown()
     {
         var left = Table(Left, ("Anna", "3200"), ("Tabsi98", "2010"));
         Assert.Null(Lobby(left, Table(Right, ("Cleo", "2S0O?"))));
 
-        var noHeading = Table(Right, ("Cleo", "2500")).Where(l => l.Text != "PUNKTE").ToList();
-        Assert.Null(Lobby(left, noHeading));
+        static List<TextLine> NoHeading(List<TextLine> lines) => lines.Where(l => l.Text != "PUNKTE").ToList();
+        Assert.Null(Lobby(NoHeading(left), NoHeading(Table(Right, ("Cleo", "2500")))));
+    }
+
+    [Fact]
+    public void A_heading_missing_in_one_table_is_taken_from_the_other()
+    {
+        // At 1440p the OCR sometimes drops "PUNKTE" over the right table while every score below is read.
+        var left = Table(Left, ("Anna", "3200"), ("Tabsi98", "2010"));
+        var right = Table(Right, ("Cleo", "2500"), ("Dan", "1500")).Where(l => l.Text != "PUNKTE").ToList();
+        Assert.Equal((4, 3), Lobby(left, right));
     }
 
     [Fact]
