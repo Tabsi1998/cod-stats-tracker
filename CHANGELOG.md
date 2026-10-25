@@ -8,6 +8,15 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Lobby-Vergleich: Der Client liest auf dem End-Scoreboard, wie viele Spieler in der Lobby waren und auf welchem Platz du nach Punkten gelandet bist. Übertragen werden nur diese zwei Zahlen, keine Namen und keine Werte anderer Spieler. Die Match-Seite zeigt „Platz 3 von 12“, das Profil den Anteil der Lobby hinter dir (über alle Matches summiert). Bei unsicherer Lesung bleibt die Lobby leer, das Match zählt trotzdem.
 - Top-Waffe und Waffenklasse aus dem Einsatzbericht (TOPLEISTUNG), auf der Match-Seite angezeigt. Gespeichert wird nur ein Name aus der Waffenliste des Erkennungsprofils; eine unbekannte Waffe bleibt leer und steht im Client-Log.
 - Modus-Werte aus der Endtabelle: Bestätigt (Abschuss bestätigt), Zielzeit (Stellung), Platzierungen und Entschärfungen (Kollateral).
+- Profil-Filter: Modus, Karte, Waffe, Waffenklasse und Ergebnis (Siege, Niederlagen, Verlassen), dazu der Zeitraum „Heute“. Alle Filter stehen in der Adresse und lassen sich teilen; die Auswahl zeigt nur, was der Spieler gespielt hat.
+- Vergleich mit dem Zeitraum davor: K/D, Siegquote und Kills pro Match zeigen bei „Heute“, „7 Tage“ und „30 Tage“ die Veränderung gegenüber gestern bzw. dem Zeitraum davor.
+- Profil-Tab „Waffen“: Siegquote und K/D je Top-Waffe und Waffenklasse.
+- Profil-Tab „Sessions“: Spielabende automatisch gruppiert, mit Ergebnisreihe, K/D, bestem Match, Level-Ups und XP.
+- Profil-Tab „Rekorde“: Bestwerte aus einem einzelnen Match (Kills, K/D, Punkte, Eliminierungen, Assists, XP und jeder Modus-Wert), jeweils mit Link zum Match.
+- Modi-Tab mit Modus-Werten je Modus (z. B. Ø Bestätigt pro Match in Abschuss bestätigt), Karten-Tab mit Karte × Modus.
+- Übersicht: Form-Kurve (K/D der letzten 10 Matches) neben der Gesamt-K/D, Level-Verlauf, „Wann du spielst“ nach Wochentag und Tageszeit, Lobby-Platz-Verteilung.
+- Ein Klick auf einen Modus, eine Karte oder eine Waffe in den Tabellen filtert das Profil darauf.
+- Ranglisten: Filter nach Karte und Zeitraum (7 und 30 Tage); Modi und Karten kommen aus den erfassten Matches.
 
 ### Behoben
 - Assists fehlten in den meisten Modi: Ohne Assist-Spalte rechnet der Client sie aus Eliminierungen − Abschüsse. Passen die drei Werte nicht zusammen, kommt das Match zur Prüfung.
