@@ -8,7 +8,9 @@
     "kills": 14,
     "deaths": 17,
     "score": 2010,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 12
   },
   "result_niederlage_herrschaft_b.jpg": {
     "screen": "result",
@@ -18,7 +20,9 @@
     "kills": 14,
     "deaths": 17,
     "score": 2010,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 12
   },
   "inmatch_herrschaft.jpg": {
     "screen": "inMatch",
@@ -43,7 +47,9 @@
     "level": 20,
     "stats": {
       "captures": 1
-    }
+    },
+    "weapon": "HAN 86",
+    "weaponClass": "STURMGEWEHR"
   },
   "lobby_kartenabstimmung.jpg": {
     "screen": "lobby",
@@ -70,7 +76,9 @@
     "kills": 19,
     "deaths": 24,
     "score": 4115,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 11,
+    "lobbyRank": 3
   },
   "result_sieg_tdm.jpg": {
     "screen": "result",
@@ -81,7 +89,9 @@
     "assists": 5,
     "deaths": 12,
     "score": 3585,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 1
   },
   "splash_sieg.jpg": {
     "screen": "unknown"
@@ -94,7 +104,9 @@
     "kills": 23,
     "deaths": 14,
     "score": 4420,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 12,
+    "lobbyRank": 3
   },
   "rundensieg_front_1440.jpg": {
     "screen": "result",
@@ -110,7 +122,9 @@
     "assists": 4,
     "deaths": 21,
     "score": 3815,
-    "ownName": "Tabsi98"
+    "ownName": "Tabsi98",
+    "lobbySize": 11,
+    "lobbyRank": 1
   },
   "aar_sieg_kapern.jpg": {
     "screen": "afterAction",
@@ -126,7 +140,9 @@
     "stats": {
       "captures": 2,
       "data_uploaded": 77
-    }
+    },
+    "weapon": "HAN 86",
+    "weaponClass": "STURMGEWEHR"
   },
   "aar_sieg_ffa.jpg": {
     "screen": "afterAction",
@@ -139,7 +155,9 @@
     "kills": 25,
     "deaths": 22,
     "xp": 18894,
-    "level": 27
+    "level": 27,
+    "weapon": "HAN 86",
+    "weaponClass": "STURMGEWEHR"
   },
   "result_sieg_kapern.jpg": {
     "screen": "result",
@@ -152,7 +170,9 @@
     "ownName": "Tabsi98",
     "stats": {
       "captures": 2
-    }
+    },
+    "lobbySize": 11,
+    "lobbyRank": 5
   },
   "rundensieg_kapern.jpg": {
     "screen": "result",
@@ -198,5 +218,55 @@
   "tab_ffa.jpg": {
     "screen": "inMatch",
     "game": "mw4_mp"
+  },
+  "result_niederlage_tdm.jpg": {
+    "screen": "result",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "TEAM-DEATHMATCH",
+    "kills": 10,
+    "assists": 7,
+    "deaths": 16,
+    "score": 1650,
+    "lobbySize": 12,
+    "lobbyRank": 10,
+    "_note": "The banner below shows another player ([MAD?]ExLoVd, 24 eliminations): nothing of it may be read as the player's.",
+    "absent": [
+      "eliminations"
+    ]
+  },
+  "aar_niederlage_tdm.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "TEAM-DEATHMATCH",
+    "map": "MUNITION",
+    "scoreline": "81 100",
+    "score": 1650,
+    "kills": 10,
+    "assists": 7,
+    "deaths": 16,
+    "xp": 12010,
+    "level": 44,
+    "_note": "TOPLEISTUNG not loaded yet: no weapon.",
+    "absent": [
+      "weapon",
+      "weaponClass"
+    ]
+  },
+  "aar_niederlage_ffa.jpg": {
+    "screen": "afterAction",
+    "game": "mw4_mp",
+    "result": "loss",
+    "mode": "FREI FÜR ALLE",
+    "map": "COAL",
+    "score": 21,
+    "kills": 21,
+    "deaths": 20,
+    "xp": 15294,
+    "level": 43,
+    "_note": "OCR reads the weapon as \"SANG SMM\". The cyan \"21\" of the scoreline \"21 | 30\" is read at 4K only (empty below, never wrong): no scoreline expected.",
+    "weapon": "SANG 9MM",
+    "weaponClass": "PISTOLE"
   }
 }

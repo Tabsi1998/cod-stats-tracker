@@ -77,6 +77,20 @@ public class StatsTests
     }
 
     [Fact]
+    public void Lobby_share_is_summed_over_matches_not_averaged()
+    {
+        // Place 1 of 2 (1 of 1 other behind) and place 12 of 12 (0 of 11 behind): 1 / 12 others, not the mean of 100 % and 0 %.
+        var stats = StatsCalculator.Compute(GameGroup.Mw4, [
+            Mw4(5, 5, MatchResult.Win, 1) with { LobbySize = 2, LobbyRank = 1 },
+            Mw4(5, 5, MatchResult.Loss, 2) with { LobbySize = 12, LobbyRank = 12 },
+            Mw4(5, 5, MatchResult.Loss, 3),
+        ]);
+        Assert.Equal(2, stats.LobbyMatches);
+        Assert.Equal(0.0833, stats.LobbyShare);
+        Assert.Null(StatsCalculator.Compute(GameGroup.Mw4, [Mw4(5, 5, MatchResult.Win, 1)]).LobbyShare);
+    }
+
+    [Fact]
     public void Breakdown_groups_names_regardless_of_case()
     {
         var stats = StatsCalculator.Compute(GameGroup.Mw4, [
@@ -213,13 +227,23 @@ public class MatchRuleTests
         Valid() with { Details = new(ModeStats: new Dictionary<string, int> { ["Captures!"] = 2 }) },
         Valid() with { Details = new(ModeStats: new Dictionary<string, int> { ["captures"] = -2 }) },
         Valid() with { Details = new(ModeStats: Enumerable.Range(0, 13).ToDictionary(i => $"s{i}", i => i)) },
+        Valid() with { Details = new(LobbySize: 12) },
+        Valid() with { Details = new(LobbySize: 12, LobbyRank: 13) },
+        Valid() with { Details = new(LobbySize: 1, LobbyRank: 1) },
+        Valid() with { Details = new(LobbySize: 151, LobbyRank: 1) },
+        Valid() with { Details = new(LobbySize: 12, LobbyRank: 0) },
+        Valid() with { Details = new(Weapon: "") },
+        Valid() with { Details = new(Weapon: new string('M', 33)) },
+        Valid() with { Details = new(Weapon: "<script>") },
+        Valid() with { Details = new(WeaponClass: "STURM\nGEWEHR") },
     };
 
     [Fact]
     public void A_match_with_all_details_is_plausible() =>
         Assert.Empty(MatchRules.Validate(Valid() with
         {
-            Details = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }),
+            Details = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }, 12, 3,
+                "WZ.55 STRIGA", "SCHARFSCHÜTZENGEWEHR"),
         }, Now));
 
     [Fact]
