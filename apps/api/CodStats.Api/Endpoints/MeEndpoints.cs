@@ -118,12 +118,17 @@ public static class MeEndpoints
         return Results.Ok(await Statistics.ForProfile(db, device.ProfileId, filter, clock.GetUtcNow(), shownOnly: false, cancel));
     }
 
-    private static async Task<IResult> GetMatches(CurrentDevice device, AppDb db, int? offset, int? limit, CancellationToken cancel)
+    private static async Task<IResult> GetMatches(CurrentDevice device, AppDb db, TimeProvider clock, HttpRequest request, int? offset,
+        int? limit, CancellationToken cancel)
     {
+        if (!QueryFilters.TryStats(request.Query, out var filter, out var problem))
+        {
+            return Results.Problem(detail: problem, statusCode: 400);
+        }
         var (skip, take) = QueryFilters.Paging(offset, limit);
-        var query = db.Matches.AsNoTracking().Where(m => m.ProfileId == device.ProfileId);
+        var query = db.Matches.AsNoTracking().Where(m => m.ProfileId == device.ProfileId).Newest(filter, clock.GetUtcNow());
         var total = await query.CountAsync(cancel);
-        var items = await query.OrderByDescending(m => m.PlayedAt).ThenByDescending(m => m.Id).Skip(skip).Take(take).ToListAsync(cancel);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancel);
         return Results.Ok(new Page<OwnMatch>(items.Select(Mapping.ToOwn).ToList(), total, skip, take));
     }
 

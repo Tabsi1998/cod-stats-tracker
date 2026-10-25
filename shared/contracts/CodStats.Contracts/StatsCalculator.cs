@@ -17,11 +17,20 @@ public sealed record MatchFacts(
     int? Eliminations = null,
     int? Xp = null,
     int? LobbySize = null,
-    int? LobbyRank = null);
+    int? LobbyRank = null,
+    string? Weapon = null,
+    string? WeaponClass = null,
+    int? Level = null,
+    IReadOnlyDictionary<string, int>? ModeStats = null);
 
-/// <summary>Which matches a statistic covers. At most one of Last and Days/From/To should be set.</summary>
+/// <summary>
+/// Which matches a statistic covers. At most one of Last and Days/From/To should be set. Mode, map, weapon and class
+/// compare without case (the OCR reads capitals, corrections may not be); Result is the normalised one (a Warzone win
+/// is first place), Status tells finished from left matches.
+/// </summary>
 public sealed record StatsFilter(GameGroup Game = GameGroup.All, int? Last = null, int? Days = null,
-    DateTimeOffset? From = null, DateTimeOffset? To = null)
+    DateTimeOffset? From = null, DateTimeOffset? To = null, string? Mode = null, string? Map = null, string? Weapon = null,
+    string? WeaponClass = null, MatchResult? Result = null, MatchStatus? Status = null)
 {
     public static readonly IReadOnlySet<int> AllowedLast = new HashSet<int> { 10, 25, 50, 100 };
     public static readonly IReadOnlySet<int> AllowedDays = new HashSet<int> { 7, 30 };
@@ -49,6 +58,17 @@ public sealed record StatsFilter(GameGroup Game = GameGroup.All, int? Last = nul
         {
             problems.Add("combine days with neither from nor to");
         }
+        foreach (var (name, text) in new[] { ("mode", Mode), ("map", Map), ("weapon", Weapon), ("weaponClass", WeaponClass) })
+        {
+            if (text is { Length: > MatchRules.MaxTextLength })
+            {
+                problems.Add($"{name} is longer than {MatchRules.MaxTextLength} characters");
+            }
+        }
+        if (Result is not null && Status == MatchStatus.Left)
+        {
+            problems.Add("a left match has no result");
+        }
         return problems;
     }
 
@@ -68,9 +88,23 @@ public sealed record StatsFilter(GameGroup Game = GameGroup.All, int? Last = nul
         {
             selected = selected.Where(match => match.PlayedAt <= to);
         }
+        selected = selected.Where(match => Same(match.Mode, Mode) && Same(match.Map, Map) && Same(match.Weapon, Weapon)
+            && Same(match.WeaponClass, WeaponClass));
+        if (Result is { } result)
+        {
+            selected = selected.Where(match => MatchRules.NormalisedResult(match.Game, match.Result, match.Placement) == result);
+        }
+        if (Status is { } status)
+        {
+            selected = selected.Where(match => match.Status == status);
+        }
         var ordered = selected.OrderBy(match => match.PlayedAt).ThenBy(match => match.Id).ToList();
         return Last is { } last && ordered.Count > last ? ordered.GetRange(ordered.Count - last, last) : ordered;
     }
+
+    /// <summary>True without a wanted value; otherwise the same name, trimmed and without case.</summary>
+    private static bool Same(string? value, string? wanted) =>
+        string.IsNullOrWhiteSpace(wanted) || string.Equals(value?.Trim(), wanted.Trim(), StringComparison.OrdinalIgnoreCase);
 }
 
 public static class StatsCalculator
@@ -164,7 +198,19 @@ public static class StatsCalculator
                 placementMatches++;
             }
             series.Add(new StatsPoint(match.Id, match.Game, match.PlayedAt, match.Kills, match.Deaths, result,
-                KdRatio(kdKills, kdDeaths), WinRate(wins, withResult)));
+                KdRatio(kdKills, kdDeaths), WinRate(wins, withResult))
+            {
+                Status = match.Status,
+                Mode = match.Mode,
+                Map = match.Map,
+                Assists = match.Assists,
+                Score = match.Score,
+                Xp = match.Xp,
+                Level = match.Level,
+                Weapon = match.Weapon,
+                LobbySize = match.LobbySize,
+                LobbyRank = match.LobbyRank,
+            });
         }
 
         return new StatsResponse(
@@ -195,7 +241,85 @@ public static class StatsCalculator
             Breakdown(matchesOldestFirst, m => m.Mode),
             Breakdown(matchesOldestFirst, m => m.Map),
             lobbyMatches,
-            LobbyShare(lobbyBehind, lobbyOthers));
+            LobbyShare(lobbyBehind, lobbyOthers))
+        {
+            ByWeapon = Breakdown(matchesOldestFirst, m => m.Weapon),
+            ByWeaponClass = Breakdown(matchesOldestFirst, m => m.WeaponClass),
+            ByMapMode = MapModes(matchesOldestFirst),
+            ModeStats = ModeStatSummaries(matchesOldestFirst),
+            Records = Records(matchesOldestFirst),
+        };
+    }
+
+    /// <summary>Win rate and K/D for every map and mode played together, most played first.</summary>
+    public static IReadOnlyList<MapModeCell> MapModes(IEnumerable<MatchFacts> matches)
+    {
+        ArgumentNullException.ThrowIfNull(matches);
+        return matches
+            .Where(m => !string.IsNullOrWhiteSpace(m.Map) && !string.IsNullOrWhiteSpace(m.Mode))
+            .GroupBy(m => (Map: m.Map!.Trim().ToUpperInvariant(), Mode: m.Mode!.Trim().ToUpperInvariant()))
+            .Select(g =>
+            {
+                var figures = Figures(g.ToList());
+                return new MapModeCell(g.Key.Map, g.Key.Mode, figures.Matches, figures.Wins, figures.WithResult,
+                    WinRate(figures.Wins, figures.WithResult), figures.Kd);
+            })
+            .OrderByDescending(c => c.Matches).ThenBy(c => c.Map, StringComparer.Ordinal).ThenBy(c => c.Mode, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Each mode value (confirms, captures …) over the matches that have it: total, average per such match and best.
+    /// Matches without the value do not lower the average: another mode simply has no such column.
+    /// </summary>
+    public static IReadOnlyList<ModeStatSummary> ModeStatSummaries(IEnumerable<MatchFacts> matches)
+    {
+        ArgumentNullException.ThrowIfNull(matches);
+        return matches
+            .SelectMany(m => m.ModeStats ?? new Dictionary<string, int>())
+            .GroupBy(s => s.Key, StringComparer.Ordinal)
+            .Select(g => new ModeStatSummary(g.Key, g.Sum(s => (long)s.Value), g.Count(), Math.Round(g.Average(s => s.Value), 2), g.Max(s => s.Value)))
+            .OrderByDescending(s => s.Matches).ThenBy(s => s.Key, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// The best single match per value: kills, K/D (at least one kill), score, eliminations, assists, XP and every
+    /// mode value. On a tie the newer match holds the record.
+    /// </summary>
+    public static IReadOnlyList<StatsRecord> Records(IReadOnlyList<MatchFacts> matchesOldestFirst)
+    {
+        ArgumentNullException.ThrowIfNull(matchesOldestFirst);
+        var best = new Dictionary<string, StatsRecord>(StringComparer.Ordinal);
+        void Offer(string kind, double? value, MatchFacts match)
+        {
+            if (value is { } v && (!best.TryGetValue(kind, out var held) || v >= held.Value))
+            {
+                best[kind] = new StatsRecord(kind, v, match.Id, match.PlayedAt, match.Mode, match.Map);
+            }
+        }
+        foreach (var match in matchesOldestFirst)
+        {
+            Offer("kills", match.Kills, match);
+            Offer("kd", match.Kills is > 0 && match.Deaths is { } deaths ? KdRatio(match.Kills.Value, deaths) : null, match);
+            Offer("score", match.Score, match);
+            Offer("eliminations", match.Eliminations, match);
+            Offer("assists", match.Assists, match);
+            Offer("xp", match.Xp, match);
+            foreach (var (key, value) in match.ModeStats ?? new Dictionary<string, int>())
+            {
+                Offer("stat." + key, value, match);
+            }
+        }
+        return best.Values.OrderBy(r => r.Kind, StringComparer.Ordinal).ToList();
+    }
+
+    private static (int Matches, int Wins, int WithResult, double? Kd) Figures(List<MatchFacts> list)
+    {
+        var results = list.Select(m => MatchRules.NormalisedResult(m.Game, m.Result, m.Placement)).Where(r => r is not null).ToList();
+        var both = list.Where(m => m.Kills is not null && m.Deaths is not null).ToList();
+        return (list.Count, results.Count(r => r == MatchResult.Win), results.Count,
+            KdRatio(both.Sum(m => (long)m.Kills!.Value), both.Sum(m => (long)m.Deaths!.Value)));
     }
 
     /// <summary>
@@ -226,7 +350,14 @@ public static class StatsCalculator
                     withKills.Sum(m => m.Kills!.Value),
                     KdRatio(both.Sum(m => (long)m.Kills!.Value), both.Sum(m => (long)m.Deaths!.Value)),
                     withKills.Count > 0 ? Math.Round(withKills.Average(m => m.Kills!.Value), 2) : null,
-                    scored.Count > 0 ? Math.Round(scored.Average(m => m.Score!.Value), 1) : null);
+                    scored.Count > 0 ? Math.Round(scored.Average(m => m.Score!.Value), 1) : null)
+                {
+                    Deaths = list.Sum(m => m.Deaths ?? 0),
+                    Assists = list.Sum(m => m.Assists ?? 0),
+                    LeftMatches = list.Count(m => m.Status == MatchStatus.Left),
+                    LastPlayedAt = list.Max(m => m.PlayedAt),
+                    ModeStats = ModeStatSummaries(list),
+                };
             })
             .OrderByDescending(b => b.Matches).ThenBy(b => b.Name, StringComparer.Ordinal)
             .ToList();

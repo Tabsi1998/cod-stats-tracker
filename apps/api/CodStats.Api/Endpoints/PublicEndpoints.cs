@@ -24,8 +24,10 @@ public static class PublicEndpoints
         pub.MapGet("/players/{id:guid}", GetPlayer);
         pub.MapGet("/players/{id:guid}/stats", GetPlayerStats);
         pub.MapGet("/players/{id:guid}/matches", GetPlayerMatches);
+        pub.MapGet("/players/{id:guid}/facets", GetPlayerFacets);
         pub.MapGet("/players/{id:guid}/matches/{matchId:guid}", GetPlayerMatch);
         pub.MapGet("/leaderboards", GetLeaderboard);
+        pub.MapGet("/facets", GetFacets);
         pub.MapGet("/platform-stats", GetPlatformStats);
     }
 
@@ -87,7 +89,27 @@ public static class PublicEndpoints
         return Results.Ok(await Statistics.ForProfile(db, id, filter, clock.GetUtcNow(), shownOnly: true, cancel));
     }
 
-    private static async Task<IResult> GetPlayerMatches(Guid id, AppDb db, string? game, int? offset, int? limit, CancellationToken cancel)
+    /// <summary>The player's matches, newest first, with the same filters as the statistics.</summary>
+    private static async Task<IResult> GetPlayerMatches(Guid id, AppDb db, TimeProvider clock, HttpRequest request, int? offset, int? limit,
+        CancellationToken cancel)
+    {
+        if (!await db.Profiles.Visible().AnyAsync(p => p.Id == id, cancel))
+        {
+            return Results.NotFound();
+        }
+        if (!QueryFilters.TryStats(request.Query, out var filter, out var problem))
+        {
+            return Results.Problem(detail: problem, statusCode: 400);
+        }
+        var (skip, take) = QueryFilters.Paging(offset, limit);
+        var query = db.Matches.Shown().AsNoTracking().Where(m => m.ProfileId == id).Newest(filter, clock.GetUtcNow());
+        var total = await query.CountAsync(cancel);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancel);
+        return Results.Ok(new Page<PublicMatch>(items.Select(Mapping.ToPublic).ToList(), total, skip, take));
+    }
+
+    /// <summary>What the player's filters can choose from: modes, maps, weapons and classes with their match counts.</summary>
+    private static async Task<IResult> GetPlayerFacets(Guid id, AppDb db, string? game, CancellationToken cancel)
     {
         if (!await db.Profiles.Visible().AnyAsync(p => p.Id == id, cancel))
         {
@@ -97,13 +119,37 @@ public static class PublicEndpoints
         {
             return Results.Problem(detail: "game must be all, mw4 or warzone", statusCode: 400);
         }
-        var (skip, take) = QueryFilters.Paging(offset, limit);
         var games = group.Members();
-        var query = db.Matches.Shown().AsNoTracking().Where(m => m.ProfileId == id && games.Contains(m.Game));
-        var total = await query.CountAsync(cancel);
-        var items = await query.OrderByDescending(m => m.PlayedAt).ThenByDescending(m => m.Id).Skip(skip).Take(take).ToListAsync(cancel);
-        return Results.Ok(new Page<PublicMatch>(items.Select(Mapping.ToPublic).ToList(), total, skip, take));
+        var rows = await db.Matches.Shown().AsNoTracking()
+            .Where(m => m.ProfileId == id && games.Contains(m.Game))
+            .Select(m => new { m.Mode, m.Map, m.Weapon, m.WeaponClass })
+            .ToListAsync(cancel);
+        return Results.Ok(new PlayerFacets(Facet(rows.Select(r => (r.Mode, 1))), Facet(rows.Select(r => (r.Map, 1))),
+            Facet(rows.Select(r => (r.Weapon, 1))), Facet(rows.Select(r => (r.WeaponClass, 1)))));
     }
+
+    /// <summary>Modes and maps of all shown matches of visible players, for the leaderboard filters.</summary>
+    private static async Task<IResult> GetFacets(AppDb db, string? game, CancellationToken cancel)
+    {
+        if (!QueryFilters.TryGameGroup(game, out var group))
+        {
+            return Results.Problem(detail: "game must be all, mw4 or warzone", statusCode: 400);
+        }
+        var games = group.Members();
+        var visible = db.Profiles.Visible().Select(p => p.Id);
+        var shown = db.Matches.Shown().AsNoTracking().Where(m => games.Contains(m.Game) && visible.Contains(m.ProfileId));
+        var modes = await shown.Where(m => m.Mode != null).GroupBy(m => m.Mode).Select(g => new { g.Key, Count = g.Count() }).ToListAsync(cancel);
+        var maps = await shown.Where(m => m.Map != null).GroupBy(m => m.Map).Select(g => new { g.Key, Count = g.Count() }).ToListAsync(cancel);
+        return Results.Ok(new PlayerFacets(Facet(modes.Select(m => (m.Key, m.Count))), Facet(maps.Select(m => (m.Key, m.Count))), [], []));
+    }
+
+    /// <summary>Names with their match counts, merged without case (the OCR reads capitals, corrections may not be).</summary>
+    private static List<FacetValue> Facet(IEnumerable<(string? Name, int Count)> names) => names
+        .Where(n => !string.IsNullOrWhiteSpace(n.Name))
+        .GroupBy(n => n.Name!.Trim().ToUpperInvariant())
+        .Select(g => new FacetValue(g.Key, g.Sum(n => n.Count)))
+        .OrderByDescending(f => f.Matches).ThenBy(f => f.Name, StringComparer.Ordinal)
+        .ToList();
 
     /// <summary>One match of a visible player, for the match detail page.</summary>
     private static async Task<IResult> GetPlayerMatch(Guid id, Guid matchId, AppDb db, CancellationToken cancel)
@@ -116,8 +162,8 @@ public static class PublicEndpoints
         return match is null ? Results.NotFound() : Results.Ok(Mapping.ToPublic(match));
     }
 
-    private static async Task<IResult> GetLeaderboard(AppDb db, IOptions<LeaderboardOptions> options, string? game, string? metric,
-        int? minMatches, string? mode, CancellationToken cancel)
+    private static async Task<IResult> GetLeaderboard(AppDb db, IOptions<LeaderboardOptions> options, TimeProvider clock, string? game,
+        string? metric, int? minMatches, string? mode, string? map, int? days, CancellationToken cancel)
     {
         if (!QueryFilters.TryGameGroup(game, out var group))
         {
@@ -128,22 +174,22 @@ public static class PublicEndpoints
         {
             return Results.Problem(detail: "metric must be kd, kills, matches or winrate", statusCode: 400);
         }
-        if (mode is { Length: > MatchRules.MaxTextLength })
+        if (mode is { Length: > MatchRules.MaxTextLength } || map is { Length: > MatchRules.MaxTextLength })
         {
-            return Results.Problem(detail: $"mode is longer than {MatchRules.MaxTextLength} characters", statusCode: 400);
+            return Results.Problem(detail: $"mode or map is longer than {MatchRules.MaxTextLength} characters", statusCode: 400);
+        }
+        if (days is { } period && !StatsFilter.AllowedDays.Contains(period))
+        {
+            return Results.Problem(detail: "days must be 7 or 30", statusCode: 400);
         }
         // A caller may ask for a stricter minimum, never for a looser one.
         var minimum = Math.Max(options.Value.MinMatches, minMatches ?? 0);
         var games = group.Members();
 
-        var matches = db.Matches.Shown().AsNoTracking().Where(m => games.Contains(m.Game));
-        if (!string.IsNullOrWhiteSpace(mode))
-        {
-            // Case-insensitive, with wildcards taken literally: modes are read in capitals, corrections may not be.
-            var wanted = mode.Trim().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal)
-                .Replace("_", "\\_", StringComparison.Ordinal);
-            matches = matches.Where(m => m.Mode != null && EF.Functions.ILike(m.Mode, wanted, "\\"));
-        }
+        // Case-insensitive, with wildcards taken literally: modes are read in capitals, corrections may not be.
+        var filter = new StatsFilter(group, Days: days, Mode: string.IsNullOrWhiteSpace(mode) ? null : mode.Trim(),
+            Map: string.IsNullOrWhiteSpace(map) ? null : map.Trim());
+        var matches = db.Matches.Shown().AsNoTracking().Filtered(filter, clock.GetUtcNow());
         var rows = await matches
             .Join(db.Profiles.Visible(), m => m.ProfileId, p => p.Id, (m, p) => new { m, p.DisplayName })
             .GroupBy(x => new { x.m.ProfileId, x.DisplayName })
