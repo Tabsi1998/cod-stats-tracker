@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
+
 ## [0.2.2] - 2026-10-24
 
 ### Geändert
