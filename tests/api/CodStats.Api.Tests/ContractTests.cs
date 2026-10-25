@@ -184,6 +184,85 @@ public class StatsTests
     [InlineData(null, 14)]
     public void Filter_rejects_values_outside_the_offered_choices(int? last, int? days) =>
         Assert.NotEmpty(new StatsFilter(Last: last, Days: days).Problems());
+
+    [Fact]
+    public void Filter_by_mode_map_weapon_result_and_status_without_case()
+    {
+        var now = DateTimeOffset.UnixEpoch.AddDays(1);
+        MatchFacts[] matches =
+        [
+            Mw4(10, 5, MatchResult.Win, 1) with { Mode = "ABSCHUSS BESTÄTIGT", Map = "COAL", Weapon = "HAN 86", WeaponClass = "STURMGEWEHR" },
+            Mw4(10, 5, MatchResult.Loss, 2) with { Mode = "Abschuss bestätigt", Map = "MUNITION", Weapon = "SANG 9MM", WeaponClass = "PISTOLE" },
+            Mw4(3, 3, null, 3) with { Mode = "KAPERN", Map = "COAL", Status = MatchStatus.Left },
+            new(Guid.NewGuid(), Game.WarzoneBattleRoyale, DateTimeOffset.UnixEpoch.AddMinutes(4), 2, 1, null, null, 1),
+        ];
+        Assert.Equal(2, new StatsFilter(Mode: " abschuss bestätigt ").Apply(matches, now).Count);
+        Assert.Equal(2, new StatsFilter(Map: "coal").Apply(matches, now).Count);
+        Assert.Single(new StatsFilter(Weapon: "han 86").Apply(matches, now));
+        Assert.Single(new StatsFilter(WeaponClass: "Pistole").Apply(matches, now));
+        // A Warzone win is first place, even without a stored result.
+        Assert.Equal(2, new StatsFilter(Result: MatchResult.Win).Apply(matches, now).Count);
+        Assert.Single(new StatsFilter(Status: MatchStatus.Left).Apply(matches, now));
+        Assert.Single(new StatsFilter(Mode: "abschuss bestätigt", Result: MatchResult.Loss).Apply(matches, now));
+        Assert.NotEmpty(new StatsFilter(Result: MatchResult.Win, Status: MatchStatus.Left).Problems());
+        Assert.NotEmpty(new StatsFilter(Mode: new string('x', 65)).Problems());
+    }
+
+    [Fact]
+    public void Weapons_maps_by_mode_mode_values_and_records()
+    {
+        var kc1 = Mw4(20, 10, MatchResult.Win, 1) with
+        {
+            Mode = "ABSCHUSS BESTÄTIGT",
+            Map = "COAL",
+            Weapon = "HAN 86",
+            WeaponClass = "STURMGEWEHR",
+            Score = 3000,
+            ModeStats = new Dictionary<string, int> { ["confirms"] = 12, ["denies"] = 4 },
+        };
+        var kc2 = Mw4(10, 10, MatchResult.Loss, 2) with
+        {
+            Mode = "ABSCHUSS BESTÄTIGT",
+            Map = "COAL",
+            Weapon = "HAN 86",
+            WeaponClass = "STURMGEWEHR",
+            Score = 2000,
+            ModeStats = new Dictionary<string, int> { ["confirms"] = 6 },
+        };
+        var cap = Mw4(8, 2, MatchResult.Win, 3) with
+        {
+            Mode = "KAPERN",
+            Map = "MUNITION",
+            Weapon = "SANG 9MM",
+            WeaponClass = "PISTOLE",
+            Score = 1225,
+            ModeStats = new Dictionary<string, int> { ["captures"] = 2 },
+        };
+        var stats = StatsCalculator.Compute(GameGroup.Mw4, [kc1, kc2, cap]);
+
+        var han = stats.ByWeapon![0];
+        Assert.Equal(("HAN 86", 2, 1.5), (han.Name, han.Matches, han.KdRatio!.Value));
+        Assert.Equal(["STURMGEWEHR", "PISTOLE"], stats.ByWeaponClass!.Select(b => b.Name));
+
+        var cell = stats.ByMapMode![0];
+        Assert.Equal(("COAL", "ABSCHUSS BESTÄTIGT", 2, 0.5), (cell.Map, cell.Mode, cell.Matches, cell.WinRate!.Value));
+
+        // Averages over the matches that have the value: confirms 9 per Kill Confirmed match, not 6 over all three.
+        var confirms = stats.ModeStats!.Single(s => s.Key == "confirms");
+        Assert.Equal((18L, 2, 9.0, 12), (confirms.Total, confirms.Matches, confirms.Average, confirms.Best));
+        var byMode = stats.ByMode!.Single(b => b.Name == "ABSCHUSS BESTÄTIGT");
+        Assert.Equal(9.0, byMode.ModeStats!.Single(s => s.Key == "confirms").Average);
+        Assert.Equal(20, byMode.Deaths);
+
+        var records = stats.Records!.ToDictionary(r => r.Kind);
+        Assert.Equal((20.0, kc1.Id), (records["kills"].Value, records["kills"].MatchId));
+        Assert.Equal((4.0, cap.Id), (records["kd"].Value, records["kd"].MatchId));
+        Assert.Equal(12, records["stat.confirms"].Value);
+        Assert.Equal(cap.Id, records["stat.captures"].MatchId);
+
+        var point = stats.Series[^1];
+        Assert.Equal(("KAPERN", "MUNITION", "SANG 9MM", 1225), (point.Mode, point.Map, point.Weapon, point.Score));
+    }
 }
 
 public class MatchRuleTests

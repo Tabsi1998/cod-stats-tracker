@@ -171,7 +171,21 @@ public sealed record StatsResponse(
     IReadOnlyList<StatsBreakdown>? ByMode = null,
     IReadOnlyList<StatsBreakdown>? ByMap = null,
     int LobbyMatches = 0,
-    double? LobbyShare = null);
+    double? LobbyShare = null)
+{
+    /// <summary>The same figures per top weapon of the report, and per its class.</summary>
+    public IReadOnlyList<StatsBreakdown>? ByWeapon { get; init; }
+    public IReadOnlyList<StatsBreakdown>? ByWeaponClass { get; init; }
+
+    /// <summary>Every map and mode played together.</summary>
+    public IReadOnlyList<MapModeCell>? ByMapMode { get; init; }
+
+    /// <summary>Mode values (confirms, captures …) over the matches that have them.</summary>
+    public IReadOnlyList<ModeStatSummary>? ModeStats { get; init; }
+
+    /// <summary>The best single match per value.</summary>
+    public IReadOnlyList<StatsRecord>? Records { get; init; }
+}
 
 /// <summary>Figures of the matches in one mode or on one map.</summary>
 public sealed record StatsBreakdown(
@@ -183,7 +197,32 @@ public sealed record StatsBreakdown(
     int Kills,
     double? KdRatio,
     double? AverageKills,
-    double? AverageScore);
+    double? AverageScore)
+{
+    public int Deaths { get; init; }
+    public int Assists { get; init; }
+    public int LeftMatches { get; init; }
+    public DateTimeOffset? LastPlayedAt { get; init; }
+
+    /// <summary>Mode values in these matches, e.g. confirms per match in Kill Confirmed.</summary>
+    public IReadOnlyList<ModeStatSummary>? ModeStats { get; init; }
+}
+
+/// <summary>What a player's filters can choose from, each with its number of matches, most played first.</summary>
+public sealed record PlayerFacets(IReadOnlyList<FacetValue> Modes, IReadOnlyList<FacetValue> Maps, IReadOnlyList<FacetValue> Weapons,
+    IReadOnlyList<FacetValue> WeaponClasses);
+
+public sealed record FacetValue(string Name, int Matches);
+
+/// <summary>Figures of one map in one mode.</summary>
+public sealed record MapModeCell(string Map, string Mode, int Matches, int Wins, int MatchesWithResult, double? WinRate, double? KdRatio);
+
+/// <param name="Key">The mode value's key, such as "confirms".</param>
+/// <param name="Matches">Matches that have the value; the average is over these only.</param>
+public sealed record ModeStatSummary(string Key, long Total, int Matches, double Average, int Best);
+
+/// <param name="Kind">"kills", "kd", "score", "eliminations", "assists", "xp" or "stat." and a mode value's key.</param>
+public sealed record StatsRecord(string Kind, double Value, Guid MatchId, DateTimeOffset PlayedAt, string? Mode, string? Map);
 
 /// <summary>One match in time order, with the running totals the charts draw.</summary>
 public sealed record StatsPoint(
@@ -194,7 +233,20 @@ public sealed record StatsPoint(
     int? Deaths,
     MatchResult? Result,
     double? RunningKdRatio,
-    double? RunningWinRate);
+    double? RunningWinRate)
+{
+    // What the website groups and plots itself (sessions, time of day, form, progress), in the viewer's time zone.
+    public MatchStatus Status { get; init; } = MatchStatus.Completed;
+    public string? Mode { get; init; }
+    public string? Map { get; init; }
+    public int? Assists { get; init; }
+    public int? Score { get; init; }
+    public int? Xp { get; init; }
+    public int? Level { get; init; }
+    public string? Weapon { get; init; }
+    public int? LobbySize { get; init; }
+    public int? LobbyRank { get; init; }
+}
 
 // Public directory
 

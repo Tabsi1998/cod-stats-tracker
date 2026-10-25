@@ -1,7 +1,9 @@
 import { useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { api, type GameGroup, type Page, type Period, type PublicMatch, type Stats, type StatsBreakdown } from '../api'
+import { api, type FilterQuery, type Stats, type StatsBreakdown } from '../api'
+import { formCurve, pointOutcome } from '../analysis'
+import { activeFilters, periodLabels, previousLabels, previousQuery, readFilters, toQuery, writeFilters, type Filters } from '../filters'
 import {
   axisLabel,
   dash,
@@ -17,22 +19,12 @@ import {
 } from '../format'
 import { useLoad, type Load } from '../load'
 import { prefersReducedMotion } from '../motion'
-import { Bracket, CommunityNote, Figure, FormStrip, GameSwitch, Icon, Message, OutcomeTag, Segmented, Skeleton, Tabs } from '../ui'
+import { Bracket, CommunityNote, Delta, Figure, FormStrip, Icon, Message, OutcomeTag, Skeleton, Tabs } from '../ui'
+import { LobbyPlaces, MapModeMatrix, ModeValues, RateBar, Records, Sessions, WhenPlayed } from './Analyses'
+import { FilterBar } from './FilterBar'
 
-type PeriodKey = 'all' | 'last10' | 'last25' | 'last50' | 'last100' | 'days7' | 'days30'
-
-const periods: Record<PeriodKey, { label: string; period: Period }> = {
-  all: { label: 'Gesamt', period: {} },
-  last10: { label: 'Letzte 10', period: { last: 10 } },
-  last25: { label: 'Letzte 25', period: { last: 25 } },
-  last50: { label: 'Letzte 50', period: { last: 50 } },
-  last100: { label: 'Letzte 100', period: { last: 100 } },
-  days7: { label: '7 Tage', period: { days: 7 } },
-  days30: { label: '30 Tage', period: { days: 30 } },
-}
-
-type TabKey = 'overview' | 'matches' | 'modes' | 'maps'
-const tabKeys: TabKey[] = ['overview', 'matches', 'modes', 'maps']
+type TabKey = 'overview' | 'matches' | 'modes' | 'maps' | 'weapons' | 'sessions' | 'records'
+const tabKeys: TabKey[] = ['overview', 'matches', 'modes', 'maps', 'weapons', 'sessions', 'records']
 
 const count = (value: number | null) => formatCount(value == null ? null : Math.round(value))
 const ratio = (value: number | null) => formatKd(value)
@@ -42,11 +34,16 @@ export function Player() {
   const { id = '' } = useParams()
   const [params, setParams] = useSearchParams()
   const tab = tabKeys.includes(params.get('tab') as TabKey) ? (params.get('tab') as TabKey) : 'overview'
-  const [game, setGame] = useState<GameGroup>('mw4')
-  const [periodKey, setPeriodKey] = useState<PeriodKey>('all')
+  const filters = readFilters(params)
+  // One moment per filter choice, so "today" and "7 days" do not shift while the page is open.
+  const [now] = useState(() => new Date())
+  const query = toQuery(filters, now)
+  const before = previousQuery(filters, now)
+  const key = JSON.stringify(query)
   const profile = useLoad(() => api.player(id), [id])
-  const stats = useLoad(() => api.stats(id, game, periods[periodKey].period), [id, game, periodKey])
-  const recent = useLoad(() => api.matches(id, game, 0, 20), [id, game])
+  const facets = useLoad(() => api.facets(id, filters.game), [id, filters.game])
+  const stats = useLoad(() => api.stats(id, query), [id, key])
+  const previous = useLoad(() => (before ? api.stats(id, before) : Promise.resolve(null)), [id, JSON.stringify(before)])
 
   if (profile.state === 'loading')
     return (
@@ -59,7 +56,22 @@ export function Player() {
     return <Message>{profile.notFound ? 'Dieses Profil gibt es nicht oder es ist nicht öffentlich.' : 'Das Profil konnte nicht geladen werden.'}</Message>
 
   const player = profile.data
-  const setTab = (next: TabKey) => setParams(next === 'overview' ? {} : { tab: next }, { replace: true })
+  const setFilters = (next: Filters) => setParams(writeFilters(params, next), { replace: true })
+  const setTab = (next: TabKey) => {
+    const nextParams = new URLSearchParams(params)
+    if (next === 'overview') nextParams.delete('tab')
+    else nextParams.set('tab', next)
+    setParams(nextParams, { replace: true })
+  }
+  /** Narrow to what was clicked in a breakdown, and show the overview of it. */
+  const drill = (patch: Partial<Filters>) => {
+    const nextParams = writeFilters(params, { ...filters, ...patch })
+    nextParams.delete('tab')
+    setParams(nextParams)
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+  }
+  const ready = stats.state === 'ready' ? stats.data : null
+  const narrowed = activeFilters(filters) > 0 || filters.period !== 'all'
 
   return (
     <div className="space-y-8 pt-10">
@@ -71,23 +83,22 @@ export function Player() {
         {player.previousNames.length > 0 && <p className="text-sm text-faint">Früher: {player.previousNames.join(', ')}</p>}
       </header>
 
-      <div className="rise flex flex-wrap items-center gap-3" style={{ '--i': 1 } as CSSProperties}>
-        <GameSwitch value={game} onChange={setGame} />
-        <Segmented
-          label="Zeitraum"
-          value={periodKey}
-          onChange={setPeriodKey}
-          options={(Object.keys(periods) as PeriodKey[]).map((key) => ({ value: key, label: periods[key].label }))}
-        />
-      </div>
+      <FilterBar filters={filters} facets={facets} onChange={setFilters} />
 
-      {game === 'all' && (
+      {filters.game === 'all' && (
         <p className="bg-you/10 px-4 py-2.5 text-sm">
           Übersicht: MW4 und Warzone zusammengerechnet. Für Vergleiche besser einzeln ansehen.
         </p>
       )}
 
-      <Debrief stats={stats} recent={recent} playerId={id} />
+      <Debrief
+        stats={stats}
+        previous={previous.state === 'ready' ? previous.data : null}
+        against={previousLabels[filters.period]}
+        playerId={id}
+        narrowed={narrowed}
+        periodLabel={periodLabels[filters.period]}
+      />
 
       <Tabs
         label="Ansicht"
@@ -95,27 +106,61 @@ export function Player() {
         onChange={setTab}
         options={[
           { value: 'overview', label: 'Übersicht' },
-          { value: 'matches', label: 'Matches' },
-          { value: 'modes', label: 'Modi', count: stats.state === 'ready' ? (stats.data.byMode?.length ?? 0) : undefined },
-          { value: 'maps', label: 'Karten', count: stats.state === 'ready' ? (stats.data.byMap?.length ?? 0) : undefined },
+          { value: 'matches', label: 'Matches', count: ready?.matches },
+          { value: 'modes', label: 'Modi', count: ready ? (ready.byMode?.length ?? 0) : undefined },
+          { value: 'maps', label: 'Karten', count: ready ? (ready.byMap?.length ?? 0) : undefined },
+          { value: 'weapons', label: 'Waffen', count: ready ? (ready.byWeapon?.length ?? 0) : undefined },
+          { value: 'sessions', label: 'Sessions' },
+          { value: 'records', label: 'Rekorde' },
         ]}
       />
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} key={tab}>
-        {tab === 'overview' && (stats.state === 'ready' ? <Overview stats={stats.data} playerId={id} /> : <Skeleton className="h-72" />)}
-        {tab === 'matches' && <MatchList playerId={id} game={game} />}
-        {tab === 'modes' &&
-          (stats.state === 'ready' ? (
-            <Breakdown rows={stats.data.byMode ?? []} kind="Modus" empty="Noch keine Matches mit erkanntem Modus." />
-          ) : (
-            <Skeleton className="h-72" />
-          ))}
-        {tab === 'maps' &&
-          (stats.state === 'ready' ? (
-            <Breakdown rows={stats.data.byMap ?? []} kind="Karte" empty="Noch keine Matches mit erkannter Karte. Karten liest der Client ab Version 0.2.0." />
-          ) : (
-            <Skeleton className="h-72" />
-          ))}
+        {tab === 'matches' ? (
+          <MatchList playerId={id} query={query} />
+        ) : !ready ? (
+          stats.state === 'error' ? null : <Skeleton className="h-72" />
+        ) : (
+          <>
+            {tab === 'overview' && <Overview stats={ready} playerId={id} />}
+            {tab === 'modes' && (
+              <div className="space-y-12">
+                <Breakdown rows={ready.byMode ?? []} kind="Modus" empty="Noch keine Matches mit erkanntem Modus." onPick={(mode) => drill({ mode })} />
+                <ModeValues modes={ready.byMode ?? []} />
+              </div>
+            )}
+            {tab === 'maps' && (
+              <div className="space-y-12">
+                <Breakdown
+                  rows={ready.byMap ?? []}
+                  kind="Karte"
+                  empty="Noch keine Matches mit erkannter Karte. Karten liest der Client ab Version 0.2.0."
+                  onPick={(map) => drill({ map })}
+                />
+                <MapModeMatrix cells={ready.byMapMode ?? []} onPick={(map, mode) => drill({ map, mode })} />
+              </div>
+            )}
+            {tab === 'weapons' && (
+              <div className="space-y-12">
+                <Breakdown
+                  rows={ready.byWeapon ?? []}
+                  kind="Top-Waffe"
+                  empty="Noch keine Matches mit erkannter Top-Waffe. Der Client liest sie aus dem Einsatzbericht ab der nächsten Version."
+                  onPick={(weapon) => drill({ weapon })}
+                />
+                {(ready.byWeaponClass?.length ?? 0) > 0 && (
+                  <Breakdown rows={ready.byWeaponClass ?? []} kind="Waffenklasse" empty="" onPick={(weaponClass) => drill({ weaponClass })} />
+                )}
+                <p className="max-w-[65ch] text-sm text-faint">
+                  Gezählt wird die Top-Waffe, die der Einsatzbericht unter „Topleistung“ zeigt: die Waffe, mit der du in diesem Match am
+                  meisten erreicht hast. Abschüsse pro Waffe folgen.
+                </p>
+              </div>
+            )}
+            {tab === 'sessions' && <Sessions series={ready.series} playerId={id} />}
+            {tab === 'records' && <Records stats={ready} playerId={id} />}
+          </>
+        )}
       </div>
 
       <CommunityNote />
@@ -124,13 +169,32 @@ export function Player() {
 }
 
 /** The service record at a glance: the four numbers that say how good someone is, and their form. */
-function Debrief({ stats, recent, playerId }: { stats: Load<Stats>; recent: Load<Page<PublicMatch>>; playerId: string }) {
+function Debrief({
+  stats,
+  previous,
+  against,
+  playerId,
+  narrowed,
+  periodLabel,
+}: {
+  stats: Load<Stats>
+  previous: Stats | null
+  against: string | undefined
+  playerId: string
+  narrowed: boolean
+  periodLabel: string
+}) {
   if (stats.state === 'loading') return <Skeleton className="h-72" />
   if (stats.state === 'error') return <Message>Die Statistik konnte nicht geladen werden.</Message>
   const s = stats.data
-  if (s.matches === 0) return <Message>In diesem Zeitraum gibt es noch keine Matches.</Message>
+  if (s.matches === 0)
+    return <Message>{narrowed ? 'Mit diesen Filtern gibt es keine Matches. Filter lockern oder einen anderen Zeitraum wählen.' : 'Noch keine Matches.'}</Message>
 
-  const form = recent.state === 'ready' ? [...recent.data.items].reverse() : []
+  const form = s.series.slice(-20)
+  // Only compare with a period before that had matches; an empty one would turn every value into a jump.
+  const base = previous && previous.matches > 0 ? previous : null
+  const delta = (now: number | null, then: number | null | undefined, format: (value: number) => string) =>
+    base && against ? <Delta now={now} before={then} format={format} against={against} /> : null
   return (
     <Bracket
       className="rise grid gap-8 bg-surface/50 px-5 py-7 shadow-[0_24px_48px_-28px_rgb(0_0_0/0.9)] sm:px-8 lg:grid-cols-[1.1fr_1fr]"
@@ -138,35 +202,46 @@ function Debrief({ stats, recent, playerId }: { stats: Load<Stats>; recent: Load
       label="Bilanz"
     >
       <div className="grid grid-cols-2 gap-x-6 gap-y-8">
-        <Figure value={s.kdRatio} format={ratio} label="K/D" size="xl" tone="you" hint="Kills gesamt ÷ Tode gesamt" />
+        <Figure
+          value={s.kdRatio}
+          format={ratio}
+          label="K/D"
+          size="xl"
+          tone="you"
+          hint={delta(s.kdRatio, base?.kdRatio, (v) => formatKd(v)) ?? 'Kills gesamt ÷ Tode gesamt'}
+        />
         <Figure
           value={s.winRate}
           format={percent}
           label="Siegquote"
           size="xl"
           tone={s.winRate == null ? undefined : s.winRate >= 0.5 ? 'win' : 'loss'}
-          hint={`${formatCount(s.wins)} von ${formatCount(s.matchesWithResult)} gewonnen`}
+          hint={
+            delta(s.winRate, base?.winRate, (v) => `${formatAverage(v * 100)} Pkt.`) ?? `${formatCount(s.wins)} von ${formatCount(s.matchesWithResult)} gewonnen`
+          }
         />
-        <Figure value={s.kills} format={count} label="Kills" size="lg" hint={`${formatAverage(s.averageKills)} pro Match`} />
+        <Figure
+          value={s.kills}
+          format={count}
+          label="Kills"
+          size="lg"
+          hint={delta(s.averageKills, base?.averageKills, (v) => `${formatAverage(v)} pro Match`) ?? `${formatAverage(s.averageKills)} pro Match`}
+        />
         <Figure
           value={s.matches}
           format={count}
           label="Matches"
           size="lg"
-          hint={s.leftMatches > 0 ? `davon ${formatCount(s.leftMatches)} verlassen` : 'keins verlassen'}
+          hint={s.leftMatches > 0 ? `davon ${formatCount(s.leftMatches)} verlassen` : narrowed ? periodLabel : 'keins verlassen'}
         />
       </div>
       <div className="flex flex-col gap-8">
         <div>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="display text-lg font-bold tracking-[0.1em] text-muted">Form · letzte {form.length || ''} Matches</h2>
+            <h2 className="display text-lg font-bold tracking-[0.1em] text-muted">Form · letzte {form.length} Matches</h2>
             <Legend />
           </div>
-          {form.length > 0 ? (
-            <FormStrip results={form.map((m) => ({ id: m.id, outcome: outcomeOf(m) }))} />
-          ) : (
-            <Skeleton className="h-16" />
-          )}
+          <FormStrip results={form.map((point) => ({ id: point.matchId, outcome: pointOutcome(point) }))} />
           <p className="mt-2 text-sm text-faint">Älteste links, neueste rechts.</p>
         </div>
         <dl className="grid grid-cols-3 gap-4 border-t border-line pt-5">
@@ -223,14 +298,18 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
   // The charts draw themselves in, unless the player asked the system for less motion.
   const animate = !prefersReducedMotion()
   const label = axisLabel(stats.series.map((point) => point.playedAt))
-  const series = stats.series.map((point) => ({
+  const form = formCurve(stats.series)
+  const series = stats.series.map((point, i) => ({
     id: point.matchId,
     day: label(point.playedAt),
     kd: point.runningKdRatio,
+    form: form[i],
     winRate: point.runningWinRate == null ? null : Math.round(point.runningWinRate * 1000) / 10,
     kills: point.kills,
-    result: point.result,
+    result: pointOutcome(point),
+    level: point.level ?? null,
   }))
+  const levels = series.filter((point) => point.level != null)
   const details: [string, string][] = [
     ['Tode', formatCount(stats.deaths)],
     ['Assists', formatCount(stats.assists)],
@@ -278,12 +357,16 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
               </Bar>
             </BarChart>
           </Chart>
-          <Chart title="K/D-Verlauf" note="laufend, über alle Matches bis dahin">
+          <Chart title="K/D und Form" note="gelb: gesamt bis dahin · weiß: letzte 10 Matches">
             <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="var(--color-line)" strokeOpacity={0.5} vertical={false} />
               <XAxis dataKey="day" stroke="var(--color-faint)" fontSize={13} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--color-faint)" fontSize={13} width={40} tickLine={false} axisLine={false} />
-              <Tooltip {...tooltip} formatter={(value) => [formatKd(Number(value)), 'K/D']} />
+              <Tooltip
+                {...tooltip}
+                formatter={(value, name) => [formatKd(Number(value)), name === 'form' ? 'Form (10 Matches)' : 'K/D gesamt']}
+              />
+              <Line type="monotone" dataKey="form" stroke="var(--color-text)" strokeOpacity={0.7} dot={false} strokeWidth={1.5} animationDuration={900} isAnimationActive={animate} />
               <Line type="monotone" dataKey="kd" stroke="var(--color-you)" dot={false} strokeWidth={2.5} animationDuration={900} isAnimationActive={animate} />
             </LineChart>
           </Chart>
@@ -300,6 +383,26 @@ function Overview({ stats, playerId }: { stats: Stats; playerId: string }) {
       ) : (
         <Message>Verläufe erscheinen ab zwei Matches im gewählten Zeitraum.</Message>
       )}
+
+      {levels.length > 2 && (
+        <Chart
+          title="Fortschritt"
+          note={`Level ${levels[0].level} → ${levels[levels.length - 1].level}${
+            levels[levels.length - 1].level! > levels[0].level! ? ` · +${levels[levels.length - 1].level! - levels[0].level!}` : ''
+          } · ${formatCount(stats.totalXp)} XP`}
+        >
+          <LineChart data={levels} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke="var(--color-line)" strokeOpacity={0.5} vertical={false} />
+            <XAxis dataKey="day" stroke="var(--color-faint)" fontSize={13} tickLine={false} axisLine={false} />
+            <YAxis stroke="var(--color-faint)" fontSize={13} width={40} allowDecimals={false} domain={['dataMin', 'dataMax']} tickLine={false} axisLine={false} />
+            <Tooltip {...tooltip} formatter={(value) => [String(value), 'Level']} />
+            <Line type="stepAfter" dataKey="level" stroke="var(--color-you)" dot={false} strokeWidth={2.5} animationDuration={900} isAnimationActive={animate} />
+          </LineChart>
+        </Chart>
+      )}
+
+      <WhenPlayed series={stats.series} />
+      <LobbyPlaces series={stats.series} />
     </div>
   )
 }
@@ -326,16 +429,17 @@ function Chart({ title, note, children, wide = false }: { title: string; note: s
   )
 }
 
-/** Every match, newest first, each row opening its debrief. Loads in pages of 25. */
-function MatchList({ playerId, game }: { playerId: string; game: GameGroup }) {
+/** Every match of the filters, newest first, each row opening its debrief. Loads in pages of 25. */
+function MatchList({ playerId, query }: { playerId: string; query: FilterQuery }) {
   const [pages, setPages] = useState(1)
-  const list = useLoad(() => api.matches(playerId, game, 0, 25 * pages), [playerId, game, pages])
+  const key = JSON.stringify(query)
+  const list = useLoad(() => api.matches(playerId, query, 0, 25 * pages), [playerId, key, pages])
   const navigate = useNavigate()
 
   if (list.state === 'loading' && pages === 1) return <Skeleton className="h-96" />
   if (list.state === 'error') return <Message>Die Matches konnten nicht geladen werden.</Message>
   const page = list.state === 'ready' ? list.data : null
-  if (page && page.items.length === 0) return <Message>Noch keine Matches.</Message>
+  if (page && page.items.length === 0) return <Message>Keine Matches für diese Filter.</Message>
 
   return (
     <div className="space-y-4">
@@ -355,6 +459,7 @@ function MatchList({ playerId, game }: { playerId: string; game: GameGroup }) {
                     {formatDate(match.playedAt)}
                     {match.map && ` · ${match.map}`}
                     {d?.teamScore != null && d.enemyScore != null && ` · ${d.teamScore}:${d.enemyScore}`}
+                    {d?.weapon && ` · ${d.weapon}`}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
@@ -403,6 +508,7 @@ function MatchList({ playerId, game }: { playerId: string; game: GameGroup }) {
                   <td className="py-3 pr-4 whitespace-nowrap">
                     <span className="display text-lg font-bold">{match.mode ?? gameLabels[match.game]}</span>
                     {match.map && <span className="ml-2 text-muted">{match.map}</span>}
+                    {d?.weapon && <span className="block text-sm text-faint">{d.weapon}</span>}
                   </td>
                   <td className="py-3 pr-4">
                     <OutcomeTag outcome={outcomeOf(match)} />
@@ -451,8 +557,8 @@ function MatchList({ playerId, game }: { playerId: string; game: GameGroup }) {
 
 type SortKey = 'matches' | 'winRate' | 'kdRatio' | 'averageKills' | 'averageScore'
 
-/** Strengths per mode or map: sortable, the win rate drawn as a bar. */
-function Breakdown({ rows, kind, empty }: { rows: StatsBreakdown[]; kind: string; empty: string }) {
+/** Strengths per mode, map or weapon: sortable, the win rate drawn as a bar; a name narrows the filters to it. */
+function Breakdown({ rows, kind, empty, onPick }: { rows: StatsBreakdown[]; kind: string; empty: string; onPick: (name: string) => void }) {
   const [sort, setSort] = useState<SortKey>('matches')
   if (rows.length === 0) return <Message>{empty}</Message>
   const sorted = [...rows].sort((a, b) => (b[sort] ?? -1) - (a[sort] ?? -1) || a.name.localeCompare(b.name))
@@ -486,15 +592,21 @@ function Breakdown({ rows, kind, empty }: { rows: StatsBreakdown[]; kind: string
         <tbody>
           {sorted.map((row, i) => (
             <tr key={row.name} className="border-b border-line/60">
-              <td className="display py-3 pr-4 text-xl font-bold">{row.name}</td>
+              <td className="py-3 pr-4">
+                <button
+                  type="button"
+                  onClick={() => onPick(row.name)}
+                  title={`Nur ${row.name} ansehen`}
+                  className="group display inline-flex items-center gap-2 text-left text-xl font-bold transition-colors duration-200 hover:text-you"
+                >
+                  {row.name}
+                  <Icon name="filter" className="size-4 text-faint opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100" />
+                </button>
+              </td>
               <td className="py-3 pr-4 text-right text-lg">{formatCount(row.matches)}</td>
               <td className="py-3 pr-4 text-right">
                 <span className="inline-flex items-center justify-end gap-3">
-                  <span aria-hidden="true" className={`hidden h-1.5 w-24 sm:block ${row.winRate == null ? '' : 'bg-loss/40'}`}>
-                    {row.winRate != null && (
-                      <span className="bar-in block h-full bg-win" style={{ width: `${row.winRate * 100}%`, '--i': i } as CSSProperties} />
-                    )}
-                  </span>
+                  <RateBar rate={row.winRate} index={i} className="hidden w-24 sm:block" />
                   <span className="w-16 text-lg">{formatPercent(row.winRate)}</span>
                 </span>
               </td>

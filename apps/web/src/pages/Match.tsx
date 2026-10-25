@@ -46,7 +46,7 @@ export function MatchPage() {
 
 function Report({ match, playerId, playerName }: { match: PublicMatch; playerId: string; playerName: string | null }) {
   // The average of the same game: MW4 and Warzone numbers are not comparable.
-  const average: Load<Stats> = useLoad(() => api.stats(playerId, match.game === 'mw4_mp' ? 'mw4' : 'warzone', {}), [playerId, match.game])
+  const average: Load<Stats> = useLoad(() => api.stats(playerId, { game: match.game === 'mw4_mp' ? 'mw4' : 'warzone' }), [playerId, match.game])
   const outcome = outcomeOf(match)
   const d = match.details
   const tone = outcome === 'win' ? 'win' : outcome === 'loss' ? 'loss' : outcome === 'left' ? 'left' : undefined
