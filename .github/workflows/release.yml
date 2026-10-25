@@ -38,6 +38,27 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
       - run: dotnet test tests/desktop/CodStats.Desktop.Tests --configuration Release
       - run: python scripts/local_check.py --only desktop --release --version ${{ steps.version.outputs.version }}
+      # The client installs an update only with a valid signature from this key (docs/updates.md). Without the
+      # secret the release still builds, it just offers no self-update.
+      - name: Sign the update manifest
+        shell: bash
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          manifest=.local-testing/release/CodStats-update.json
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::warning::UPDATE_SIGNING_KEY is not set: this release offers no self-update"
+            rm -f "$manifest"
+            exit 0
+          fi
+          key="$RUNNER_TEMP/update-key.pem"
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$UPDATE_SIGNING_KEY" > "$key"
+          # Clients only know the public key in UpdateKey.cs; a release signed with another key would never install.
+          public="$(openssl ec -in "$key" -pubout -outform DER 2>/dev/null | openssl base64 -A)"
+          grep -qF "\"$public\"" apps/desktop/CodStats.Desktop/Updates/UpdateKey.cs \
+            || { echo "::error::UPDATE_SIGNING_KEY does not match UpdateKey.PublicKey"; exit 1; }
+          openssl dgst -sha256 -sign "$key" "$manifest" | openssl base64 -A > "$manifest.sig"
       - name: Release notes from CHANGELOG.md
         shell: bash
         env:

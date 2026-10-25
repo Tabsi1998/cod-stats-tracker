@@ -464,12 +464,24 @@ def portable_zip(context: Context) -> str:
     return f"{target.stat().st_size // (1024 * 1024)} MB"
 
 
+UPDATE_MANIFEST = "CodStats-update.json"
+
+
 def checksums(context: Context) -> str:
     lines = [f"{hashlib.sha256(file.read_bytes()).hexdigest()}  {file.name}"
-             for file in sorted(RELEASE_DIR.iterdir()) if file.is_file() and file.name != "SHA256SUMS"]
+             for file in sorted(RELEASE_DIR.iterdir())
+             if file.is_file() and file.name not in ("SHA256SUMS", UPDATE_MANIFEST, UPDATE_MANIFEST + ".sig")]
     # LF on every platform: with CRLF, "sha256sum -c" on Linux verifies nothing.
     (RELEASE_DIR / "SHA256SUMS").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     return f"{len(lines)} file(s)"
+
+
+def update_manifest(context: Context) -> str:
+    """What the client's self-update reads. The release workflow signs it; unsigned, clients ignore it."""
+    setup = RELEASE_DIR / "CodStats-Setup-win-x64.exe"
+    manifest = {"version": context.version, "installer": setup.name, "sha256": hashlib.sha256(setup.read_bytes()).hexdigest()}
+    (RELEASE_DIR / UPDATE_MANIFEST).write_bytes(json.dumps(manifest, indent=2).encode("utf-8") + b"\n")
+    return f"{context.version}, unsigned"
 
 
 def release_steps() -> list[Step]:
@@ -477,6 +489,7 @@ def release_steps() -> list[Step]:
         Step("release", "installer", "Installer (Inno Setup)", installer, needs=("desktop-publish",)),
         Step("release", "portable", "Portable ZIP", portable_zip, needs=("desktop-publish",)),
         Step("release", "checksums", "SHA256SUMS", checksums, needs=("installer", "portable")),
+        Step("release", "update-manifest", "Update manifest for the client", update_manifest, needs=("installer",)),
     ]
 
 

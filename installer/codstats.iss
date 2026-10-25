@@ -72,6 +72,8 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 [Run]
 ; The first start shows the consent window; nothing is recorded before the player agrees.
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; An update from inside the client runs silently with /RESTARTAPP=1: the client quit for it and comes back here.
+Filename: "{app}\{#AppExe}"; Flags: nowait skipifnotsilent; Check: RestartAfterUpdate
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM {#AppExe} /F"; Flags: runhidden; RunOnceId: "StopCodStats"
@@ -88,6 +90,11 @@ german.RemoveDataPrompt=Sollen auch deine lokalen Daten gelöscht werden?%n%nDas
 english.RemoveDataPrompt=Also delete your local data?%n%nThat is the settings, the recorded matches and this PC's device key. Without the key this PC can no longer change your profile.%n%nYour profile on the website stays. To delete it, choose "Delete all data" in the client's settings first.%n%nChoose No to keep everything.
 
 [Code]
+function RestartAfterUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:RESTARTAPP|0}') = '1';
+end;
+
 // The client sets its own autostart entry; the uninstaller removes it, so nothing starts a deleted program.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin

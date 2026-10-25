@@ -78,6 +78,9 @@ public sealed partial class GameWatcher : IDisposable
         return window;
     }
 
+    /// <summary>Looks now, also while tracking is off: an update must not restart the client mid-game.</summary>
+    public static bool IsGameRunningNow() => RunningProcessNames().Any(IsCodProcess);
+
     public void Start() => timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(5));
 
     public void SetEnabled(bool value)

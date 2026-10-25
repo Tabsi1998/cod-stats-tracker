@@ -60,24 +60,46 @@ wait_healthy() {
   return 1
 }
 
-# Puts the latest release's Windows installer into deploy/downloads for the website's download button.
-# Never fatal: the site runs without it, the button just stays hidden.
+# Puts the latest release's Windows installer into deploy/downloads for the website's download button, and with it
+# the signed update manifest the clients look for (docs/updates.md). Never fatal: the site runs without them, the
+# button just stays hidden and clients see no update.
 fetch_installer() {
-  local target="$DEPLOY_DIR/downloads" file="CodStats-Setup-win-x64.exe" repo
+  local target="$DEPLOY_DIR/downloads" file="CodStats-Setup-win-x64.exe" manifest="CodStats-update.json" repo staging
   repo="$(git -C "$ROOT_DIR" remote get-url origin 2>/dev/null | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')"
   mkdir -p "$target"
   [[ -n "$repo" ]] || { yellow "  Installer: GitHub-Repo unbekannt, Download-Knopf bleibt ausgeblendet."; return 0; }
-  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
-     && gh release download --repo "$repo" --pattern "$file" --dir "$target" --clobber >/dev/null 2>&1; then
-    green "✓ Installer der neuesten Version für die Webseite geholt."
-  elif curl -fsSL -o "$target/$file.part" "https://github.com/$repo/releases/latest/download/$file" 2>/dev/null; then
-    mv -- "$target/$file.part" "$target/$file"
-    green "✓ Installer der neuesten Version für die Webseite geholt."
-  else
-    rm -f -- "$target/$file.part"
+  # Next to the target, so the moves below are atomic renames on the same file system.
+  staging="$(mktemp -d "$target/.staging.XXXXXX")"
+  if ! release_file "$repo" "$file" "$staging"; then
+    rm -rf -- "$staging"
     yellow "  Installer nicht geholt (privates Repo ohne 'gh auth login'?). Von Hand: Datei $file aus dem"
     yellow "  GitHub-Release nach $target legen. Bis dahin ist der Download-Knopf ausgeblendet."
+    return 0
   fi
+  # The manifest only goes out with the installer it describes; an old one next to a new installer is removed.
+  rm -f -- "$target/$manifest" "$target/$manifest.sig"
+  if release_file "$repo" "$manifest" "$staging" && release_file "$repo" "$manifest.sig" "$staging" \
+     && grep -qi "\"$(sha256sum "$staging/$file" | cut -d' ' -f1)\"" "$staging/$manifest"; then
+    mv -- "$staging/$file" "$target/$file"
+    mv -- "$staging/$manifest.sig" "$target/$manifest.sig"
+    mv -- "$staging/$manifest" "$target/$manifest"
+    green "✓ Installer und Update für die Clients bereitgestellt."
+  else
+    mv -- "$staging/$file" "$target/$file"
+    green "✓ Installer der neuesten Version für die Webseite geholt."
+    yellow "  Kein signiertes Update im Release: Clients bieten diese Version nicht selbst an."
+  fi
+  rm -rf -- "$staging"
+}
+
+# Downloads one file of the latest release into a folder: with gh (also private repos), else anonymously.
+release_file() {
+  local repo="$1" name="$2" dir="$3"
+  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
+     && gh release download --repo "$repo" --pattern "$name" --dir "$dir" --clobber >/dev/null 2>&1 && [[ -s "$dir/$name" ]]; then
+    return 0
+  fi
+  curl -fsSL -o "$dir/$name" "https://github.com/$repo/releases/latest/download/$name" 2>/dev/null && [[ -s "$dir/$name" ]]
 }
 
 site_address() {

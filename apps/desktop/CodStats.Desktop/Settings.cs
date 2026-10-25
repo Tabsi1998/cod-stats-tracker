@@ -19,6 +19,9 @@ public sealed class Settings
     public bool PublishProfile { get; set; }
     public bool StartWithWindows { get; set; } = true;
 
+    /// <summary>Look for a newer client on the server. Installing always waits for the player.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     /// <summary>The CoD display name, recognised or entered once by the player.</summary>
     public string? DisplayName { get; set; }
 

@@ -19,6 +19,7 @@ public partial class SettingsWindow : Window
         Publish.IsChecked = settings.PublishProfile;
         Tracking.IsChecked = settings.TrackingEnabled;
         Autostart.IsChecked = settings.StartWithWindows;
+        CheckUpdates.IsChecked = settings.CheckForUpdates;
     }
 
     private async void OnSave(object sender, RoutedEventArgs e)
@@ -35,7 +36,9 @@ public partial class SettingsWindow : Window
         settings.PublishProfile = Publish.IsChecked == true;
         settings.TrackingEnabled = Tracking.IsChecked == true;
         settings.StartWithWindows = Autostart.IsChecked == true;
+        settings.CheckForUpdates = CheckUpdates.IsChecked == true;
         app.SaveSettings();
+        _ = app.CheckForUpdateAsync();
         Status.Text = "Gespeichert. Wird synchronisiert …";
         await app.SyncNowAsync();
         Status.Text = app.Sync.Status.Text + (app.Sync.Status.Detail is { } detail ? $": {detail}" : "");

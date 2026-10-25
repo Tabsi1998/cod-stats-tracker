@@ -102,6 +102,10 @@ GameWatcher (Prozessname, alle 5 s) ──CoD läuft──▶ RecognitionLoop (a
 - **Eigener Name:** gilt erst als bestätigt, wenn derselbe Name sauber in 3 verschiedenen Matches gelesen wurde und kein zweiter Name genauso oft vorkommt. Ein von Hand bestätigter Name bleibt.
 - **Windows-OCR** liefert keine Wort-Konfidenz; die Qualität kommt aus sauberem Parsen (Ziffern-Verwechsler wie O/0 senken sie) und der Übereinstimmung mehrerer Bilder.
 
+## Selbst-Update (Client)
+
+Der Client liest `/downloads/CodStats-update.json` und die Signatur daneben vom eigenen Server, prüft sie mit dem öffentlichen Release-Schlüssel (`Updates/UpdateKey.cs`) und bietet eine neuere Version an. Installiert wird nur auf Klick, nie während CoD läuft, und nur ein Installer mit dem signierten SHA-256. Details und Einrichtung des Schlüssels: [docs/updates.md](docs/updates.md).
+
 ## API-Überblick (`/api/v1`)
 
 Gerät (signiert): `POST devices/register`, `POST devices/recover`, `GET me`, `PUT me/display-name`, `PATCH me/privacy`, `GET me/stats`, `GET me/matches`, `POST me/matches/batch`, `PATCH me/matches/{id}`, `GET me/sync-status`, `POST me/recovery-key`, `GET me/export`, `DELETE me/data`.

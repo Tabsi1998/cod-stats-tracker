@@ -4,6 +4,10 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Hinzugefügt
+- Windows-Client: Selbst-Update. Der Client fragt den Server nach einer neueren Version und bietet sie im Dashboard und im Tray an; ein Klick lädt sie, prüft Signatur und Prüfsumme, installiert still und startet neu. Nie während Call of Duty läuft, abschaltbar in den Einstellungen. Aktiv ab der ersten Version mit eingetragenem Release-Schlüssel ([docs/updates.md](docs/updates.md)).
+- Release: signierte Update-Datei `CodStats-update.json` (+ `.sig`); `install.sh`/`update.sh` legen sie neben den Installer.
+
 ## [0.2.2] - 2026-10-24
 
 ### Geändert
