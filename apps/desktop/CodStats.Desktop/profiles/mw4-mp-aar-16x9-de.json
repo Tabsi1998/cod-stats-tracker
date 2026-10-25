@@ -70,13 +70,6 @@
       },
       "more": [
         {
-          "x": 0.095,
-          "y": 0.305,
-          "width": 0.13,
-          "height": 0.06,
-          "maxHeight": 40
-        },
-        {
           "x": 0.085,
           "y": 0.3,
           "width": 0.12,
@@ -105,9 +98,29 @@
         "y": 0.7,
         "width": 0.2,
         "height": 0.11,
-        "whiteText": true
+        "minPixelHeight": 300
       },
       "more": [
+        {
+          "x": 0.2,
+          "y": 0.7,
+          "width": 0.2,
+          "height": 0.11
+        },
+        {
+          "x": 0.2,
+          "y": 0.7,
+          "width": 0.2,
+          "height": 0.11,
+          "maxHeight": 60
+        },
+        {
+          "x": 0.2,
+          "y": 0.7,
+          "width": 0.2,
+          "height": 0.11,
+          "whiteText": true
+        },
         {
           "x": 0.2,
           "y": 0.7,
@@ -130,15 +143,29 @@
         "x": 0.64,
         "y": 0.19,
         "width": 0.15,
-        "height": 0.035
+        "height": 0.035,
+        "maxHeight": 40
       },
       "more": [
         {
           "x": 0.64,
           "y": 0.19,
           "width": 0.15,
+          "height": 0.035
+        },
+        {
+          "x": 0.64,
+          "y": 0.19,
+          "width": 0.15,
           "height": 0.035,
           "whiteText": true
+        },
+        {
+          "x": 0.64,
+          "y": 0.19,
+          "width": 0.15,
+          "height": 0.035,
+          "minPixelHeight": 120
         }
       ],
       "numbers": 1
@@ -243,6 +270,20 @@
         "height": 0.09,
         "whiteText": true,
         "maxHeight": 80
+      },
+      {
+        "x": 0.08,
+        "y": 0.485,
+        "width": 0.45,
+        "height": 0.09,
+        "maxHeight": 60
+      },
+      {
+        "x": 0.08,
+        "y": 0.485,
+        "width": 0.45,
+        "height": 0.09,
+        "minPixelHeight": 250
       }
     ],
     "labels": {

@@ -220,24 +220,32 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
     private async Task ReadLabelledAsync(Frame frame, LabelledValuesSpec spec, Dictionary<string, FieldReading> fields,
         double quality, CancellationToken cancel)
     {
-        var lines = await reader.ReadLinesAsync(frame, spec.Region, cancel);
-        foreach (var (field, words) in spec.Values)
+        var read = new Dictionary<string, List<string>>();
+        foreach (var region in spec.More.Prepend(spec.Region))
         {
-            var label = lines.FirstOrDefault(l => TextParsing.ContainsAny(l.Text, words));
-            if (label is null)
+            var lines = await reader.ReadLinesAsync(frame, region, cancel);
+            foreach (var (field, words) in spec.Values)
             {
-                continue;
+                var label = lines.FirstOrDefault(l => TextParsing.ContainsAny(l.Text, words));
+                if (label is null)
+                {
+                    continue;
+                }
+                var value = lines
+                    .Where(l => l.Top >= label.Top + label.Height * 0.8 && l.Top <= label.Top + label.Height * 4
+                        && l.Center >= label.Left - label.Width && l.Center <= label.Left + label.Width * 2)
+                    .OrderBy(l => Math.Abs(l.Center - label.Center))
+                    .FirstOrDefault();
+                if (value is not null && value.Text.Trim() is { Length: > 0 } text)
+                {
+                    (read.TryGetValue(field, out var list) ? list : read[field] = []).Add(text);
+                }
             }
-            var value = lines
-                .Where(l => l.Top >= label.Top + label.Height * 0.8 && l.Top <= label.Top + label.Height * 4
-                    && l.Center >= label.Left - label.Width && l.Center <= label.Left + label.Width * 2)
-                .OrderBy(l => Math.Abs(l.Center - label.Center))
-                .FirstOrDefault();
+        }
+        foreach (var (field, texts) in read)
+        {
             // The table row, found by name, wins over the banner: the banner may show another player.
-            if (value is not null)
-            {
-                fields.TryAdd(field, new FieldReading(value.Text, quality));
-            }
+            fields.TryAdd(field, new FieldReading(MostCommon(texts)!, quality));
         }
     }
 

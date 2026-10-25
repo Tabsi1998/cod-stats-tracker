@@ -4,6 +4,13 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Behoben
+- Tode fehlten oft (z. B. Herrschaft): Die Leiste unter dem Ergebnis wird jetzt in drei Durchgängen gelesen, und die ELIM/T-QUOTE prüft die Tode gegen (45 Eliminierungen bei 1.67 sind nur mit 27 Toden möglich). Fehlen die Tode, aber passt genau ein Wert zur Quote, wird er übernommen; passt der gelesene nicht, kommt das Match zur Prüfung.
+- XP wurden manchmal falsch gelesen (931 statt 9311): mehr Durchgänge ohne Weißfilter, und XP unter den Punkten gelten als Lesefehler und werden verworfen.
+- Level nach einem Level-Up (grüne Schrift) wurde nicht gelesen.
+- Ein Endstand, der dem Ergebnis widerspricht (Sieg mit 0:174), wird verworfen statt gespeichert; ein Lese-Durchgang, der solche Werte lieferte, ist entfernt.
+- Kacheln im Einsatzbericht (einzelne Ziffern wie „4“ Assists) werden mit zwei weiteren Durchgängen gelesen.
+
 ## [0.2.3] - 2026-10-25
 
 ### Hinzugefügt
