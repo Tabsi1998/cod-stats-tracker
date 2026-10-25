@@ -39,17 +39,25 @@ public sealed record SyncStatusResponse(int Matches, DateTimeOffset? LastUploadA
 /// <param name="TeamScore">The own team's final score (free-for-all: the player's).</param>
 /// <param name="EnemyScore">The enemy team's final score (free-for-all: the leader's).</param>
 /// <param name="ModeStats">Mode values by key, such as "captures" or "data_uploaded".</param>
+/// <param name="LobbySize">Players on the final scoreboard, both teams. Only this number, never their names or values.</param>
+/// <param name="LobbyRank">The player's place on that scoreboard by score (1 = most points; a tie counts as the better place).</param>
+/// <param name="Weapon">The report's top weapon ("HAN 86"), as the client's list spells it.</param>
+/// <param name="WeaponClass">Its class ("STURMGEWEHR").</param>
 public sealed record MatchDetails(
     int? Eliminations = null,
     int? TeamScore = null,
     int? EnemyScore = null,
     int? Xp = null,
     int? Level = null,
-    IReadOnlyDictionary<string, int>? ModeStats = null)
+    IReadOnlyDictionary<string, int>? ModeStats = null,
+    int? LobbySize = null,
+    int? LobbyRank = null,
+    string? Weapon = null,
+    string? WeaponClass = null)
 {
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsEmpty => Eliminations is null && TeamScore is null && EnemyScore is null && Xp is null && Level is null
-        && (ModeStats is null || ModeStats.Count == 0);
+        && (ModeStats is null || ModeStats.Count == 0) && LobbySize is null && LobbyRank is null && Weapon is null && WeaponClass is null;
 }
 
 /// <summary>One recognised match as the client uploads it. Unknown values are null, never 0.</summary>
@@ -161,7 +169,9 @@ public sealed record StatsResponse(
     Guid? BestMatchId = null,
     int? LongestWinStreak = null,
     IReadOnlyList<StatsBreakdown>? ByMode = null,
-    IReadOnlyList<StatsBreakdown>? ByMap = null);
+    IReadOnlyList<StatsBreakdown>? ByMap = null,
+    int LobbyMatches = 0,
+    double? LobbyShare = null);
 
 /// <summary>Figures of the matches in one mode or on one map.</summary>
 public sealed record StatsBreakdown(

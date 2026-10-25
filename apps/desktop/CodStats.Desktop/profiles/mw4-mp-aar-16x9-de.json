@@ -142,6 +142,81 @@
         }
       ],
       "numbers": 1
+    },
+    "weapon": {
+      "region": {
+        "x": 0.62,
+        "y": 0.48,
+        "width": 0.3,
+        "height": 0.07
+      },
+      "more": [
+        {
+          "x": 0.64,
+          "y": 0.485,
+          "width": 0.25,
+          "height": 0.06
+        },
+        {
+          "x": 0.6,
+          "y": 0.44,
+          "width": 0.35,
+          "height": 0.12
+        }
+      ],
+      "oneOf": [
+        "HAN 86",
+        "M4",
+        "HYEON BURST",
+        "PATRIOT XMR",
+        "KASTOV 762",
+        "ODEN",
+        "AXION",
+        "CRONEN SQUALL",
+        "ISO NIGHTSHADE",
+        "VEL 46",
+        "WZ.55 STRIGA",
+        "PPSH-41",
+        "X-58 NYX",
+        "REZI 12",
+        "KG-7 VULCAN",
+        "SIGNAL 50",
+        "SANG 9MM"
+      ]
+    },
+    "weaponClass": {
+      "region": {
+        "x": 0.62,
+        "y": 0.48,
+        "width": 0.3,
+        "height": 0.07
+      },
+      "more": [
+        {
+          "x": 0.64,
+          "y": 0.485,
+          "width": 0.25,
+          "height": 0.06
+        },
+        {
+          "x": 0.6,
+          "y": 0.44,
+          "width": 0.35,
+          "height": 0.12
+        }
+      ],
+      "oneOf": [
+        "STURMGEWEHR",
+        "MASCHINENPISTOLE",
+        "LEICHTES MASCHINENGEWEHR",
+        "SCHARFSCHÜTZENGEWEHR",
+        "PRÄZISIONSGEWEHR",
+        "KAMPFGEWEHR",
+        "SCHROTFLINTE",
+        "PISTOLE",
+        "WERFER",
+        "NAHKAMPF"
+      ]
     }
   },
   "tiles": {

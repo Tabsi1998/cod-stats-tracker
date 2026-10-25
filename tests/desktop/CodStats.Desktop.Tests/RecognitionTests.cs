@@ -53,6 +53,93 @@ public class TextParsingTests
         Assert.False(TextParsing.ContainsAny("SC0REB0ARD", ["SCOREBOARD"]));
         Assert.False(TextParsing.ContainsAny("WIM", ["WIN"]));
     }
+
+    private static readonly string[] Weapons = ["HAN 86", "SANG 9MM", "M4", "KASTOV 762", "PPSH-41"];
+
+    [Theory]
+    [InlineData("SANG SMM", "SANG 9MM")] // as read on a real report
+    [InlineData("sang 9mm", "SANG 9MM")]
+    [InlineData("HAN 86", "HAN 86")]
+    [InlineData("HAN B6", "HAN 86")]
+    [InlineData("KAST0V 762", "KASTOV 762")]
+    [InlineData("PPSH 41", "PPSH-41")]
+    [InlineData("M4", "M4")]
+    public void A_weapon_is_read_despite_look_alike_characters(string read, string weapon) =>
+        Assert.Equal(weapon, TextParsing.OneOf(read, Weapons));
+
+    [Theory]
+    [InlineData("SANG")] // half a name
+    [InlineData("3MM")]
+    [InlineData("KASTOV 545")] // another weapon of the same family is not this one
+    [InlineData("TOPLEISTUNG")]
+    [InlineData("")]
+    public void A_text_that_is_no_known_weapon_stays_unknown(string read) =>
+        Assert.Null(TextParsing.OneOf(read, Weapons));
+
+    [Fact]
+    public void Names_that_look_alike_cannot_both_be_listed()
+    {
+        var profile = new RecognitionProfile
+        {
+            Id = "test",
+            Screen = ScreenKind.AfterAction,
+            Game = Game.Mw4Multiplayer,
+            Aspect = 1.7778,
+            Anchors = [new Anchor(new Region(0.1, 0.1, 0.1, 0.1), ["X"])],
+            Fields = new Dictionary<string, FieldSpec> { [Fields.Weapon] = new(new Region(0.1, 0.1, 0.1, 0.1)) { OneOf = ["SANG 9MM", "SANG SMM"] } },
+        };
+        Assert.Contains(profile.Problems(), p => p.Contains("nicht unterscheidbar", StringComparison.Ordinal));
+    }
+}
+
+public class DerivedValueTests
+{
+    [Theory]
+    [InlineData(25, null, 30, 5)] // TDM: 30 eliminations, 25 kills
+    [InlineData(19, null, 31, 12)] // Stellung shows no assists column
+    [InlineData(10, 7, 17, 7)]
+    [InlineData(10, null, null, null)]
+    [InlineData(null, null, 20, null)]
+    public void Assists_are_eliminations_minus_kills(int? kills, int? assists, int? eliminations, int? expected)
+    {
+        var doubts = new List<string>();
+        Assert.Equal(expected, MatchStateMachine.Assists(kills, assists, eliminations, doubts));
+        Assert.Empty(doubts);
+    }
+
+    [Fact]
+    public void Values_that_do_not_add_up_are_a_doubt()
+    {
+        var doubts = new List<string>();
+        Assert.Equal(4, MatchStateMachine.Assists(25, 4, 30, doubts));
+        Assert.Null(MatchStateMachine.Assists(25, null, 20, doubts));
+        Assert.Equal(2, doubts.Count);
+    }
+
+    [Theory]
+    [InlineData(3, MatchResult.Win, 25, 29, 3)]
+    [InlineData(1, MatchResult.Win, 24, 22, 1)]
+    [InlineData(null, MatchResult.Win, 24, 22, 1)] // first by the report's scoreline
+    [InlineData(null, MatchResult.Loss, 21, 30, null)]
+    [InlineData(7, MatchResult.Loss, 21, 30, 7)]
+    public void A_free_for_all_place_that_fits_the_match_is_kept(int? placement, MatchResult result, int own, int other, int? expected)
+    {
+        var doubts = new List<string>();
+        Assert.Equal(expected, MatchStateMachine.FreeForAllPlacement(placement, result, [own, other], doubts));
+        Assert.Empty(doubts);
+    }
+
+    [Theory]
+    [InlineData(2, MatchResult.Loss, 21, 30)] // SIEG is the top three
+    [InlineData(5, MatchResult.Win, 25, 29)]
+    [InlineData(1, MatchResult.Win, 25, 29)] // first, but someone has more points
+    [InlineData(2, MatchResult.Win, 30, 25)] // more points than everyone else, but not first
+    public void A_free_for_all_place_that_contradicts_the_match_is_dropped(int placement, MatchResult result, int own, int other)
+    {
+        var doubts = new List<string>();
+        Assert.Null(MatchStateMachine.FreeForAllPlacement(placement, result, [own, other], doubts));
+        Assert.Single(doubts);
+    }
 }
 
 public class MatchStateMachineTests

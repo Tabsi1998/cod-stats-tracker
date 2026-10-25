@@ -80,6 +80,7 @@ Fehlende Werte sind `null`, nie `0`.
 | `score` | 0–100 000 |
 | `confidence` | 0–1 |
 | `played_at` | nicht mehr als 5 Minuten in der Zukunft, nicht älter als 180 Tage |
+| `lobbySize`, `lobbyRank` | nur zusammen; Größe 2–150, Platz 1–Größe |
 | `mode`, `map` | max. 64 Zeichen |
 
 Warzone mit `placement = 1` muss `result = win` sein, sonst `loss`.
@@ -100,6 +101,7 @@ GameWatcher (Prozessname, alle 5 s) ──CoD läuft──▶ RecognitionLoop (a
 - **Tab-Scoreboard mitten im Match zählt nicht.** Es wird nur gemerkt; endet ein Match ohne Ergebnisbildschirm, wird der letzte Stand als `pending` zur Prüfung abgelegt.
 - **Duplikate:** nach einem erfassten Match werden Ergebnisbildschirme ignoriert, bis ein neues Match beginnt; zusätzlich prüfen SQLite (gleiches Ergebnis ±3 Min.) und Server.
 - **Eigener Name:** gilt erst als bestätigt, wenn derselbe Name sauber in 3 verschiedenen Matches gelesen wurde und kein zweiter Name genauso oft vorkommt. Ein von Hand bestätigter Name bleibt.
+- **Lobby-Vergleich:** Aus den ohnehin gelesenen Tabellen des End-Scoreboards zählt der Client die Zeilen (Name und Punkte nebeneinander) und wie viele mehr Punkte haben als er. Gespeichert werden nur Lobbygröße und eigener Platz, nie Namen oder Werte anderer. Jeder Zweifel (Zeile ohne Punkte, fehlende Überschrift, uneinige Bilder) lässt die Lobby leer und macht das Match nicht unsicher. Auswertung: Anteil der Mitspieler mit höchstens so vielen Punkten, über alle Matches summiert (wie K/D).
 - **Windows-OCR** liefert keine Wort-Konfidenz; die Qualität kommt aus sauberem Parsen (Ziffern-Verwechsler wie O/0 senken sie) und der Übereinstimmung mehrerer Bilder.
 
 ## Selbst-Update (Client)

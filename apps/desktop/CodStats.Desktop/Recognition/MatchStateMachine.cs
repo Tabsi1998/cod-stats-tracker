@@ -297,6 +297,8 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         var assists = Count(Fields.Assists, TextParsing.Count, doubts, out _);
         var score = Count(Fields.Score, TextParsing.Count, doubts, out _);
         var eliminations = Count(Fields.Eliminations, TextParsing.Count, doubts, out _);
+        assists = Assists(kills, assists, eliminations, doubts);
+        var lobby = Lobby();
         var placement = Count(Fields.Placement, TextParsing.Placement, doubts, out var placementConfidence);
         var xp = Count(Fields.Xp, TextParsing.Count, doubts, out _);
         var level = Count(Fields.Level, TextParsing.Count, doubts, out _);
@@ -315,6 +317,16 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         }
         var mode = Text(reports, Fields.Mode) ?? Text(results, Fields.Mode);
         var map = Text(reports, Fields.Map) ?? Text(results, Fields.Map);
+        var notes = new List<string>();
+        var weapon = Text(reports, Fields.Weapon);
+        if (weapon is null && UnreadWeapon(Text(reports, Fields.Weapon + Fields.UnreadSuffix)) is { } unread)
+        {
+            notes.Add($"Waffe nicht in der Liste: '{unread}'");
+        }
+        if (game?.IsWarzone() != true && TextParsing.ContainsAny(mode ?? "", FreeForAllModes))
+        {
+            placement = FreeForAllPlacement(placement, result, scoreline, doubts);
+        }
 
         // The values a statistic depends on: kills, placement in Warzone, the result of a finished MW4 match. A left
         // match needs none of them: that it was left is what it says, its values may be unreadable (yellow zeros).
@@ -357,7 +369,12 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             EnemyScore = scoreline?[1],
             Xp = xp,
             Level = level,
+            LobbySize = lobby?.Size,
+            LobbyRank = lobby?.Rank,
             ModeStats = ModeStats(),
+            Weapon = weapon,
+            WeaponClass = Text(reports, Fields.WeaponClass),
+            Notes = notes,
         };
 
         results.Clear();
@@ -367,6 +384,84 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         Phase = MatchPhase.Recorded;
         sawStart = false;
         return candidate;
+    }
+
+    /// <summary>What the weapon block held besides its heading (the block is empty until the report loads it).</summary>
+    private static string? UnreadWeapon(string? block) =>
+        block?.Split(" / ").Where(l => !TextParsing.ContainsAny(l, ["TOPLEISTUNG", "TOP PERFORMANCE"])).ToList() is { Count: > 0 } rest
+            ? string.Join(" / ", rest) : null;
+
+    private static readonly string[] FreeForAllModes = ["FREI FÜR ALLE", "FREE-FOR-ALL", "JEDER GEGEN JEDEN"];
+
+    /// <summary>
+    /// The place in free-for-all, checked against what else the match showed: the banner says SIEG for the top three,
+    /// and the report's scoreline is the player's score next to the best other one, so a higher own score is first
+    /// place and a lower one is not. A place that contradicts either was misread and stays unknown.
+    /// </summary>
+    internal static int? FreeForAllPlacement(int? placement, MatchResult? result, IReadOnlyList<int>? scoreline, List<string> doubts)
+    {
+        if (placement is { } place && result is MatchResult.Win or MatchResult.Loss && (place <= 3) != (result == MatchResult.Win))
+        {
+            doubts.Add($"Platz {place} passt nicht zu {(result == MatchResult.Win ? "Sieg" : "Niederlage")}");
+            return null;
+        }
+        if (scoreline is [var own, var other] && own != other)
+        {
+            if (placement is { } read && (read == 1) != (own > other))
+            {
+                doubts.Add($"Platz {read} passt nicht zum Endstand {own}:{other}");
+                return null;
+            }
+            if (placement is null && own > other && result != MatchResult.Loss)
+            {
+                return 1;
+            }
+        }
+        return placement;
+    }
+
+    /// <summary>
+    /// MW4 counts eliminations as kills plus assists and shows an assists column in a few modes only (TDM, Front).
+    /// Without the column the assists are the difference; with it the difference is a check of all three values.
+    /// </summary>
+    internal static int? Assists(int? kills, int? assists, int? eliminations, List<string> doubts)
+    {
+        if (kills is not { } k || eliminations is not { } e)
+        {
+            return assists;
+        }
+        if (e < k)
+        {
+            doubts.Add("Eliminierungen kleiner als Abschüsse");
+            return assists;
+        }
+        if (assists is { } a && a != e - k)
+        {
+            doubts.Add("Assists passen nicht zu Eliminierungen − Abschüsse");
+        }
+        return assists ?? e - k;
+    }
+
+    /// <summary>
+    /// The lobby, from the final scoreboard only (a scoreboard mid-match is not the lobby's result). It is extra: an
+    /// unsure reading never makes the match unsure, the lobby just stays unknown. Size and place come from the same
+    /// frame and count together; at least two frames and two thirds of those that read it must agree.
+    /// </summary>
+    private (int Size, int Rank)? Lobby()
+    {
+        var read = results
+            .Select(r => (Size: TextParsing.Count(r.Fields.GetValueOrDefault(Fields.LobbySize)?.Text).Value,
+                Rank: TextParsing.Count(r.Fields.GetValueOrDefault(Fields.LobbyRank)?.Text).Value))
+            .Where(l => l.Size is not null && l.Rank is not null)
+            .Select(l => $"{l.Size}/{l.Rank}")
+            .ToList();
+        var winner = Vote(read, out var agreement);
+        if (winner is null || read.Count(r => r == winner) < 2 || agreement < 2.0 / 3)
+        {
+            return null;
+        }
+        var parts = winner.Split('/');
+        return (int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private MatchResult? VoteResult(List<Observation> readings, out double agreement) =>

@@ -10,7 +10,7 @@ public class MatchDetailsTests(ApiFixture fixture)
 {
     private ApiFactory Api => fixture.Api;
 
-    private static readonly MatchDetails Report = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 });
+    private static readonly MatchDetails Report = new(11, 300, 0, 12410, 26, new Dictionary<string, int> { ["captures"] = 2, ["data_uploaded"] = 77 }, 12, 3, "HAN 86", "STURMGEWEHR");
 
     [Fact]
     public async Task All_values_of_the_report_are_stored_and_shown_publicly()
@@ -28,6 +28,12 @@ public class MatchDetailsTests(ApiFixture fixture)
         Assert.Equal(12410, shown.Details.Xp);
         Assert.Equal(26, shown.Details.Level);
         Assert.Equal(77, shown.Details.ModeStats!["data_uploaded"]);
+        Assert.Equal((12, 3), (shown.Details.LobbySize, shown.Details.LobbyRank));
+        Assert.Equal(("HAN 86", "STURMGEWEHR"), (shown.Details.Weapon, shown.Details.WeaponClass));
+
+        var stats = await device.Http.GetFromJsonAsync<StatsResponse>($"/api/v1/public/players/{device.ProfileId}/stats");
+        Assert.Equal(1, stats!.LobbyMatches);
+        Assert.Equal(Math.Round(9 / 11.0, 4), stats.LobbyShare);
     }
 
     [Fact]

@@ -76,6 +76,14 @@ public sealed class Match
     /// <summary>Mode values such as captures; stored as jsonb, since every mode has others.</summary>
     public Dictionary<string, int>? ModeStats { get; set; }
 
+    /// <summary>Players on the final scoreboard and the player's place by score; no other player's name or values.</summary>
+    public int? LobbySize { get; set; }
+    public int? LobbyRank { get; set; }
+
+    /// <summary>The report's top weapon and its class ("HAN 86", "STURMGEWEHR").</summary>
+    public string? Weapon { get; set; }
+    public string? WeaponClass { get; set; }
+
     public double Confidence { get; set; }
     public ReviewStatus ReviewStatus { get; set; }
     public string? RecognizerVersion { get; set; }

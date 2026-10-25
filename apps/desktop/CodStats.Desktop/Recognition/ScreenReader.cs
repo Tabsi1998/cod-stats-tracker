@@ -44,6 +44,19 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
             var fields = new Dictionary<string, FieldReading>();
             foreach (var (name, spec) in profile.Fields)
             {
+                if (spec.OneOf.Count > 0)
+                {
+                    var (choice, unread) = await ReadChoiceAsync(frame, spec, cancel);
+                    if (choice is not null)
+                    {
+                        fields[name] = new FieldReading(choice, quality);
+                    }
+                    else if (unread is not null)
+                    {
+                        fields[name + Recognition.Fields.UnreadSuffix] = new FieldReading(unread, quality);
+                    }
+                    continue;
+                }
                 if (await ReadFieldAsync(frame, profile, name, spec, cancel) is { } text)
                 {
                     fields[name] = new FieldReading(text, quality);
@@ -98,9 +111,11 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         }
 
         var found = new List<(TableSpec Table, IReadOnlyList<TextLine> Lines, TextLine Name)>();
+        var tables = new List<(TableSpec Table, IReadOnlyList<TextLine> Lines)>();
         foreach (var table in row.Tables)
         {
             var lines = await reader.ReadLinesAsync(frame, table.Region, cancel);
+            tables.Add((table, lines));
             found.AddRange(lines.Where(line => SameName(own.Text, line.Text)).Select(line => (table, lines, line)));
         }
         if (found.Count != 1)
@@ -137,7 +152,65 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 fields[rankField] = new FieldReading((above + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
             }
         }
+        if (row.Lobby && Lobby(tables, row, ownTable, name) is { } lobby)
+        {
+            fields[Recognition.Fields.LobbySize] = new FieldReading(lobby.Size.ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+            fields[Recognition.Fields.LobbyRank] = new FieldReading(lobby.Rank.ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+        }
         return name.Text;
+    }
+
+    /// <summary>
+    /// The lobby from the tables already read: one score per row (under the score heading) and how many are higher
+    /// than the player's. Only these two numbers leave here, never a name or another player's value.
+    /// Rows are found by height, whatever column a line is in: a stray glyph beside a name (4K reads a "4." there)
+    /// joins its row instead of becoming a player, and an indented name ("ꞵy ZBK") still has its row. Any doubt (a
+    /// score heading in no table, a row without exactly one score, a score that is no number) and the lobby stays
+    /// unknown rather than wrong.
+    /// </summary>
+    internal static (int Size, int Rank)? Lobby(IReadOnlyList<(TableSpec Table, IReadOnlyList<TextLine> Lines)> tables, OwnRowSpec row,
+        TableSpec ownTable, TextLine ownName)
+    {
+        if (!row.Columns.TryGetValue(Recognition.Fields.Score, out var scoreWords))
+        {
+            return null;
+        }
+        // Both tables have the same layout, so a heading the OCR dropped in one (1440p loses "PUNKTE" now and then)
+        // is where the other table has it, measured from the table's left edge.
+        var headings = tables.Select(t => t.Lines.FirstOrDefault(l =>
+                l.Top < t.Table.Region.Y + t.Table.HeaderHeight && TextParsing.ContainsAny(l.Text, scoreWords)) is { } h
+                ? (Offset: h.Left - t.Table.Region.X, h.Width)
+                : ((double Offset, double Width)?)null).ToList();
+        if (headings.FirstOrDefault(h => h is not null) is not { } known)
+        {
+            return null;
+        }
+        var scores = new List<int>();
+        int? own = null;
+        foreach (var ((table, lines), found) in tables.Zip(headings))
+        {
+            var bodyTop = table.Region.Y + table.HeaderHeight;
+            var (offset, width) = found ?? known;
+            var left = table.Region.X + offset;
+            foreach (var line in Cluster(lines.Where(l => l.Top >= bodyTop), l => l.Middle, row.RowHeight / 2))
+            {
+                var cells = line.Where(l => l.Left >= left - 0.012 && l.Left <= left + width).ToList();
+                if (cells.Count != 1 || TextParsing.Count(cells[0].Text).Value is not { } value)
+                {
+                    return null;
+                }
+                scores.Add(value);
+                if (line.Any(l => ReferenceEquals(l, ownName)))
+                {
+                    own = value;
+                }
+            }
+        }
+        if (own is not { } mine || scores.Count < 2)
+        {
+            return null;
+        }
+        return (scores.Count, 1 + scores.Count(s => s > mine));
     }
 
     /// <summary>
@@ -160,9 +233,10 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                     && l.Center >= label.Left - label.Width && l.Center <= label.Left + label.Width * 2)
                 .OrderBy(l => Math.Abs(l.Center - label.Center))
                 .FirstOrDefault();
+            // The table row, found by name, wins over the banner: the banner may show another player.
             if (value is not null)
             {
-                fields[field] = new FieldReading(value.Text, quality);
+                fields.TryAdd(field, new FieldReading(value.Text, quality));
             }
         }
     }
@@ -194,6 +268,31 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         var text = await ReadAllAsync(frame, regions, cancel);
         // A mode is stored by its name from the profile's list, not with whatever else the region held.
         return name == Recognition.Fields.Mode && profile.Modes.Count > 0 ? TextParsing.FirstOf(text, profile.Modes) ?? "" : text;
+    }
+
+    /// <summary>
+    /// A name from <see cref="FieldSpec.OneOf"/>: each pass on its own, the entry most passes fit. A pass reads a
+    /// block ("TOPLEISTUNG / HAN 86 / STURMGEWEHR"; OCR reads a lone short line badly) and counts only when exactly one
+    /// of its lines fits an entry. When no pass fits, the block read most often comes back as unread, for the log.
+    /// </summary>
+    private async Task<(string? Choice, string? Unread)> ReadChoiceAsync(Frame frame, FieldSpec spec, CancellationToken cancel)
+    {
+        var blocks = new List<string>();
+        var choices = new List<string>();
+        foreach (var region in spec.More.Prepend(spec.Region))
+        {
+            var lines = await reader.ReadLinesAsync(frame, region, cancel);
+            var fits = lines.Select(l => TextParsing.OneOf(l.Text, spec.OneOf)).OfType<string>().Distinct().ToList();
+            if (fits.Count == 1)
+            {
+                choices.Add(fits[0]);
+            }
+            if (lines.Count > 0)
+            {
+                blocks.Add(string.Join(" / ", lines.Select(l => l.Text.Trim())));
+            }
+        }
+        return choices.Count > 0 ? (MostCommon(choices), null) : (null, MostCommon(blocks));
     }
 
     /// <summary>The value most passes agree on; on a tie the earlier pass, which the profile lists as the better one.</summary>

@@ -48,7 +48,8 @@ public class FixtureTests
         {
             return; // Image only on the PC it was captured on.
         }
-        if (width > BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth)
+        var captured = BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth;
+        if (width > captured)
         {
             return; // Scaling a capture up says nothing about a real higher resolution.
         }
@@ -78,13 +79,22 @@ public class FixtureTests
         Number("score", Fields.Score);
         Number("assists", Fields.Assists);
         Number("eliminations", Fields.Eliminations);
+        // The lobby: players on the final scoreboard and the own place by score. Add both to expected.json per capture.
+        // Never wrong; read at the capture's own resolution, scaled down it may stay unknown (a match has several frames).
+        foreach (var (key, field) in new[] { ("lobbySize", Fields.LobbySize), ("lobbyRank", Fields.LobbyRank) })
+        {
+            if (width == captured || Field(field) != "")
+            {
+                Number(key, field);
+            }
+        }
         Number("xp", Fields.Xp);
         Number("level", Fields.Level);
         if (expected.TryGetProperty("placement", out var placement))
         {
             Assert.True(placement.GetInt32() == TextParsing.Placement(Field(Fields.Placement)).Value, $"placement: expected {placement}, read '{Field(Fields.Placement)}'");
         }
-        foreach (var key in new[] { "map", "scoreline" })
+        foreach (var key in new[] { "map", "scoreline", Fields.Weapon, Fields.WeaponClass })
         {
             if (expected.TryGetProperty(key, out var text))
             {
