@@ -157,6 +157,7 @@
       }
     ],
     "rowHeight": 0.03,
+    "lobby": true,
     "columns": {
       "score": [
         "PUNKTE",

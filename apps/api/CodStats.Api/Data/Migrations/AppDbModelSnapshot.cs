@@ -112,6 +112,14 @@ namespace CodStats.Api.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("level");
 
+                    b.Property<int?>("LobbyRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("lobby_rank");
+
+                    b.Property<int?>("LobbySize")
+                        .HasColumnType("integer")
+                        .HasColumnName("lobby_size");
+
                     b.Property<string>("Map")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")

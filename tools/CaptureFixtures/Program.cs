@@ -152,7 +152,7 @@ if (args.Length >= 2 && args[0] == "replay")
             var local = RecognitionLoop.ToLocal(candidate);
             Console.WriteLine($"  MATCH {candidate.Game} {candidate.Status} {candidate.Mode} @ {candidate.Map} {candidate.Result} {candidate.TeamScore}:{candidate.EnemyScore} " +
                 $"K={candidate.Kills} D={candidate.Deaths} A={candidate.Assists} E={candidate.Eliminations} S={candidate.Score} P={candidate.Placement} " +
-                $"XP={candidate.Xp} L={candidate.Level} stats={string.Join(",", candidate.ModeStats.Select(s => $"{s.Key}={s.Value}"))} " +
+                $"XP={candidate.Xp} L={candidate.Level} lobby={candidate.LobbyRank}/{candidate.LobbySize} stats={string.Join(",", candidate.ModeStats.Select(s => $"{s.Key}={s.Value}"))} " +
                 $"conf={candidate.Confidence:0.00} -> {local?.ReviewStatus.ToString() ?? "not stored"} doubts: {string.Join("; ", candidate.Doubts)}");
         }
     }

@@ -11,7 +11,7 @@ Bitte nicht als öffentliches Issue. Schreib an fabian.tabelander@gmail.com mit 
 - Keine Eingaben an das Spiel, keine Umgehung von Anti-Cheat
 - Keine dauerhafte Video- oder Bildaufnahme. Einzelbilder bleiben im Arbeitsspeicher und werden nach der Auswertung verworfen.
 - Keine Screenshots an den Server. Übertragen werden nur die erkannten Zahlen und der eigene Anzeigename.
-- Keine Namen oder Werte anderer Spieler aus dem Scoreboard
+- Keine Namen oder Einzelwerte anderer Spieler aus dem Scoreboard. Für den Lobby-Vergleich zählt der Client auf dem PC nur, wie viele Spieler das End-Scoreboard zeigt und wie viele davon mehr Punkte haben; übertragen werden genau diese zwei Zahlen (Lobbygröße, eigener Platz).
 
 Der Client nimmt das Spielfenster nur auf, wie es OBS oder Discord auch tun. Activision hat dazu keine ausdrückliche Zusage gemacht. Die Nutzung erfolgt auf eigenes Risiko.
 

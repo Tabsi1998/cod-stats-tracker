@@ -78,6 +78,9 @@ public class FixtureTests
         Number("score", Fields.Score);
         Number("assists", Fields.Assists);
         Number("eliminations", Fields.Eliminations);
+        // The lobby: players on the final scoreboard and the own place by score. Add both to expected.json per capture.
+        Number("lobbySize", Fields.LobbySize);
+        Number("lobbyRank", Fields.LobbyRank);
         Number("xp", Fields.Xp);
         Number("level", Fields.Level);
         if (expected.TryGetProperty("placement", out var placement))

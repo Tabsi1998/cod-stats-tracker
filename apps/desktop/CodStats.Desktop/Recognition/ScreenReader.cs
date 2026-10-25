@@ -98,9 +98,11 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         }
 
         var found = new List<(TableSpec Table, IReadOnlyList<TextLine> Lines, TextLine Name)>();
+        var tables = new List<(TableSpec Table, IReadOnlyList<TextLine> Lines)>();
         foreach (var table in row.Tables)
         {
             var lines = await reader.ReadLinesAsync(frame, table.Region, cancel);
+            tables.Add((table, lines));
             found.AddRange(lines.Where(line => SameName(own.Text, line.Text)).Select(line => (table, lines, line)));
         }
         if (found.Count != 1)
@@ -137,7 +139,65 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 fields[rankField] = new FieldReading((above + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
             }
         }
+        if (row.Lobby && Lobby(tables, row, ownTable, name) is { } lobby)
+        {
+            fields[Recognition.Fields.LobbySize] = new FieldReading(lobby.Size.ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+            fields[Recognition.Fields.LobbyRank] = new FieldReading(lobby.Rank.ToString(System.Globalization.CultureInfo.InvariantCulture), quality);
+        }
         return name.Text;
+    }
+
+    /// <summary>
+    /// The lobby from the tables already read: every row's score (under the score heading, beside a name in the
+    /// name column) and how many are higher than the player's. Only these two numbers leave here, never a name or
+    /// another player's value. Any doubt (a table without score heading, a name without a score or the other way
+    /// round, a score that is no number) and the lobby stays unknown rather than wrong.
+    /// </summary>
+    internal static (int Size, int Rank)? Lobby(IReadOnlyList<(TableSpec Table, IReadOnlyList<TextLine> Lines)> tables, OwnRowSpec row,
+        TableSpec ownTable, TextLine ownName)
+    {
+        if (!row.Columns.TryGetValue(Recognition.Fields.Score, out var scoreWords))
+        {
+            return null;
+        }
+        // Both tables have the same layout: the name column sits at the same offset from each table's left edge.
+        var nameOffset = ownName.Left - ownTable.Region.X;
+        var scores = new List<int>();
+        int? own = null;
+        foreach (var (table, lines) in tables)
+        {
+            var bodyTop = table.Region.Y + table.HeaderHeight;
+            var heading = lines.FirstOrDefault(l => l.Top < bodyTop && TextParsing.ContainsAny(l.Text, scoreWords));
+            if (heading is null)
+            {
+                return null;
+            }
+            var body = lines.Where(l => l.Top >= bodyTop).ToList();
+            var names = body.Where(l => Math.Abs(l.Left - (table.Region.X + nameOffset)) < 0.01).ToList();
+            var cells = body.Where(l => l.Left >= heading.Left - 0.012 && l.Left <= heading.Left + heading.Width).ToList();
+            if (names.Count != cells.Count)
+            {
+                return null;
+            }
+            foreach (var name in names)
+            {
+                var cell = cells.Where(c => Math.Abs(c.Middle - name.Middle) < row.RowHeight / 2).ToList();
+                if (cell.Count != 1 || TextParsing.Count(cell[0].Text).Value is not { } value)
+                {
+                    return null;
+                }
+                scores.Add(value);
+                if (ReferenceEquals(name, ownName))
+                {
+                    own = value;
+                }
+            }
+        }
+        if (own is not { } mine || scores.Count < 2)
+        {
+            return null;
+        }
+        return (scores.Count, 1 + scores.Count(s => s > mine));
     }
 
     /// <summary>

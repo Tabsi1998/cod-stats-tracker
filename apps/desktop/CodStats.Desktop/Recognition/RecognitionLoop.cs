@@ -189,7 +189,7 @@ public sealed class RecognitionLoop(
             candidate.Assists, candidate.Result, candidate.Placement, candidate.Map, candidate.Score,
             Math.Clamp(candidate.Confidence, 0, 1), ReviewStatus.Pending, RecognizerVersion, SyncState.Waiting, null, candidate.Status,
             new MatchDetails(candidate.Eliminations, candidate.TeamScore, candidate.EnemyScore, candidate.Xp, candidate.Level,
-                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null));
+                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null, candidate.LobbySize, candidate.LobbyRank));
         var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;

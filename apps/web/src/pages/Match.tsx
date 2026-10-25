@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router'
 import { api, type PublicMatch, type Stats, type StatsBreakdown } from '../api'
-import { dash, formatAverage, formatCount, formatKd, formatLongDate, formatTime, gameLabels, matchKd, modeStatLabel, outcomeLabels, outcomeOf, outcomeText } from '../format'
+import { dash, formatAverage, formatCount, formatKd, formatLongDate, formatPercent, formatTime, gameLabels, matchKd, modeStatLabel, outcomeLabels, outcomeOf, outcomeText } from '../format'
 import { useLoad, type Load } from '../load'
 import { Bracket, CommunityNote, Figure, Icon, Message, Skeleton } from '../ui'
 
@@ -116,6 +116,8 @@ function Report({ match, playerId, playerName }: { match: PublicMatch; playerId:
 
       {sameMode && sameMode.matches > 1 && match.status === 'completed' && <Comparison match={match} baseline={sameMode} />}
 
+      {d?.lobbySize != null && d.lobbyRank != null && <Lobby size={d.lobbySize} rank={d.lobbyRank} />}
+
       {(modeStats.length > 0 || d?.xp != null || d?.level != null) && (
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
           <section>
@@ -193,6 +195,38 @@ function Comparison({ match, baseline }: { match: PublicMatch; baseline: StatsBr
           )
         })}
       </dl>
+    </section>
+  )
+}
+
+/**
+ * The player's place on the final scoreboard, both teams together, by points. One cell per player, best left;
+ * nobody else is named: only how many ended ahead and behind.
+ */
+function Lobby({ size, rank }: { size: number; rank: number }) {
+  const behind = size - rank
+  return (
+    <section>
+      <h2 className="display mb-4 text-2xl font-bold">In der Lobby</h2>
+      <div className="flex flex-wrap items-end gap-x-12 gap-y-6 border-t border-line pt-5">
+        <div className="flex flex-col-reverse">
+          <p className="display mt-2 text-sm font-semibold tracking-[0.12em] text-muted">Platz nach Punkten</p>
+          <p className="display text-5xl font-bold">
+            <span className="text-you">{rank}</span>
+            <span className="text-3xl text-muted"> von {size}</span>
+          </p>
+        </div>
+        <p className="max-w-[40ch] text-muted">
+          {behind === 0
+            ? 'Alle anderen hatten mehr Punkte.'
+            : `${behind} von ${size - 1} Mitspielern hatten höchstens so viele Punkte wie du (${formatPercent(behind / (size - 1))}).`}
+        </p>
+      </div>
+      <ol className="mt-5 flex gap-1" aria-label={`Platz ${rank} von ${size}, beste links`}>
+        {Array.from({ length: size }, (_, i) => (
+          <li key={i} className={`h-3 min-w-1 flex-1 ${i + 1 === rank ? 'bg-you' : i + 1 < rank ? 'bg-line' : 'bg-line/40'}`} />
+        ))}
+      </ol>
     </section>
   )
 }

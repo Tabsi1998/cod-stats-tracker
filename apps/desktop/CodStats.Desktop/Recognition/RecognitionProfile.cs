@@ -95,6 +95,12 @@ public sealed record OwnRowSpec(IReadOnlyList<TableSpec> Tables, double RowHeigh
     /// free-for-all placement digits are orange on orange. Only for the top three, where the list has no gaps.
     /// </summary>
     public string? RankField { get; init; }
+
+    /// <summary>
+    /// Also read the lobby: how many players the tables list and the own place among them by score. Only for the
+    /// final scoreboard, where both teams are complete; nothing but these two numbers is kept.
+    /// </summary>
+    public bool Lobby { get; init; }
 }
 
 /// <summary>

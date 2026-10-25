@@ -297,6 +297,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         var assists = Count(Fields.Assists, TextParsing.Count, doubts, out _);
         var score = Count(Fields.Score, TextParsing.Count, doubts, out _);
         var eliminations = Count(Fields.Eliminations, TextParsing.Count, doubts, out _);
+        var lobby = Lobby();
         var placement = Count(Fields.Placement, TextParsing.Placement, doubts, out var placementConfidence);
         var xp = Count(Fields.Xp, TextParsing.Count, doubts, out _);
         var level = Count(Fields.Level, TextParsing.Count, doubts, out _);
@@ -357,6 +358,8 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             EnemyScore = scoreline?[1],
             Xp = xp,
             Level = level,
+            LobbySize = lobby?.Size,
+            LobbyRank = lobby?.Rank,
             ModeStats = ModeStats(),
         };
 
@@ -367,6 +370,28 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         Phase = MatchPhase.Recorded;
         sawStart = false;
         return candidate;
+    }
+
+    /// <summary>
+    /// The lobby, from the final scoreboard only (a scoreboard mid-match is not the lobby's result). It is extra: an
+    /// unsure reading never makes the match unsure, the lobby just stays unknown. Size and place come from the same
+    /// frame and count together; at least two frames and two thirds of those that read it must agree.
+    /// </summary>
+    private (int Size, int Rank)? Lobby()
+    {
+        var read = results
+            .Select(r => (Size: TextParsing.Count(r.Fields.GetValueOrDefault(Fields.LobbySize)?.Text).Value,
+                Rank: TextParsing.Count(r.Fields.GetValueOrDefault(Fields.LobbyRank)?.Text).Value))
+            .Where(l => l.Size is not null && l.Rank is not null)
+            .Select(l => $"{l.Size}/{l.Rank}")
+            .ToList();
+        var winner = Vote(read, out var agreement);
+        if (winner is null || read.Count(r => r == winner) < 2 || agreement < 2.0 / 3)
+        {
+            return null;
+        }
+        var parts = winner.Split('/');
+        return (int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private MatchResult? VoteResult(List<Observation> readings, out double agreement) =>

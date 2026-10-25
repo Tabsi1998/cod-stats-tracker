@@ -80,6 +80,21 @@ public static class MatchRules
         {
             problems.Add($"level must be between 1 and {MaxLevel}");
         }
+        if (details.LobbySize is null != details.LobbyRank is null)
+        {
+            problems.Add("lobbySize and lobbyRank come together");
+        }
+        else if (details.LobbySize is { } size && details.LobbyRank is { } rank)
+        {
+            if (size is < 2 or > MaxPlacement)
+            {
+                problems.Add($"lobbySize must be between 2 and {MaxPlacement}");
+            }
+            if (rank < 1 || rank > size)
+            {
+                problems.Add("lobbyRank must be between 1 and lobbySize");
+            }
+        }
         if (details.ModeStats is { } stats)
         {
             if (stats.Count > MaxModeStats)

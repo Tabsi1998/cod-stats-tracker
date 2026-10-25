@@ -34,6 +34,10 @@ Die Werte oben sind **Beispiele, keine echten Koordinaten**.
 | `fields` | `kills`, `deaths`, `assists`, `score`, `placement`, `result`, `mode`, `map` |
 | `verified` | Erst `true`, wenn das Profil gegen echte Screenshots getestet ist. Sonst nie „sichere“ Matches |
 
+### Lobby-Vergleich (`ownRow.lobby`)
+
+`"lobby": true` in `ownRow` liest aus denselben Tabellen zusätzlich die Lobby: Anzahl der Zeilen (Name in der Namensspalte und Wert unter der Punkte-Überschrift, `columns.score`) und wie viele davon mehr Punkte haben. Die Namensspalte liegt in jeder Tabelle beim gleichen Abstand vom linken Rand wie der eigene Name. Nur für das End-Scoreboard einschalten, wo beide Teams vollständig sind. Ergebnis in den Feldern `lobby.size` und `lobby.rank`; in `expected.json` als `lobbySize` und `lobbyRank` prüfbar.
+
 ## Neues Profil erstellen
 
 1. Screenshots in `tests/capture-fixtures/<spiel>/<auflösung>/` ablegen, mit gleichnamiger `.json` der richtigen Werte.

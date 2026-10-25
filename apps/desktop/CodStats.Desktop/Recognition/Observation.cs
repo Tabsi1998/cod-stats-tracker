@@ -57,6 +57,10 @@ public static class Fields
     public const string Xp = "xp";
     public const string Level = "level";
 
+    /// <summary>Players on the final scoreboard and the own place among them by score (see <see cref="OwnRowSpec.Lobby"/>).</summary>
+    public const string LobbySize = "lobby.size";
+    public const string LobbyRank = "lobby.rank";
+
     /// <summary>Mode values such as "stat.captures" come with this prefix.</summary>
     public const string StatPrefix = "stat.";
 }
@@ -84,6 +88,8 @@ public sealed record MatchCandidate(
     public int? EnemyScore { get; init; }
     public int? Xp { get; init; }
     public int? Level { get; init; }
+    public int? LobbySize { get; init; }
+    public int? LobbyRank { get; init; }
 
     /// <summary>Mode values from the scoreboard and the after-action report, such as captures or data uploaded.</summary>
     public IReadOnlyDictionary<string, int> ModeStats { get; init; } = new Dictionary<string, int>();
