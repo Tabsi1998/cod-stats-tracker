@@ -108,6 +108,8 @@ Gerät (signiert): `POST devices/register`, `POST devices/recover`, `GET me`, `P
 
 Öffentlich (lesend, ohne Anmeldung): `GET public/players`, `GET public/players/search?q=`, `GET public/players/{id}`, `GET public/players/{id}/stats`, `GET public/players/{id}/matches`, `GET public/leaderboards`, `GET public/platform-stats`.
 
+Link-Vorschau (HTML, nicht in OpenAPI): `GET public/share/player/{id}`, `GET public/share/player/{id}/match/{matchId}`. Caddy leitet nur Vorschau-Crawler (Discord, WhatsApp, X, Telegram, Slack …) auf Profil- und Match-Adressen dorthin; Menschen bekommen die Webseite. Versteckte oder unbekannte Profile bekommen die allgemeine Vorschau. Fällt die API aus, fehlt nur die Vorschau.
+
 Statistik-Filter (alle `stats`-Endpunkte): `game=mw4|warzone|all`, `last=10|25|50|100`, `days=7|30`, `from`, `to`.
 
 Die genaue Beschreibung liefert OpenAPI unter `/openapi/v1.json`.

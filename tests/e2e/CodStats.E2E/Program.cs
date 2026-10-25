@@ -72,6 +72,18 @@ var text = await anonymous.GetStringAsync($"api/v1/public/players/{first.Profile
 Check(!text.Contains(first.DeviceId!.Value.ToString(), StringComparison.OrdinalIgnoreCase) && !text.Contains("confidence", StringComparison.OrdinalIgnoreCase),
     "public matches carry no device id or review data");
 
+// Link previews: a chat app's crawler gets the player's numbers, a browser gets the website.
+using (var crawler = new HttpRequestMessage(HttpMethod.Get, $"player/{first.ProfileId}"))
+{
+    crawler.Headers.UserAgent.ParseAdd("Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)");
+    using var preview = await anonymous.SendAsync(crawler);
+    var html = await preview.Content.ReadAsStringAsync();
+    Check(html.Contains($"content=\"{name} · COD Stats\"", StringComparison.Ordinal) && !html.Contains("id=\"root\"", StringComparison.Ordinal),
+        "a link preview crawler gets the player's preview");
+}
+var page = await anonymous.GetStringAsync($"player/{first.ProfileId}");
+Check(page.Contains("<div id=\"root\">", StringComparison.Ordinal), "a browser gets the website on the same address");
+
 using var unsigned = await anonymous.GetAsync("api/v1/me");
 Check(unsigned.StatusCode == HttpStatusCode.Unauthorized, "unsigned /me is refused");
 

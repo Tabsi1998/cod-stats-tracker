@@ -20,6 +20,21 @@
 		-Server
 	}
 
+	# Link previews: chat apps and social sites read the page without running it. Only their crawlers get a small
+	# page with the profile's or match's numbers from the API; people get the website. If the API is down, the
+	# preview is missing and nothing else.
+	@share {
+		path_regexp ^/player/[0-9a-fA-F-]{36}(/match/[0-9a-fA-F-]{36})?/?$
+		header_regexp User-Agent (?i)(discordbot|twitterbot|facebookexternalhit|facebookcatalog|whatsapp|telegrambot|slackbot|linkedinbot|skypeuripreview|redditbot|mastodon|embedly|iframely)
+	}
+	handle @share {
+		uri strip_suffix /
+		rewrite * /api/v1/public/share{path}
+		reverse_proxy api:8080 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+
 	@api path /api/* /openapi/* /health
 	handle @api {
 		reverse_proxy api:8080 {

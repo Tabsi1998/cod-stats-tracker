@@ -73,6 +73,7 @@ var api = app.MapGroup("/api/v1");
 api.MapDeviceEndpoints();
 api.MapMeEndpoints();
 api.MapPublicEndpoints();
+api.MapShareEndpoints();
 
 await app.RunAsync();
 
