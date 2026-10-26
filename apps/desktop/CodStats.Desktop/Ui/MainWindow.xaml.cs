@@ -65,6 +65,12 @@ public partial class MainWindow : Window
         IdentityChip.Visibility = settings.NameConfirmed ? Visibility.Collapsed : Visibility.Visible;
         IdentityText.Text = settings.DisplayName is null ? "Spieleridentität unsicher" : "Name nicht bestätigt, wird nicht veröffentlicht";
         TrackerText.Text = TrackerStateText.Of(app.Tracker);
+        var update = app.Settings.CheckForUpdates || app.UpdateRunning ? app.Updates.Available : null;
+        UpdateNote.Visibility = update is null ? Visibility.Collapsed : Visibility.Visible;
+        UpdateText.Text = update is null ? ""
+            : app.UpdateRunning ? $"Version {update.Version} wird geladen und geprüft. COD Stats startet danach neu."
+            : $"Version {update.Version} ist da. Das Update dauert einen Moment, deine Daten bleiben erhalten.";
+        UpdateButton.IsEnabled = !app.UpdateRunning;
         RecognitionNote.Visibility = app.Recognition.HasProfiles ? Visibility.Collapsed : Visibility.Visible;
         SyncText.Text = app.Sync.Status.Text + (app.Sync.Status.LastSuccess is { } last ? $" (zuletzt {last:HH:mm})" : "");
 
@@ -119,6 +125,8 @@ public partial class MainWindow : Window
     private async void OnSync(object sender, RoutedEventArgs e) => await app.SyncNowAsync();
 
     private void OnSettings(object sender, RoutedEventArgs e) => app.ShowSettings();
+
+    private async void OnUpdate(object sender, RoutedEventArgs e) => await app.InstallUpdateAsync();
 
     private void OnAddMatch(object sender, RoutedEventArgs e)
     {

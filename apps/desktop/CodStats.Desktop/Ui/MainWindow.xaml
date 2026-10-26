@@ -30,6 +30,19 @@
                 </StackPanel>
             </Grid>
 
+            <Border x:Name="UpdateNote" Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="Collapsed"
+                    BorderBrush="{StaticResource Accent}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="UpdateText" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button x:Name="UpdateButton" Grid.Column="1" Content="Jetzt aktualisieren" Style="{StaticResource Primary}"
+                            Margin="12,0,0,0" Click="OnUpdate" />
+                </Grid>
+            </Border>
+
             <Border x:Name="RecognitionNote" Style="{StaticResource Card}" Margin="0,14,0,0" Background="#1F2633">
                 <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}"
                            Text="Für MW4 und Warzone gibt es noch keine Erkennungsprofile. Sie entstehen aus echten Spielbildern. Bis dahin kannst du Matches mit „Match nachtragen“ selbst eintragen; unsichere Erkennungen landen hier zur Prüfung." />
