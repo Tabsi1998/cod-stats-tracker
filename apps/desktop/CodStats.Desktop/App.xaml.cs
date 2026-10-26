@@ -62,6 +62,12 @@ public partial class App : Application
         Paths.Ensure();
         Diagnostics.Initialise(Paths);
         Diagnostics.Log($"client {typeof(App).Assembly.GetName().Version} started");
+        // The game comes first: below normal, the client only gets CPU time the game leaves unused, and still runs at
+        // full speed when cores are free (the result screen stays only seconds, so the client must not be throttled).
+        using (var self = System.Diagnostics.Process.GetCurrentProcess())
+        {
+            self.PriorityClass = System.Diagnostics.ProcessPriorityClass.BelowNormal;
+        }
         Settings = Settings.Load(Paths);
         if (Settings.ConsentGivenAt is null && new ConsentWindow(Settings).ShowDialog() != true)
         {

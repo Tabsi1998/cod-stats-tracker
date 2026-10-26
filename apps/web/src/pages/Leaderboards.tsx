@@ -1,51 +1,56 @@
 import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { api, type GameGroup, type LeaderboardMetric } from '../api'
-import { formatCount, formatMetric, groupLabels, metricLabels, mw4Modes } from '../format'
+import { formatCount, formatMetric, groupLabels, metricLabels } from '../format'
 import { useLoad } from '../load'
-import { Bracket, CommunityNote, GameSwitch, Message, Segmented, Skeleton } from '../ui'
+import { Bracket, CommunityNote, GameSwitch, Message, Segmented, Select, Skeleton } from '../ui'
+
+type Days = 'all' | '30' | '7'
+const dayLabels: Record<Days, string> = { all: 'Gesamt', '30': '30 Tage', '7': '7 Tage' }
 
 export function Leaderboards() {
   const [game, setGame] = useState<GameGroup>('mw4')
   const [metric, setMetric] = useState<LeaderboardMetric>('kd')
   const [mode, setMode] = useState('')
-  const board = useLoad(() => api.leaderboard(game, metric, mode || undefined), [game, metric, mode])
+  const [map, setMap] = useState('')
+  const [days, setDays] = useState<Days>('all')
+  const facets = useLoad(() => api.allFacets(game), [game])
+  const board = useLoad(
+    () => api.leaderboard(game, metric, { mode: mode || undefined, map: map || undefined, days: days === 'all' ? undefined : (Number(days) as 7 | 30) }),
+    [game, metric, mode, map, days],
+  )
+  const choices = (values: { name: string; matches: number }[] | undefined) =>
+    (values ?? []).map((facet) => ({ value: facet.name, label: `${facet.name} · ${formatCount(facet.matches)}` }))
+  const scope = [mode, map, days === 'all' ? '' : dayLabels[days]].filter(Boolean).join(' · ')
   const top = board.state === 'ready' ? Math.max(...board.data.entries.map((e) => e.value), 0) : 0
 
   return (
     <div className="space-y-8 pt-10">
       <h1 className="display text-5xl font-extrabold">Rankings</h1>
       <div className="flex flex-wrap items-center gap-3">
-        <GameSwitch value={game} onChange={setGame} />
+        <GameSwitch
+          value={game}
+          onChange={(next) => {
+            setGame(next)
+            setMode('')
+            setMap('')
+          }}
+        />
         <Segmented
           label="Wertung"
           value={metric}
           onChange={setMetric}
           options={(Object.keys(metricLabels) as LeaderboardMetric[]).map((key) => ({ value: key, label: metricLabels[key] }))}
         />
-        {game !== 'warzone' && (
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Modus</span>
-            <select
-              value={mode}
-              onChange={(event) => setMode(event.target.value)}
-              className="display border border-line bg-deep/70 px-3 py-2 text-[0.95rem] font-semibold tracking-[0.06em] text-text outline-none focus:border-you"
-            >
-              <option value="">Alle Modi</option>
-              {mw4Modes.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <Segmented label="Zeitraum" value={days} onChange={setDays} options={(['all', '30', '7'] as const).map((key) => ({ value: key, label: dayLabels[key] }))} />
+        <Select label="Modus" all="Alle Modi" value={mode} options={choices(facets.state === 'ready' ? facets.data.modes : undefined)} onChange={setMode} />
+        <Select label="Karte" all="Alle Karten" value={map} options={choices(facets.state === 'ready' ? facets.data.maps : undefined)} onChange={setMap} />
       </div>
 
       <Bracket className="px-1 py-2 sm:px-3" label={`${metricLabels[metric]}, ${groupLabels[game]}`}>
         <div className="flex flex-wrap items-baseline justify-between gap-2 px-3 pt-3">
           <h2 className="display text-2xl font-bold">
-            {metricLabels[metric]} · {mode || groupLabels[game]}
+            {metricLabels[metric]} · {scope || groupLabels[game]}
           </h2>
           {board.state === 'ready' && <p className="text-sm text-faint">ab {board.data.minMatches} erfassten Matches</p>}
         </div>
@@ -58,7 +63,7 @@ export function Leaderboards() {
         )}
         {board.state === 'error' && <Message>Rankings konnten nicht geladen werden.</Message>}
         {board.state === 'ready' && board.data.entries.length === 0 && (
-          <Message>Noch niemand hat genug Matches{mode ? ` in ${mode}` : ''} für ein Ranking.</Message>
+          <Message>Noch niemand hat genug Matches{scope ? ` (${scope})` : ''} für ein Ranking.</Message>
         )}
         {board.state === 'ready' && board.data.entries.length > 0 && (
           <ol className="mt-2">

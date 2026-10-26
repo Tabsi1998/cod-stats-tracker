@@ -43,7 +43,8 @@ public sealed record LocalMatch(
     public MatchCorrectionRequest ToCorrection() => new(Mode, PlayedAt, Kills, Deaths, Assists, Result, Placement, Map, Score);
 
     public MatchFacts ToFacts() => new(Id, Game, PlayedAt, Kills, Deaths, Assists, Result, Placement, Status, Mode, Map, Score,
-        Details?.Eliminations, Details?.Xp, Details?.LobbySize, Details?.LobbyRank);
+        Details?.Eliminations, Details?.Xp, Details?.LobbySize, Details?.LobbyRank, Details?.Weapon, Details?.WeaponClass, Details?.Level,
+        Details?.ModeStats);
 }
 
 /// <summary>The local SQLite database. It holds only this player's own matches.</summary>

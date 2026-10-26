@@ -34,6 +34,7 @@ public sealed partial class WindowCapture : IDisposable
 
     private WindowCapture(IntPtr window)
     {
+        Window = window;
         device = CreateDevice();
         item = CreateItem(window);
         poolSize = item.Size;
@@ -47,6 +48,9 @@ public sealed partial class WindowCapture : IDisposable
         }
         session.StartCapture();
     }
+
+    /// <summary>The window this capture follows; the game may replace it (splash window, then the real one).</summary>
+    public IntPtr Window { get; }
 
     public static bool IsSupported => GraphicsCaptureSession.IsSupported();
 

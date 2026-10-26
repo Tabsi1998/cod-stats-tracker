@@ -32,6 +32,16 @@ export interface StatsPoint {
   result: MatchResult | null
   runningKdRatio: number | null
   runningWinRate: number | null
+  status?: MatchStatus
+  mode?: string | null
+  map?: string | null
+  assists?: number | null
+  score?: number | null
+  xp?: number | null
+  level?: number | null
+  weapon?: string | null
+  lobbySize?: number | null
+  lobbyRank?: number | null
 }
 
 export interface Stats {
@@ -64,6 +74,54 @@ export interface Stats {
   /** Matches with a lobby read, and the share of other players in them who ended with fewer points (summed). */
   lobbyMatches: number
   lobbyShare: number | null
+  byWeapon?: StatsBreakdown[] | null
+  byWeaponClass?: StatsBreakdown[] | null
+  byMapMode?: MapModeCell[] | null
+  modeStats?: ModeStatSummary[] | null
+  records?: StatsRecord[] | null
+}
+
+/** One map in one mode. */
+export interface MapModeCell {
+  map: string
+  mode: string
+  matches: number
+  wins: number
+  matchesWithResult: number
+  winRate: number | null
+  kdRatio: number | null
+}
+
+/** A mode value (confirms, captures …) over the matches that have it. */
+export interface ModeStatSummary {
+  key: string
+  total: number
+  matches: number
+  average: number
+  best: number
+}
+
+/** The best single match for one value; kind is "kills", "kd", "score", "eliminations", "assists", "xp" or "stat.<key>". */
+export interface StatsRecord {
+  kind: string
+  value: number
+  matchId: string
+  playedAt: string
+  mode: string | null
+  map: string | null
+}
+
+export interface FacetValue {
+  name: string
+  matches: number
+}
+
+/** What the filters can choose from, most played first. */
+export interface Facets {
+  modes: FacetValue[]
+  maps: FacetValue[]
+  weapons: FacetValue[]
+  weaponClasses: FacetValue[]
 }
 
 /** The figures of the matches in one mode or on one map. */
@@ -77,6 +135,11 @@ export interface StatsBreakdown {
   kdRatio: number | null
   averageKills: number | null
   averageScore: number | null
+  deaths?: number
+  assists?: number
+  leftMatches?: number
+  lastPlayedAt?: string | null
+  modeStats?: ModeStatSummary[] | null
 }
 
 /** Values beyond the basics, read from the result screen and the after-action report. */
@@ -140,8 +203,8 @@ export interface PlatformStats {
   lastMatchAt: string | null
 }
 
-/** A period choice of the stats filter, as query parameters. */
-export type Period = { last: 10 | 25 | 50 | 100 } | { days: 7 | 30 } | { from?: string; to?: string } | Record<string, never>
+/** Query parameters of the stats and match filters (see filters.ts). */
+export type FilterQuery = Record<string, string | number | undefined>
 
 export class NotFoundError extends Error {}
 
@@ -176,12 +239,13 @@ export const api = {
   search: (q: string) => get<PlayerSummary[]>(`${base}/players/search${query({ q })}`),
   players: (offset = 0) => get<Page<PlayerSummary>>(`${base}/players${query({ offset, limit: 50 })}`),
   player: (id: string) => get<PlayerProfile>(`${base}/players/${encodeURIComponent(id)}`),
-  stats: (id: string, game: GameGroup, period: Period) =>
-    get<Stats>(`${base}/players/${encodeURIComponent(id)}/stats${query({ game, ...period })}`),
-  matches: (id: string, game: GameGroup, offset = 0, limit = 25) =>
-    get<Page<PublicMatch>>(`${base}/players/${encodeURIComponent(id)}/matches${query({ game, offset, limit })}`),
+  stats: (id: string, filter: FilterQuery) => get<Stats>(`${base}/players/${encodeURIComponent(id)}/stats${query(filter)}`),
+  matches: (id: string, filter: FilterQuery, offset = 0, limit = 25) =>
+    get<Page<PublicMatch>>(`${base}/players/${encodeURIComponent(id)}/matches${query({ ...filter, offset, limit })}`),
+  facets: (id: string, game: GameGroup) => get<Facets>(`${base}/players/${encodeURIComponent(id)}/facets${query({ game })}`),
+  allFacets: (game: GameGroup) => get<Facets>(`${base}/facets${query({ game })}`),
   match: (id: string, matchId: string) =>
     get<PublicMatch>(`${base}/players/${encodeURIComponent(id)}/matches/${encodeURIComponent(matchId)}`),
-  leaderboard: (game: GameGroup, metric: LeaderboardMetric, mode?: string) =>
-    get<Leaderboard>(`${base}/leaderboards${query({ game, metric, mode })}`),
+  leaderboard: (game: GameGroup, metric: LeaderboardMetric, filter: { mode?: string; map?: string; days?: 7 | 30 } = {}) =>
+    get<Leaderboard>(`${base}/leaderboards${query({ game, metric, ...filter })}`),
 }

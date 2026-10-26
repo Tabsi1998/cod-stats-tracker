@@ -271,6 +271,15 @@ On the match page the outcome word is the headline (SIEG, NIEDERLAGE, VERLASSEN)
 ### Bars and charts
 Win-rate bars are 6px tall: cyan fill over an orange 40% track; ranking bars are 4px, yellow for rank 1 and cyan at 70% otherwise; both grow from the left once (900ms, 40ms stagger). Charts use the hairline grid at 50% (horizontal only), Faint Steel axis text at 13px without axis lines or ticks, kills bars coloured by outcome, K/D line in yellow and win-rate line in cyan at 2.5px, square Raised Steel tooltips.
 
+### Filter bar
+Two lines under the player's name: game and period as segmented controls, then the narrowing filters (mode, map, weapon, class, outcome) as selects behind a filter icon. A select is set like the segmented control (Deep Well, hairline, display face); while it narrows, its border and chevron turn Operator Yellow, the selection colour. Options list only what the player has played, each with its match count ("KAPERN · 12"). "Filter aufheben" appears as a plain text control with a close icon only when something narrows. Every filter lives in the URL. A name in a breakdown table (mode, map, weapon) and a map × mode cell narrow the filters to it and return to the overview.
+
+### Delta
+The change against the period right before, as the hint under a debrief figure: an up or down arrow and the difference, cyan when it improved and orange when it got worse (the outcome colours: better = own side), "ggü. gestern" in Faint Steel. Shown only when the earlier period had matches.
+
+### Map × mode matrix and session rows
+The matrix is a hairline table: map names as row titles, modes as column heads, each played cell a row link with the win rate in the display face, the match count in Faint Steel and a full-width 6px win-rate bar; unplayed cells hold "–". Session rows stack date and time span, a strip of 20px outcome squares (each a link to its match), and K/D, matches and best match as figures, separated by hairlines. Records put the best kill count in a yellow bracket and the rest on a figure grid, each linking to its match.
+
 ### Skeleton
 Square Raised Steel blocks at 70% with a pulse, in the shape of the content that will arrive.
 

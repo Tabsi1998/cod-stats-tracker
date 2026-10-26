@@ -260,7 +260,29 @@
       "eliminations": [
         "ELIMINIERUNGEN",
         "ELIMINATIONS"
+      ],
+      "eliminationRatio": [
+        "ELIM/T-QUOTE",
+        "ELIMT-QUOTE",
+        "QUOTE",
+        "E/D"
       ]
-    }
+    },
+    "more": [
+      {
+        "x": 0.44,
+        "y": 0.86,
+        "width": 0.33,
+        "height": 0.07,
+        "maxHeight": 60
+      },
+      {
+        "x": 0.44,
+        "y": 0.86,
+        "width": 0.33,
+        "height": 0.07,
+        "minPixelHeight": 200
+      }
+    ]
   }
 }

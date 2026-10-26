@@ -113,19 +113,3 @@ export function formatMetric(metric: LeaderboardMetric, value: number): string {
       return formatCount(value)
   }
 }
-
-/** MW4 modes the client recognises, as the game writes them. */
-export const mw4Modes = [
-  'TEAM-DEATHMATCH',
-  'HERRSCHAFT',
-  'STELLUNG',
-  'ABSCHUSS BESTÄTIGT',
-  'FREI FÜR ALLE',
-  'KAPERN',
-  'FRONT',
-  'KOLLATERAL',
-  'INFLATION',
-  'KILL BLOCK',
-  'SUCHEN & ZERSTÖREN',
-  'WAFFENSPIEL',
-] as const
