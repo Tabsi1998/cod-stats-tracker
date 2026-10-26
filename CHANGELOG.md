@@ -7,6 +7,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ### Geändert
 - README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
 
+### Hinzugefügt
+- Webseite: Link-Vorschau. Wer einen Profil- oder Match-Link in Discord, WhatsApp, X oder Telegram teilt, sieht Name und Kennzahlen (z. B. „K/D 1,32 · 54 % Siege · 120 Matches · 1.234 Kills“, beim Match Ergebnis, Modus, Kills, Tode, Punkte). Alle anderen Seiten zeigen eine allgemeine Vorschau mit Bild.
+
 ## [0.2.5] - 2026-10-26
 
 ### Geändert

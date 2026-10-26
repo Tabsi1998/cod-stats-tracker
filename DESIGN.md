@@ -300,3 +300,7 @@ Square Raised Steel blocks at 70% with a pulse, in the shape of the content that
 - **Don't** use the role colours decoratively; outside the home page's cyan headline word and step numerals they mean win, loss, you/selection or left only.
 - **Don't** cast shadows outside bracket clusters; hover is a background tone, not a lift.
 - **Don't** show game artwork, map images or Activision logos; names only.
+
+## Link-Vorschau
+
+`apps/web/public/og.png` (1200 × 630) ist die Vorschau beim Teilen, für alle Seiten gleich. Quelle: `apps/web/design/og-image.html` (Schriften und Farben der Webseite), mit Chromium in genau dieser Größe gerendert. Profile und Matches bringen ihren Text aus der API mit (ARCHITECTURE.md, „Link-Vorschau“); das Bild bleibt dasselbe.
