@@ -6,11 +6,11 @@ Live: https://codstats.tabelander.co.at
 
 ## Funktionen
 
-- **Automatische Erkennung (MW4 Multiplayer):** Ergebnisbildschirm, Frei für alle mit Platzierung, Einsatzbericht, Tab-Scoreboard als Rückfallebene, verlassene Matches. Gelesen werden Ergebnis, Modus, Karte, Abschüsse, Tode, Assists, Eliminierungen, Punkte, Endstand, XP, Level, Modus-Werte und die Top-Waffe.
+- **Automatische Erkennung (MW4 Multiplayer):** Ergebnisbildschirm, Frei für alle mit Platzierung, Einsatzbericht, Tab-Scoreboard als Rückfallebene, verlassene Matches. Gelesen werden Ergebnis, Modus, Karte (aus der offiziellen Kartenliste), Abschüsse, Tode, Assists, Eliminierungen, Punkte, Endstand, XP, Level, Modus-Werte (Bestätigt, Zielzeit, Erobert …) und die Top-Waffe mit Klasse. Jeder Wert wird mehrfach gelesen und gegengeprüft (z. B. Tode gegen die ELIM/T-Quote, Endstand gegen das Ergebnis).
 - **Lobby-Vergleich:** dein Platz nach Punkten im End-Scoreboard („Platz 3 von 12“). Übertragen werden nur Lobbygröße und Platz, keine fremden Namen oder Werte.
 - **Nur sichere Werte gehen automatisch hoch.** Unsichere Matches bleiben im Client zur Prüfung; nicht Gelesenes bleibt „unbekannt“ statt 0.
-- **Windows-Client im Tray:** eigenes Dashboard mit Filtern und Diagrammen, Match von Hand nachtragen oder korrigieren, Offline-Speicher mit Synchronisierung, Autostart.
-- **Webseite:** Spielersuche, Profile mit Bilanz, Form, Serien, Auswertung nach Modus und Karte, eine eigene Seite je Match, Ranglisten (auch je Modus).
+- **Windows-Client im Tray:** eigenes Dashboard mit Filtern und Diagrammen, Match von Hand nachtragen oder korrigieren, Offline-Speicher mit Synchronisierung, Autostart. Läuft mit niedriger Priorität, damit das Spiel immer vorgeht, und speichert keine Bilder.
+- **Webseite:** Spielersuche, Profile mit Bilanz, Form-Kurve und Vergleich mit dem Zeitraum davor; Filter nach Zeitraum, Modus, Karte, Waffe und Ergebnis (teilbar per Link); Auswertungen nach Modus (mit Modus-Werten), Karte, Karte × Modus, Waffe, Tageszeit, Sessions und Rekorden; eine eigene Seite je Match; Ranglisten je Modus, Karte und Zeitraum.
 - **Ohne Konto:** Jeder Client hat eine eigene kryptografische Geräteidentität; Umzug auf einen neuen PC per Wiederherstellungsschlüssel.
 - **Selbst hostbar:** Docker Compose, `./install.sh` einmal, danach `./update.sh`.
 
@@ -76,7 +76,7 @@ Webseite: http://localhost:8080 · API-Beschreibung: http://localhost:8080/opena
 **2. Windows-Client bauen und starten**
 
 ```bash
-python scripts/local_check.py --release --version 0.2.2
+python scripts/local_check.py --release --version 0.2.5
 ```
 
 Dann `.local-testing/release/CodStats-Setup-win-x64.exe` installieren (ohne Adminrechte) oder direkt `.local-testing/publish/win-x64/CodStats.exe` starten. Beim ersten Start:
