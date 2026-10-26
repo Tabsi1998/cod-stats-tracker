@@ -1,0 +1,30 @@
+# The .NET SDK from Microsoft's current download server. actions/setup-dotnet, and the install scripts' own version
+# lookup through aka.ms, still lead to the old storage account, which refuses public access since 25.10.2026
+# ("PublicAccessNotPermitted"): every job failed at setup. So the version comes from the new server and is passed on.
+name: Set up .NET
+description: Installs the newest .NET 10 SDK with the official dotnet-install scripts from builds.dotnet.microsoft.com.
+runs:
+  using: composite
+  steps:
+    - name: Install .NET 10 SDK (Linux)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        feed=https://builds.dotnet.microsoft.com/dotnet
+        version=$(curl -fsSL "$feed/Sdk/10.0/latest.version" | tr -d '\r\n')
+        curl -fsSL "$feed/scripts/v1/dotnet-install.sh" -o "$RUNNER_TEMP/dotnet-install.sh"
+        bash "$RUNNER_TEMP/dotnet-install.sh" --version "$version" --install-dir "$RUNNER_TEMP/dotnet" --azure-feed "$feed"
+        echo "$RUNNER_TEMP/dotnet" >> "$GITHUB_PATH"
+        echo "DOTNET_ROOT=$RUNNER_TEMP/dotnet" >> "$GITHUB_ENV"
+    - name: Install .NET 10 SDK (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $feed = 'https://builds.dotnet.microsoft.com/dotnet'
+        $version = (Invoke-RestMethod "$feed/Sdk/10.0/latest.version").Trim()
+        $dir = Join-Path $env:RUNNER_TEMP 'dotnet'
+        $script = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
+        Invoke-WebRequest -Uri "$feed/scripts/v1/dotnet-install.ps1" -OutFile $script
+        & $script -Version $version -InstallDir $dir -AzureFeed $feed
+        Add-Content -Path $env:GITHUB_PATH -Value $dir
+        Add-Content -Path $env:GITHUB_ENV -Value "DOTNET_ROOT=$dir"
