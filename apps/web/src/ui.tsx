@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { useCountUp } from './motion'
 import type { GameGroup } from './api'
 import { groupLabels, outcomeFill, outcomeLabels, outcomeText, type Outcome } from './format'
@@ -8,6 +8,9 @@ const iconPaths = {
   search: 'M9 15.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM13.7 13.7 18 18',
   back: 'M12.5 4.5 7 10l5.5 5.5',
   down: 'M10 4v12m0 0-4.5-4.5M10 16l4.5-4.5',
+  up: 'M10 16V4m0 0-4.5 4.5M10 4l4.5 4.5',
+  close: 'M5 5l10 10M15 5 5 15',
+  filter: 'M3 4.5h14M5.5 10h9M8 15.5h4',
   next: 'M7.5 4.5 13 10l-5.5 5.5',
   download: 'M10 3v10m0 0-4-4m4 4 4-4M4 16.5h12',
   trophy: 'M6.5 3.5h7v4a3.5 3.5 0 0 1-7 0v-4ZM6.5 5H3.5v1.5a3 3 0 0 0 3 3M13.5 5h3v1.5a3 3 0 0 1-3 3M10 11v3.5M7 17h6',
@@ -134,6 +137,74 @@ export function GameSwitch({ value, onChange }: { value: GameGroup; onChange: (v
   )
 }
 
+/**
+ * A choice from a list, set like the segmented control. While it narrows something (a value is chosen) its border is
+ * yellow: the current selection.
+ */
+export function Select({
+  label,
+  value,
+  options,
+  onChange,
+  all,
+}: {
+  label: string
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (value: string) => void
+  /** The text of the empty choice ("Alle Modi"). */
+  all: string
+}) {
+  // A value from a shared link that this player's list does not offer is still shown, not silently dropped.
+  const shown = value && !options.some((option) => option.value === value) ? [{ value, label: value }, ...options] : options
+  return (
+    <label className="relative flex min-w-0 items-center">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`display max-w-[16rem] min-w-0 appearance-none truncate border bg-deep/70 py-2 pr-9 pl-3 text-[0.95rem] font-semibold tracking-[0.06em] outline-none transition-colors duration-200 focus:border-you ${
+          value ? 'border-you text-text' : 'border-line text-muted hover:text-text'
+        }`}
+      >
+        <option value="">{all}</option>
+        {shown.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <Icon name="down" className={`pointer-events-none absolute right-3 size-3.5 ${value ? 'text-you' : 'text-faint'}`} />
+    </label>
+  )
+}
+
+/**
+ * The change against the period before: an arrow and the difference, cyan when it got better, orange when worse.
+ * Nothing when either value is unknown.
+ */
+export function Delta({ now, before, format, against, lowerIsBetter = false }: {
+  now: number | null
+  before: number | null | undefined
+  format: (value: number) => string
+  against: string
+  lowerIsBetter?: boolean
+}) {
+  if (now == null || before == null) return null
+  const change = now - before
+  if (Math.abs(change) < 1e-9) return <span className="text-faint">gleich wie {against}</span>
+  const better = lowerIsBetter ? change < 0 : change > 0
+  return (
+    <span className={`inline-flex items-center gap-1 ${better ? 'text-win' : 'text-loss'}`}>
+      <Icon name={change > 0 ? 'up' : 'down'} className="size-3.5" />
+      <span>
+        {change > 0 ? '+' : '−'}
+        {format(Math.abs(change))} <span className="text-faint">ggü. {against}</span>
+      </span>
+    </span>
+  )
+}
+
 /** Tabs that switch a view in place; the yellow bar slides to the active tab. */
 export function Tabs<T extends string>({
   value,
@@ -147,38 +218,51 @@ export function Tabs<T extends string>({
   label: string
 }) {
   const index = Math.max(0, options.findIndex((option) => option.value === value))
+  const list = useRef<HTMLDivElement>(null)
+  const counts = options.map((option) => option.count ?? '').join()
+  // On a phone the active tab may sit outside the visible strip (a shared link to "Rekorde"): bring it in.
+  useEffect(() => {
+    const active = list.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const strip = list.current?.parentElement
+    if (active && strip) strip.scrollLeft = Math.max(0, active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2)
+    // Counts arrive after the tabs and widen them, so their arrival moves the active tab too.
+  }, [value, counts])
   return (
-    <div
-      role="tablist"
-      aria-label={label}
-      className="relative grid overflow-x-auto border-b border-line sm:max-w-2xl"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(5rem, 1fr))` }}
-    >
-      {options.map((option) => {
-        const active = option.value === value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="tab"
-            id={`tab-${option.value}`}
-            aria-selected={active}
-            aria-controls={`panel-${option.value}`}
-            onClick={() => onChange(option.value)}
-            className={`display px-2 pt-3 pb-2.5 text-base font-bold tracking-[0.08em] transition-colors duration-200 sm:px-3 sm:text-lg ${
-              active ? 'text-text' : 'text-muted hover:text-text'
-            }`}
-          >
-            {option.label}
-            {option.count != null && <span className="ml-2 font-sans text-sm font-medium tracking-normal text-faint normal-case">{option.count}</span>}
-          </button>
-        )
-      })}
-      <span
-        aria-hidden="true"
-        className="absolute bottom-0 left-0 h-0.5 bg-you transition-transform duration-500 ease-[var(--ease-out-expo)]"
-        style={{ width: `${100 / options.length}%`, transform: `translateX(${index * 100}%)` }}
-      />
+    // The tabs scroll sideways on a phone; the bar sits in the scrolled grid, so it stays under its tab.
+    <div className="overflow-x-auto border-b border-line [scrollbar-width:none]">
+      <div
+        ref={list}
+        role="tablist"
+        aria-label={label}
+        className="relative grid w-max min-w-full"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(5.5rem, 1fr))` }}
+      >
+        {options.map((option) => {
+          const active = option.value === value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              id={`tab-${option.value}`}
+              aria-selected={active}
+              aria-controls={`panel-${option.value}`}
+              onClick={() => onChange(option.value)}
+              className={`display px-2 pt-3 pb-2.5 text-base font-bold tracking-[0.08em] whitespace-nowrap transition-colors duration-200 sm:px-3 sm:text-lg ${
+                active ? 'text-text' : 'text-muted hover:text-text'
+              }`}
+            >
+              {option.label}
+              {option.count != null && <span className="ml-2 font-sans text-sm font-medium tracking-normal text-faint normal-case">{option.count}</span>}
+            </button>
+          )
+        })}
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-0.5 bg-you transition-transform duration-500 ease-[var(--ease-out-expo)]"
+          style={{ width: `${100 / options.length}%`, transform: `translateX(${index * 100}%)` }}
+        />
+      </div>
     </div>
   )
 }

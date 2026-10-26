@@ -209,3 +209,53 @@ public class UniqueNameTests(ApiFixture fixture)
         again.EnsureSuccessStatusCode();
     }
 }
+
+[Collection(ApiTestGroup.Name)]
+public class FilterTests(ApiFixture fixture)
+{
+    private ApiFactory Api => fixture.Api;
+
+    [Fact]
+    public async Task Stats_and_matches_follow_the_same_filters_and_facets_list_the_choices()
+    {
+        using var device = await TestDevice.PublicPlayerAsync(Api, "Filter" + Random.Shared.Next(100_000));
+        var han = new MatchDetails(Weapon: "HAN 86", WeaponClass: "STURMGEWEHR", ModeStats: new Dictionary<string, int> { ["confirms"] = 12 });
+        await device.UploadAsync(
+            Matches.Mw4(20, 10, MatchResult.Win) with { Mode = "ABSCHUSS BESTÄTIGT", Map = "COAL", Details = han },
+            Matches.Mw4(10, 10, MatchResult.Loss) with { Mode = "ABSCHUSS BESTÄTIGT", Map = "MUNITION", Details = han },
+            Matches.Mw4(8, 2, MatchResult.Win) with { Mode = "KAPERN", Map = "COAL" },
+            Matches.Mw4(3, 3, result: null) with { Mode = "KAPERN", Map = "COAL", Status = MatchStatus.Left });
+        var player = $"/api/v1/public/players/{device.ProfileId}";
+
+        var kc = await device.Http.GetFromJsonAsync<StatsResponse>($"{player}/stats?mode=abschuss%20best%C3%A4tigt");
+        Assert.Equal((2, 1.5), (kc!.Matches, kc.KdRatio!.Value));
+        Assert.Equal(12, kc.ModeStats!.Single(s => s.Key == "confirms").Average);
+        Assert.Equal("HAN 86", Assert.Single(kc.ByWeapon!).Name);
+
+        var coalWins = await device.Http.GetFromJsonAsync<Page<PublicMatch>>($"{player}/matches?map=coal&result=win");
+        Assert.Equal(2, coalWins!.Total);
+        var left = await device.Http.GetFromJsonAsync<Page<PublicMatch>>($"{player}/matches?status=left");
+        Assert.Equal(MatchStatus.Left, Assert.Single(left!.Items).Status);
+        var byWeapon = await device.Http.GetFromJsonAsync<Page<PublicMatch>>($"{player}/matches?weaponClass=sturmgewehr&last=10");
+        Assert.Equal(2, byWeapon!.Total);
+        // Wildcards are literal: "%" finds no mode.
+        Assert.Equal(0, (await device.Http.GetFromJsonAsync<Page<PublicMatch>>($"{player}/matches?mode=%25"))!.Total);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, (await device.Http.GetAsync($"{player}/matches?result=maybe")).StatusCode);
+
+        var facets = await device.Http.GetFromJsonAsync<PlayerFacets>($"{player}/facets");
+        Assert.Equal([("COAL", 3), ("MUNITION", 1)], facets!.Maps.Select(f => (f.Name, f.Matches)));
+        Assert.Equal(("HAN 86", 2), (facets.Weapons[0].Name, facets.Weapons[0].Matches));
+    }
+
+    [Fact]
+    public async Task Leaderboards_can_be_limited_to_one_map_and_a_period()
+    {
+        using var player = await TestDevice.PublicPlayerAsync(Api, "Maprank" + Random.Shared.Next(100_000));
+        var map = "MAP" + Random.Shared.Next(100_000);
+        await player.UploadAsync(Enumerable.Range(0, ApiFactory.LeaderboardMinMatches).Select(_ => Matches.Mw4(10, 5) with { Map = map }).ToArray());
+
+        var board = await player.Http.GetFromJsonAsync<LeaderboardResponse>($"/api/v1/public/leaderboards?game=mw4&map={map.ToLowerInvariant()}&days=30");
+        Assert.Equal(player.ProfileId, Assert.Single(board!.Entries).PlayerId);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, (await player.Http.GetAsync("/api/v1/public/leaderboards?days=3")).StatusCode);
+    }
+}

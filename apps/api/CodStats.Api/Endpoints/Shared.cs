@@ -87,7 +87,7 @@ public static class Mapping
     }
 
     public static MatchFacts ToFacts(Match m) => new(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement,
-        m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp, m.LobbySize, m.LobbyRank);
+        m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp, m.LobbySize, m.LobbyRank, m.Weapon, m.WeaponClass, m.Level, m.ModeStats);
 }
 
 public static class Statistics
@@ -99,15 +99,84 @@ public static class Statistics
     public static async Task<StatsResponse> ForProfile(AppDb db, Guid profileId, StatsFilter filter, DateTimeOffset now, bool shownOnly,
         CancellationToken cancel)
     {
-        var games = filter.Game.Members();
         var source = shownOnly ? db.Matches.Shown() : db.Matches;
         var matches = await source.AsNoTracking()
-            .Where(m => m.ProfileId == profileId && games.Contains(m.Game))
-            .OrderByDescending(m => m.PlayedAt).Take(MaxMatches)
+            .Where(m => m.ProfileId == profileId)
+            .Newest(filter, now).Take(MaxMatches)
             .Select(m => new MatchFacts(m.Id, m.Game, m.PlayedAt, m.Kills, m.Deaths, m.Assists, m.Result, m.Placement,
-                m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp, m.LobbySize, m.LobbyRank))
+                m.Status, m.Mode, m.Map, m.Score, m.Eliminations, m.Xp, m.LobbySize, m.LobbyRank, m.Weapon, m.WeaponClass,
+                m.Level, m.ModeStats))
             .ToListAsync(cancel);
         return StatsCalculator.Compute(filter.Game, filter.Apply(matches, now));
+    }
+}
+
+public static class MatchQueries
+{
+    private static readonly Game[] Warzone = [Game.WarzoneBattleRoyale, Game.WarzoneResurgence];
+
+    /// <summary>
+    /// The filter in SQL, as <see cref="StatsFilter.Apply"/> does it in memory, except Last (the caller takes the newest
+    /// matches). The result is the normalised one: in Warzone the placement decides when there is one.
+    /// </summary>
+    public static IQueryable<Match> Filtered(this IQueryable<Match> matches, StatsFilter filter, DateTimeOffset now)
+    {
+        var games = filter.Game.Members();
+        matches = matches.Where(m => games.Contains(m.Game));
+        if (filter.Days is { } days)
+        {
+            var since = now.AddDays(-days);
+            matches = matches.Where(m => m.PlayedAt >= since);
+        }
+        if (filter.From is { } from)
+        {
+            matches = matches.Where(m => m.PlayedAt >= from);
+        }
+        if (filter.To is { } to)
+        {
+            matches = matches.Where(m => m.PlayedAt <= to);
+        }
+        if (filter.Mode is { } mode)
+        {
+            var pattern = QueryFilters.Literal(mode);
+            matches = matches.Where(m => m.Mode != null && EF.Functions.ILike(m.Mode, pattern, "\\"));
+        }
+        if (filter.Map is { } map)
+        {
+            var pattern = QueryFilters.Literal(map);
+            matches = matches.Where(m => m.Map != null && EF.Functions.ILike(m.Map, pattern, "\\"));
+        }
+        if (filter.Weapon is { } weapon)
+        {
+            var pattern = QueryFilters.Literal(weapon);
+            matches = matches.Where(m => m.Weapon != null && EF.Functions.ILike(m.Weapon, pattern, "\\"));
+        }
+        if (filter.WeaponClass is { } weaponClass)
+        {
+            var pattern = QueryFilters.Literal(weaponClass);
+            matches = matches.Where(m => m.WeaponClass != null && EF.Functions.ILike(m.WeaponClass, pattern, "\\"));
+        }
+        if (filter.Status is { } status)
+        {
+            matches = matches.Where(m => m.Status == status);
+        }
+        matches = filter.Result switch
+        {
+            MatchResult.Win => matches.Where(m => Warzone.Contains(m.Game) && m.Placement != null
+                ? m.Placement == 1 : m.Result == MatchResult.Win),
+            MatchResult.Loss => matches.Where(m => Warzone.Contains(m.Game) && m.Placement != null
+                ? m.Placement != 1 : m.Result == MatchResult.Loss),
+            MatchResult.Draw => matches.Where(m => !(Warzone.Contains(m.Game) && m.Placement != null) && m.Result == MatchResult.Draw),
+            _ => matches,
+        };
+        return matches;
+    }
+
+    /// <summary>The filtered matches, newest first, limited to the newest <see cref="StatsFilter.Last"/>.</summary>
+    public static IQueryable<Match> Newest(this IQueryable<Match> matches, StatsFilter filter, DateTimeOffset now)
+    {
+        var newest = matches.Filtered(filter, now).OrderByDescending(m => m.PlayedAt).ThenByDescending(m => m.Id);
+        return filter.Last is { } last ? newest.Take(last) : newest;
     }
 }
 
@@ -140,10 +209,38 @@ public static class QueryFilters
             problem = "last, days, from or to is not a valid value";
             return false;
         }
-        filter = new StatsFilter(group, last, days, from, to);
+        if (!TryEnum<MatchResult>(query["result"], out var result) || !TryEnum<MatchStatus>(query["status"], out var status))
+        {
+            problem = "result must be win, loss or draw; status completed or left";
+            return false;
+        }
+        filter = new StatsFilter(group, last, days, from, to, Text(query["mode"]), Text(query["map"]), Text(query["weapon"]),
+            Text(query["weaponClass"]), result, status);
         var problems = filter.Problems();
         problem = problems.Count > 0 ? string.Join("; ", problems) : null;
         return problem is null;
+    }
+
+    /// <summary>The text as a LIKE pattern that matches only itself (no case): wildcards are taken literally.</summary>
+    public static string Literal(string text) =>
+        text.Trim().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
+
+    private static string? Text(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    private static bool TryEnum<T>(string? text, out T? value) where T : struct, Enum
+    {
+        value = null;
+        if (string.IsNullOrEmpty(text))
+        {
+            return true;
+        }
+        if (WireNames.TryParse<T>(text, out var parsed))
+        {
+            value = parsed;
+            return true;
+        }
+        return false;
     }
 
     private static bool TryInt(string? text, out int? value)

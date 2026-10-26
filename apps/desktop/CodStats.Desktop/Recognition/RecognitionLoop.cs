@@ -77,6 +77,7 @@ public sealed class RecognitionLoop(
         Diagnostics.Log($"recognition started: {profiles.Count} profile(s)");
         WindowCapture? capture = null;
         var lastScreen = ScreenKind.Unknown;
+        var missed = 0;
         try
         {
             while (!cancel.IsCancellationRequested)
@@ -86,6 +87,7 @@ public sealed class RecognitionLoop(
                     if (capture is null)
                     {
                         capture = WindowCapture.Start(GameWatcher.FindGameWindow());
+                        missed = 0;
                         Diagnostics.Log(capture is null ? "game window not found yet" : "capture started");
                     }
                     if (capture is null)
@@ -96,6 +98,7 @@ public sealed class RecognitionLoop(
                     var started = Environment.TickCount64;
                     using (var frame = await capture.GrabAsync(TimeSpan.FromSeconds(1), cancel))
                     {
+                        missed = frame is null ? missed + 1 : 0;
                         if (frame is not null)
                         {
                             var observation = await reader.ReadAsync(frame, DateTimeOffset.Now, cancel);
@@ -106,6 +109,13 @@ public sealed class RecognitionLoop(
                             }
                             Handle(observation);
                         }
+                    }
+                    // Only while frames stay away is the window looked up again; a working capture costs nothing extra.
+                    if (missed > 0 && NeedsNewCapture(capture.Window, GameWatcher.FindGameWindow(), missed))
+                    {
+                        Diagnostics.Log($"no frames from the game window ({missed}), restarting capture");
+                        capture.Dispose();
+                        capture = null;
                     }
                     MemoryGuard.AfterFrame();
                     var took = Environment.TickCount64 - started;
@@ -196,6 +206,17 @@ public sealed class RecognitionLoop(
             && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
         return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;
     }
+
+    /// <summary>Seconds without any frame after which the capture starts over, even on the same window.</summary>
+    internal const int MaxMissedFrames = 10;
+
+    /// <summary>
+    /// Whether to capture anew: the game shows another main window than the one captured (it starts with a small splash
+    /// window and then opens the real one; the old capture then delivers nothing, without an error), or no frame came for
+    /// <see cref="MaxMissedFrames"/> tries in a row.
+    /// </summary>
+    internal static bool NeedsNewCapture(IntPtr captured, IntPtr current, int missed) =>
+        (current != IntPtr.Zero && current != captured) || missed >= MaxMissedFrames;
 
     public void Dispose() => stop?.Dispose();
 }

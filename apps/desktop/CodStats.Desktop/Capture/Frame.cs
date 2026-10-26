@@ -83,6 +83,10 @@ public sealed class Frame : IDisposable
         {
             KeepWhiteText(crop.Pixels);
         }
+        if (region.TextColour is { } colour)
+        {
+            KeepColouredText(crop.Pixels, colour);
+        }
         return crop;
     }
 
@@ -99,6 +103,45 @@ public sealed class Frame : IDisposable
             bgra[i + 2] = value;
             bgra[i + 3] = 255;
         }
+    }
+
+    /// <summary>
+    /// Keeps the saturated, bright pixels of one hue band as black text on white: cyan 165–200°, orange 0–28° (and
+    /// the reds just below 360°) or a pale warm glow at full brightness. Measured on real reports, where the golden
+    /// background sits at 35–50° and below 0.85 brightness.
+    /// </summary>
+    private static void KeepColouredText(Span<byte> bgra, Recognition.TextColour colour)
+    {
+        for (var i = 0; i < bgra.Length; i += 4)
+        {
+            var (hue, saturation, value) = Hsv(bgra[i + 2], bgra[i + 1], bgra[i]);
+            var inBand = colour == Recognition.TextColour.Cyan
+                ? hue is >= 165 and <= 200 && saturation >= 0.45 && value >= 0.5
+                : (hue <= 28 || hue >= 350) && saturation >= 0.45 && value >= 0.55
+                    // Some reports draw the enemy's score as a peach glow: warm, pale and at full brightness, where the
+                    // golden background around it stays below 0.85.
+                    || hue <= 45 && saturation >= 0.2 && value >= 0.93;
+            var shade = inBand ? (byte)0 : (byte)255;
+            bgra[i] = shade;
+            bgra[i + 1] = shade;
+            bgra[i + 2] = shade;
+            bgra[i + 3] = 255;
+        }
+    }
+
+    internal static (double Hue, double Saturation, double Value) Hsv(byte red, byte green, byte blue)
+    {
+        var max = Math.Max(red, Math.Max(green, blue));
+        var min = Math.Min(red, Math.Min(green, blue));
+        var delta = max - min;
+        if (max == 0 || delta == 0)
+        {
+            return (0, 0, max / 255.0);
+        }
+        var hue = max == red ? 60.0 * ((green - blue) / (double)delta % 6)
+            : max == green ? 60.0 * ((blue - red) / (double)delta + 2)
+            : 60.0 * ((red - green) / (double)delta + 4);
+        return (hue < 0 ? hue + 360 : hue, delta / (double)max, max / 255.0);
     }
 
     public void Dispose()

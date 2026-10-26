@@ -4,10 +4,37 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-26
+
+### Geändert
+- Windows-Client: läuft mit der Priorität „Niedriger als normal“. Er bekommt nur Rechenzeit, die das Spiel nicht braucht, und kann so auch bei Lastspitzen keine FPS kosten.
+
+## [0.2.4] - 2026-10-25
+
+### Behoben
+- Endstand im Einsatzbericht: Die beiden Zahlen werden zusätzlich je in ihrer Teamfarbe gelesen (Cyan eigenes Team, Orange Gegner, mit Farbfilter). Fehlt die gemeinsame Zeile, setzt sich der Endstand aus beiden Farben zusammen; widersprechen sich die Lesungen, bleibt er leer.
+- Karten werden nur noch als Name aus der offiziellen MW4-Kartenliste gespeichert (z. B. „REACTOR U92“ statt „REACTOR IJ92“); ein unbekannter Name bleibt leer und steht im Client-Log.
+- Tode fehlten oft (z. B. Herrschaft): Die Leiste unter dem Ergebnis wird jetzt in drei Durchgängen gelesen, und die ELIM/T-QUOTE prüft die Tode gegen (45 Eliminierungen bei 1.67 sind nur mit 27 Toden möglich). Fehlen die Tode, aber passt genau ein Wert zur Quote, wird er übernommen; passt der gelesene nicht, kommt das Match zur Prüfung.
+- XP wurden manchmal falsch gelesen (931 statt 9311): mehr Durchgänge ohne Weißfilter, und XP unter den Punkten gelten als Lesefehler und werden verworfen.
+- Level nach einem Level-Up (grüne Schrift) wurde nicht gelesen.
+- Ein Endstand, der dem Ergebnis widerspricht (Sieg mit 0:174), wird verworfen statt gespeichert; ein Lese-Durchgang, der solche Werte lieferte, ist entfernt.
+- Kacheln im Einsatzbericht (einzelne Ziffern wie „4“ Assists) werden mit zwei weiteren Durchgängen gelesen.
+
+## [0.2.3] - 2026-10-25
+
 ### Hinzugefügt
 - Lobby-Vergleich: Der Client liest auf dem End-Scoreboard, wie viele Spieler in der Lobby waren und auf welchem Platz du nach Punkten gelandet bist. Übertragen werden nur diese zwei Zahlen, keine Namen und keine Werte anderer Spieler. Die Match-Seite zeigt „Platz 3 von 12“, das Profil den Anteil der Lobby hinter dir (über alle Matches summiert). Bei unsicherer Lesung bleibt die Lobby leer, das Match zählt trotzdem.
 - Top-Waffe und Waffenklasse aus dem Einsatzbericht (TOPLEISTUNG), auf der Match-Seite angezeigt. Gespeichert wird nur ein Name aus der Waffenliste des Erkennungsprofils; eine unbekannte Waffe bleibt leer und steht im Client-Log.
 - Modus-Werte aus der Endtabelle: Bestätigt (Abschuss bestätigt), Zielzeit (Stellung), Platzierungen und Entschärfungen (Kollateral).
+- Profil-Filter: Modus, Karte, Waffe, Waffenklasse und Ergebnis (Siege, Niederlagen, Verlassen), dazu der Zeitraum „Heute“. Alle Filter stehen in der Adresse und lassen sich teilen; die Auswahl zeigt nur, was der Spieler gespielt hat.
+- Vergleich mit dem Zeitraum davor: K/D, Siegquote und Kills pro Match zeigen bei „Heute“, „7 Tage“ und „30 Tage“ die Veränderung gegenüber gestern bzw. dem Zeitraum davor.
+- Profil-Tab „Waffen“: Siegquote und K/D je Top-Waffe und Waffenklasse.
+- Profil-Tab „Sessions“: Spielabende automatisch gruppiert, mit Ergebnisreihe, K/D, bestem Match, Level-Ups und XP.
+- Profil-Tab „Rekorde“: Bestwerte aus einem einzelnen Match (Kills, K/D, Punkte, Eliminierungen, Assists, XP und jeder Modus-Wert), jeweils mit Link zum Match.
+- Modi-Tab mit Modus-Werten je Modus (z. B. Ø Bestätigt pro Match in Abschuss bestätigt), Karten-Tab mit Karte × Modus.
+- Übersicht: Form-Kurve (K/D der letzten 10 Matches) neben der Gesamt-K/D, Level-Verlauf, „Wann du spielst“ nach Wochentag und Tageszeit, Lobby-Platz-Verteilung.
+- Ein Klick auf einen Modus, eine Karte oder eine Waffe in den Tabellen filtert das Profil darauf.
+- Ranglisten: Filter nach Karte und Zeitraum (7 und 30 Tage); Modi und Karten kommen aus den erfassten Matches.
 
 ### Geändert
 - README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
@@ -16,6 +43,7 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Assists fehlten in den meisten Modi: Ohne Assist-Spalte rechnet der Client sie aus Eliminierungen − Abschüsse. Passen die drei Werte nicht zusammen, kommt das Match zur Prüfung.
 - Tode kommen aus der eigenen Tabellenzeile, wenn die Tabelle sie zeigt; die Leiste darunter zeigt manchmal einen anderen Spieler.
 - Frei für alle: Ein Platz, der dem Ergebnis (Sieg = Top 3) oder dem Endstand im Einsatzbericht widerspricht, wird verworfen statt gespeichert; ist der Platz unlesbar, aber der Endstand eindeutig vorn, gilt Platz 1.
+- Windows-Client: Startete er, während das Spiel noch sein kleines Startfenster zeigte, erkannte er danach nichts mehr (das Spiel öffnet ein neues Hauptfenster). Die Aufnahme wechselt jetzt auf das neue Fenster und startet nach 10 Sekunden ohne Bild neu.
 
 ## [0.2.2] - 2026-10-24
 
@@ -104,7 +132,10 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.3...v0.2.4
+[0.2.3]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.1.2...v0.2.0
