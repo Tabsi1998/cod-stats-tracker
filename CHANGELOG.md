@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
+
 ## [0.2.5] - 2026-10-26
 
 ### Geändert
@@ -35,9 +38,6 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Übersicht: Form-Kurve (K/D der letzten 10 Matches) neben der Gesamt-K/D, Level-Verlauf, „Wann du spielst“ nach Wochentag und Tageszeit, Lobby-Platz-Verteilung.
 - Ein Klick auf einen Modus, eine Karte oder eine Waffe in den Tabellen filtert das Profil darauf.
 - Ranglisten: Filter nach Karte und Zeitraum (7 und 30 Tage); Modi und Karten kommen aus den erfassten Matches.
-
-### Geändert
-- README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
 
 ### Behoben
 - Assists fehlten in den meisten Modi: Ohne Assist-Spalte rechnet der Client sie aus Eliminierungen − Abschüsse. Passen die drei Werte nicht zusammen, kommt das Match zur Prüfung.
