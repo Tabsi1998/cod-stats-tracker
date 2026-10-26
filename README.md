@@ -1,8 +1,33 @@
 # COD Stats Tracker
 
-Installieren und vergessen: Ein kleiner Windows-Client erfasst deine eigenen Matchwerte aus Call of Duty: Modern Warfare 4 (Multiplayer) und Warzone und überträgt sie an eine selbst gehostete Statistik-Webseite.
+Installieren und vergessen: Ein kleiner Windows-Client erfasst deine eigenen Matchwerte aus Call of Duty: Modern Warfare 4 (Multiplayer) direkt vom Bildschirm und überträgt sie an eine selbst gehostete Statistik-Webseite.
 
-> **Stand 0.1 (Grundgerüst):** Server, Webseite und Windows-Client laufen zusammen. Die **automatische Spielerkennung fehlt noch**: Sie braucht echte Spielbilder. Bis dahin trägst du Matches im Client von Hand nach („Match nachtragen“). Der Client erkennt schon, ob Call of Duty läuft.
+Live: https://codstats.tabelander.co.at
+
+## Funktionen
+
+- **Automatische Erkennung (MW4 Multiplayer):** Ergebnisbildschirm, Frei für alle mit Platzierung, Einsatzbericht, Tab-Scoreboard als Rückfallebene, verlassene Matches. Gelesen werden Ergebnis, Modus, Karte (aus der offiziellen Kartenliste), Abschüsse, Tode, Assists, Eliminierungen, Punkte, Endstand, XP, Level, Modus-Werte (Bestätigt, Zielzeit, Erobert …) und die Top-Waffe mit Klasse. Jeder Wert wird mehrfach gelesen und gegengeprüft (z. B. Tode gegen die ELIM/T-Quote, Endstand gegen das Ergebnis).
+- **Lobby-Vergleich:** dein Platz nach Punkten im End-Scoreboard („Platz 3 von 12“). Übertragen werden nur Lobbygröße und Platz, keine fremden Namen oder Werte.
+- **Nur sichere Werte gehen automatisch hoch.** Unsichere Matches bleiben im Client zur Prüfung; nicht Gelesenes bleibt „unbekannt“ statt 0.
+- **Windows-Client im Tray:** eigenes Dashboard mit Filtern und Diagrammen, Match von Hand nachtragen oder korrigieren, Offline-Speicher mit Synchronisierung, Autostart. Läuft mit niedriger Priorität, damit das Spiel immer vorgeht, und speichert keine Bilder.
+- **Webseite:** Spielersuche, Profile mit Bilanz, Form-Kurve und Vergleich mit dem Zeitraum davor; Filter nach Zeitraum, Modus, Karte, Waffe und Ergebnis (teilbar per Link); Auswertungen nach Modus (mit Modus-Werten), Karte, Karte × Modus, Waffe, Tageszeit, Sessions und Rekorden; eine eigene Seite je Match; Ranglisten je Modus, Karte und Zeitraum.
+- **Ohne Konto:** Jeder Client hat eine eigene kryptografische Geräteidentität; Umzug auf einen neuen PC per Wiederherstellungsschlüssel.
+- **Selbst hostbar:** Docker Compose, `./install.sh` einmal, danach `./update.sh`.
+
+## Was erkannt wird
+
+| Spiel | Oberfläche | Seitenverhältnis | Stand |
+|---|---|---|---|
+| MW4 Multiplayer | Deutsch | 16:9 (1080p, 1440p, 4K) | erkannt, an echten Aufnahmen geprüft |
+| MW4 Multiplayer | Englisch | 16:9 | fehlt, braucht Aufnahmen ([#48](https://github.com/Tabsi1998/cod-stats-tracker/issues/48)) |
+| MW4 Multiplayer | Deutsch | 21:9, 16:10 | fehlt, braucht Aufnahmen ([#48](https://github.com/Tabsi1998/cod-stats-tracker/issues/48)) |
+| Warzone (BR, Resurgence) | – | – | fehlt, braucht Aufnahmen ([#47](https://github.com/Tabsi1998/cod-stats-tracker/issues/47)); bis dahin von Hand nachtragen |
+
+Wie ein Erkennungsprofil aufgebaut ist: [docs/erkennungsprofile.md](docs/erkennungsprofile.md).
+
+## Installieren (Spieler)
+
+Auf der Webseite „Für Windows herunterladen“, Installer starten (keine Adminrechte nötig), zustimmen und „öffentlich zeigen“ oder „nur für mich“ wählen. Der Client sitzt danach im Tray (Symbol neben der Uhr) und startet mit Windows. Einfach spielen; nach dem Match steht es im Client und, wenn du es freigegeben hast, auf der Webseite.
 
 ## Bestandteile
 
@@ -51,7 +76,7 @@ Webseite: http://localhost:8080 · API-Beschreibung: http://localhost:8080/opena
 **2. Windows-Client bauen und starten**
 
 ```bash
-python scripts/local_check.py --release --version 0.1.0
+python scripts/local_check.py --release --version 0.2.5
 ```
 
 Dann `.local-testing/release/CodStats-Setup-win-x64.exe` installieren (ohne Adminrechte) oder direkt `.local-testing/publish/win-x64/CodStats.exe` starten. Beim ersten Start:
@@ -68,7 +93,7 @@ Der Client sitzt danach im Tray (Symbol neben der Uhr).
 3. Der Client synchronisiert automatisch (oder *Synchronisieren* klicken).
 4. Auf http://localhost:8080 nach deinem Namen suchen: Profil, Diagramme, Rankings (ab 3 Matches).
 
-Zurücksetzen des Clients: Tray → Beenden, dann `%LOCALAPPDATA%\CodStats` löschen.
+Zurücksetzen des Clients: Tray → Beenden, dann `%LOCALAPPDATA%\CodStats` löschen. Protokoll: `%LOCALAPPDATA%\CodStats\client.log`.
 
 ## Wichtig
 
@@ -103,7 +128,9 @@ Repo klonen, einmal `./install.sh` (fragt, ob HTTPS ein eigener Reverse Proxy ma
 
 ## Doku
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): Aufbau, Identität, Synchronisierung, API
+- [ARCHITECTURE.md](ARCHITECTURE.md): Aufbau, Identität, Synchronisierung, Erkennung, API
+- [docs/erkennungsprofile.md](docs/erkennungsprofile.md): Erkennungsprofile und was die echten Bilder gelehrt haben
+- [DESIGN.md](DESIGN.md): Design der Webseite
 - [SECURITY.md](SECURITY.md): Sicherheit und Datenschutz
 - [deploy/BETRIEB.md](deploy/BETRIEB.md): Server, Backup, Updates
 - [CHANGELOG.md](CHANGELOG.md)
