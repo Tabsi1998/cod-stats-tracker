@@ -111,6 +111,16 @@ public static class TextParsing
         return hits.Count == 1 ? hits[0] : null;
     }
 
+    /// <summary>A ratio with two decimals as the game prints it ("1.67", "0,85"); null for anything else.</summary>
+    public static double? Ratio(string? text)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(text ?? "", @"^\s*(\d{1,3})[.,](\d{2})\s*$");
+        return match.Success
+            ? int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)
+                + int.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) / 100.0
+            : null;
+    }
+
     /// <summary>Upper case, letters and digits only, so "Victory!" and "VICTORY" compare equal.</summary>
     public static string Normalise(string? text) =>
         new((text ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
@@ -131,9 +141,12 @@ public static class TextParsing
         return hits.Count == 1 ? hits[0] : null;
     }
 
-    /// <summary>The text with look-alike characters made one (see <see cref="OneOf"/>).</summary>
+    /// <summary>
+    /// The text with look-alike characters made one (see <see cref="OneOf"/>). A "U" is often read as two strokes
+    /// ("REACTOR IJ92", "REACTOR 1.192"), so "IJ" and "II" count as "U" as well.
+    /// </summary>
     public static string LookAlike(string? text) =>
-        new(Normalise(text).Select(c => c switch
+        new string(Normalise(text).Select(c => c switch
         {
             '9' or '5' or '3' => 'S',
             '0' or 'D' or 'Q' => 'O',
@@ -145,7 +158,7 @@ public static class TextParsing
             'Ö' => 'O',
             'Ü' => 'U',
             _ => c,
-        }).ToArray());
+        }).ToArray()).Replace("IJ", "U", StringComparison.Ordinal).Replace("II", "U", StringComparison.Ordinal);
 
     /// <summary>The first of the words the text contains (see <see cref="ContainsAny"/>), as written in the list.</summary>
     public static string? FirstOf(string? text, IEnumerable<string> words) =>

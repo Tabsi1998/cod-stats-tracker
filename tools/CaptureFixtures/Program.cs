@@ -9,14 +9,25 @@ using System.Windows.Media.Imaging;
 using CodStats.Desktop.Capture;
 using CodStats.Desktop.Recognition;
 
-// "ocr <image> <x> <y> <width> <height> [white,max=80,min=300]": what Windows OCR reads in a region of a saved image, with line positions.
+// "ocr <image> <x> <y> <width> <height> [white|cyan|orange,max=80,min=300]": what Windows OCR reads in a region of a saved image, with line positions.
 if (args.Length is 6 or 7 && args[0] == "ocr")
 {
     var numbers = args[2..6].Select(a => double.Parse(a, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
     using var image = LoadImage(args[1]);
     var ocr = WindowsOcr.Create()!;
     Console.WriteLine($"OCR language: {ocr.Language}");
-    foreach (var line in await ocr.ReadLinesAsync(image, RegionOptions(new Region(numbers[0], numbers[1], numbers[2], numbers[3]), args.Length == 7 ? args[6] : ""), CancellationToken.None))
+    var region = RegionOptions(new Region(numbers[0], numbers[1], numbers[2], numbers[3]), args.Length == 7 ? args[6] : "");
+    // CODSTATS_DUMP=<file.png>: the crop exactly as the OCR gets it (scaled, filtered), for tuning a region.
+    if (Environment.GetEnvironmentVariable("CODSTATS_DUMP") is { Length: > 0 } dump)
+    {
+        using var crop = image.Crop(region);
+        var bitmap = BitmapSource.Create(crop.Width, crop.Height, 96, 96, PixelFormats.Bgra32, null, crop.Pixels.ToArray(), crop.Width * 4);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(dump);
+        encoder.Save(file);
+    }
+    foreach (var line in await ocr.ReadLinesAsync(image, region, CancellationToken.None))
     {
         Console.WriteLine($"x={line.Left:0.000}..{line.Left + line.Width:0.000} y={line.Top:0.000}..{line.Top + line.Height:0.000}  '{line.Text}'");
     }
@@ -343,6 +354,8 @@ static Region RegionOptions(Region region, string options)
         region = parts[0] switch
         {
             "white" => region with { WhiteText = true },
+            "cyan" => region with { TextColour = TextColour.Cyan },
+            "orange" => region with { TextColour = TextColour.Orange },
             "max" => region with { MaxHeight = int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) },
             "min" => region with { MinPixelHeight = int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) },
             _ => throw new ArgumentException($"unknown option {option}"),

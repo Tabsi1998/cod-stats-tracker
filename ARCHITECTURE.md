@@ -108,7 +108,9 @@ GameWatcher (Prozessname, alle 5 s) ──CoD läuft──▶ RecognitionLoop (a
 
 Gerät (signiert): `POST devices/register`, `POST devices/recover`, `GET me`, `PUT me/display-name`, `PATCH me/privacy`, `GET me/stats`, `GET me/matches`, `POST me/matches/batch`, `PATCH me/matches/{id}`, `GET me/sync-status`, `POST me/recovery-key`, `GET me/export`, `DELETE me/data`.
 
-Öffentlich (lesend, ohne Anmeldung): `GET public/players`, `GET public/players/search?q=`, `GET public/players/{id}`, `GET public/players/{id}/stats`, `GET public/players/{id}/matches`, `GET public/leaderboards`, `GET public/platform-stats`.
+Öffentlich (lesend, ohne Anmeldung): `GET public/players`, `GET public/players/search?q=`, `GET public/players/{id}`, `GET public/players/{id}/stats`, `GET public/players/{id}/matches`, `GET public/players/{id}/matches/{matchId}`, `GET public/players/{id}/facets`, `GET public/leaderboards`, `GET public/facets`, `GET public/platform-stats`.
+
+Filter (gleich für `stats`, `matches` und `me/matches`): `game`, Zeitraum `last` (10/25/50/100) oder `days` (7/30) oder `from`/`to`, dazu `mode`, `map`, `weapon`, `weaponClass` (genauer Name ohne Groß-/Kleinschreibung, Platzhalter zählen wörtlich), `result` (`win`/`loss`/`draw`, in Warzone entscheidet die Platzierung) und `status` (`completed`/`left`). Die Datenbank filtert mit derselben Bedeutung wie `StatsFilter.Apply` im Speicher. `facets` liefert, was ein Filter anbieten kann (Modi, Karten, Waffen, Klassen mit Anzahl). Ranglisten: zusätzlich `map` und `days` (7/30). Auswertungen nach Uhrzeit, Wochentag und Sessions rechnet die Webseite selbst aus der Match-Reihe, weil nur sie die Zeitzone des Besuchers kennt.
 
 Link-Vorschau (HTML, nicht in OpenAPI): `GET public/share/player/{id}`, `GET public/share/player/{id}/match/{matchId}`. Caddy leitet nur Vorschau-Crawler (Discord, WhatsApp, X, Telegram, Slack …) auf Profil- und Match-Adressen dorthin; Menschen bekommen die Webseite. Versteckte oder unbekannte Profile bekommen die allgemeine Vorschau. Fällt die API aus, fehlt nur die Vorschau.
 

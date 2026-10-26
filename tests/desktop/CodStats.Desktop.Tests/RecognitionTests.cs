@@ -54,7 +54,7 @@ public class TextParsingTests
         Assert.False(TextParsing.ContainsAny("WIM", ["WIN"]));
     }
 
-    private static readonly string[] Weapons = ["HAN 86", "SANG 9MM", "M4", "KASTOV 762", "PPSH-41"];
+    private static readonly string[] Weapons = ["HAN 86", "SANG 9MM", "M4", "KASTOV 762", "PPSH-41", "REACTOR U92"];
 
     [Theory]
     [InlineData("SANG SMM", "SANG 9MM")] // as read on a real report
@@ -64,6 +64,8 @@ public class TextParsingTests
     [InlineData("KAST0V 762", "KASTOV 762")]
     [InlineData("PPSH 41", "PPSH-41")]
     [InlineData("M4", "M4")]
+    [InlineData("REACTOR IJ92", "REACTOR U92")] // a U read as two strokes
+    [InlineData("REACTOR 1.192", "REACTOR U92")]
     public void A_weapon_is_read_despite_look_alike_characters(string read, string weapon) =>
         Assert.Equal(weapon, TextParsing.OneOf(read, Weapons));
 
@@ -94,6 +96,51 @@ public class TextParsingTests
 
 public class DerivedValueTests
 {
+    [Fact]
+    public void The_final_score_comes_from_the_line_or_from_both_colours()
+    {
+        var notes = new List<string>();
+        Assert.Equal([200, 174], MatchStateMachine.Scoreline([200, 174], 200, null, notes));
+        Assert.Equal([100, 95], MatchStateMachine.Scoreline(null, 100, 95, notes)); // as on 25.10.: the line unread
+        Assert.Null(MatchStateMachine.Scoreline(null, 250, null, notes));
+        Assert.Empty(notes);
+        Assert.Null(MatchStateMachine.Scoreline([0, 174], 200, 174, notes)); // the line misread "200" as "0"
+        Assert.Single(notes);
+    }
+
+    [Theory]
+    [InlineData(null, 45, 1.67, 27)] // live on 25.10.: the 27 unread, the ratio says it
+    [InlineData(27, 45, 1.67, 27)]
+    [InlineData(null, 18, 2.00, 9)]
+    [InlineData(null, 45, null, null)]
+    [InlineData(5, 0, 0.00, 5)]
+    public void Deaths_come_from_the_ratio_when_exactly_one_value_fits(int? deaths, int? eliminations, double? ratio, int? expected)
+    {
+        var doubts = new List<string>();
+        Assert.Equal(expected, MatchStateMachine.Deaths(deaths, eliminations, ratio, doubts));
+        Assert.Empty(doubts);
+    }
+
+    [Fact]
+    public void Deaths_that_do_not_fit_the_ratio_are_a_doubt()
+    {
+        var doubts = new List<string>();
+        Assert.Equal(21, MatchStateMachine.Deaths(21, 45, 1.67, doubts));
+        Assert.Single(doubts);
+        // 12 eliminations at 12.00 fit both 0 and 1 death (the game prints the eliminations without deaths): unknown.
+        Assert.Null(MatchStateMachine.Deaths(null, 12, 12.00, []));
+        // Several fits (50 / 100 and 50 / 101 both print 0.50): the deaths stay unknown.
+        Assert.Null(MatchStateMachine.Deaths(null, 50, 0.50, []));
+    }
+
+    [Theory]
+    [InlineData("1.67", 1.67)]
+    [InlineData(" 0,85 ", 0.85)]
+    [InlineData("12.00", 12.0)]
+    [InlineData("1.6", null)]
+    [InlineData("ELIM", null)]
+    public void Ratios_are_read_with_two_decimals(string text, double? expected) => Assert.Equal(expected, TextParsing.Ratio(text));
+
     [Theory]
     [InlineData(25, null, 30, 5)] // TDM: 30 eliminations, 25 kills
     [InlineData(19, null, 31, 12)] // Stellung shows no assists column
