@@ -18,6 +18,7 @@
                        Text="Einschalten zeigt alle deine Matches. Ausschalten lässt bereits gezeigte Matches stehen und zeigt nur neue nicht mehr. Ganz entfernen: „Alle Daten löschen“." />
             <CheckBox x:Name="Tracking" Content="Tracking aktiv" />
             <CheckBox x:Name="Autostart" Content="Mit Windows starten (im Tray)" />
+            <CheckBox x:Name="CheckUpdates" Content="Nach neuen Versionen suchen (installiert wird nur auf deinen Klick)" />
 
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">

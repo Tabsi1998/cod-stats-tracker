@@ -18,5 +18,8 @@ public sealed record AppPaths(string Root)
     /// <summary>Recognition profiles the player or an update placed here replace the built-in ones.</summary>
     public string Profiles => Path.Combine(Root, "profiles");
 
+    /// <summary>Downloaded installers of client updates; emptied before each new download.</summary>
+    public string Updates => Path.Combine(Root, "updates");
+
     public void Ensure() => Directory.CreateDirectory(Root);
 }

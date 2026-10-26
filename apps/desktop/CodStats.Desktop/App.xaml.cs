@@ -6,6 +6,7 @@ using CodStats.Desktop.Recognition;
 using CodStats.Desktop.Storage;
 using CodStats.Desktop.Sync;
 using CodStats.Desktop.Ui;
+using CodStats.Desktop.Updates;
 
 namespace CodStats.Desktop;
 
@@ -15,10 +16,13 @@ public partial class App : Application
 {
     private static readonly TimeSpan SyncInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan MaxBackoff = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan FirstUpdateCheck = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(6);
 
     private Mutex? single;
     private Tray? tray;
     private DispatcherTimer? syncTimer;
+    private DispatcherTimer? updateTimer;
     private int failures;
 
     public AppPaths Paths { get; } = AppPaths.Default;
@@ -28,6 +32,10 @@ public partial class App : Application
     public SyncService Sync { get; private set; } = null!;
     public GameWatcher Watcher { get; } = new();
     public RecognitionLoop Recognition { get; private set; } = null!;
+    public UpdateService Updates { get; private set; } = null!;
+
+    /// <summary>True while an update downloads; the dashboard and the tray show it and do not offer it twice.</summary>
+    public bool UpdateRunning { get; private set; }
 
     /// <summary>What the tracker is doing right now, from the process watcher or, while the game runs, the recognition.</summary>
     public TrackerState Tracker { get; private set; } = TrackerState.WaitingForGame;
@@ -84,6 +92,16 @@ public partial class App : Application
             }),
             name => Dispatcher.BeginInvoke(() => AdoptRecognisedName(name)),
             () => Settings.NameConfirmed ? Settings.DisplayName : null);
+
+        var version = typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0);
+        Updates = new UpdateService(Settings.ServerUri, UpdateKey.PublicKey, version, Paths.Updates);
+        updateTimer = new DispatcherTimer { Interval = FirstUpdateCheck };
+        updateTimer.Tick += async (_, _) =>
+        {
+            updateTimer.Interval = UpdateCheckInterval;
+            await CheckForUpdateAsync();
+        };
+        updateTimer.Start();
 
         tray = new Tray(this);
         Watcher.StateChanged += state => Dispatcher.BeginInvoke(async () =>
@@ -147,6 +165,62 @@ public partial class App : Application
             syncTimer.Start();
         }
         DataChanged?.Invoke();
+    }
+
+    /// <summary>Asks the server for a newer client; the dashboard and the tray offer it, nothing installs by itself.</summary>
+    public async Task CheckForUpdateAsync()
+    {
+        if (!Settings.CheckForUpdates || !Updates.Enabled || UpdateRunning)
+        {
+            tray?.ShowUpdate(UpdateRunning ? Updates.Available : null);
+            return;
+        }
+        var found = await Updates.CheckAsync(CancellationToken.None);
+        if (found is not null)
+        {
+            Diagnostics.Log($"update: {found.Version} available");
+        }
+        tray?.ShowUpdate(found);
+        DataChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// The player chose to update: download, check the signed SHA-256, start the installer silently and quit. The
+    /// installer closes this client and starts the new one. Never while Call of Duty runs.
+    /// </summary>
+    public async Task InstallUpdateAsync()
+    {
+        if (Updates.Available is not { } update || UpdateRunning)
+        {
+            return;
+        }
+        if (GameWatcher.IsGameRunningNow())
+        {
+            MessageBox.Show("Call of Duty läuft gerade. Das Update startet COD Stats neu, darum bitte nach dem Spielen aktualisieren.",
+                "COD Stats", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        UpdateRunning = true;
+        tray?.ShowUpdate(update);
+        DataChanged?.Invoke();
+        try
+        {
+            var installer = await Updates.DownloadAsync(update, CancellationToken.None);
+            Diagnostics.Log($"update: installing {update.Version}");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(installer,
+                "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RESTARTAPP=1")
+            { UseShellExecute = true });
+            Quit();
+        }
+        catch (Exception error) when (error is UpdateException or System.ComponentModel.Win32Exception)
+        {
+            Diagnostics.Log("update failed: " + error.Message);
+            UpdateRunning = false;
+            tray?.ShowUpdate(update);
+            DataChanged?.Invoke();
+            MessageBox.Show($"Das Update hat nicht geklappt. {error.Message}\n\nDu kannst es später noch einmal versuchen oder den Installer von der Webseite holen.",
+                "COD Stats", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     public void SaveSettings()
@@ -213,6 +287,8 @@ public partial class App : Application
     public void Quit()
     {
         tray?.Dispose();
+        updateTimer?.Stop();
+        Updates?.Dispose();
         Watcher.Dispose();
         Recognition.Dispose();
         Shutdown();

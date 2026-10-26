@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using CodStats.Desktop.Recognition;
 using CodStats.Desktop.Sync;
+using CodStats.Desktop.Updates;
 
 namespace CodStats.Desktop.Ui;
 
@@ -12,12 +13,15 @@ public sealed class Tray : IDisposable
     private readonly ToolStripMenuItem trackerItem = new() { Enabled = false };
     private readonly ToolStripMenuItem syncItem = new() { Enabled = false };
     private readonly ToolStripMenuItem trackingToggle = new("Tracking aktiv") { CheckOnClick = true };
+    private readonly ToolStripMenuItem updateItem = new() { Visible = false };
 
     public Tray(App app)
     {
         this.app = app;
         var menu = new ContextMenuStrip();
         menu.Items.Add("Dashboard öffnen", null, (_, _) => app.ShowDashboard());
+        updateItem.Click += async (_, _) => await app.InstallUpdateAsync();
+        menu.Items.Add(updateItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(trackerItem);
         menu.Items.Add(syncItem);
@@ -56,6 +60,14 @@ public sealed class Tray : IDisposable
     {
         syncItem.Text = status.Text;
         UpdateTooltip();
+    }
+
+    /// <summary>A newer client as a menu entry, not a pop-up: the tray stays quiet while playing.</summary>
+    public void ShowUpdate(UpdateManifest? update)
+    {
+        updateItem.Visible = update is not null;
+        updateItem.Enabled = !app.UpdateRunning;
+        updateItem.Text = update is null ? "" : app.UpdateRunning ? $"Update {update.Version} wird geladen …" : $"Update auf {update.Version} installieren";
     }
 
     private void UpdateTooltip()

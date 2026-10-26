@@ -75,6 +75,8 @@ Die Webseite bietet `deploy/downloads/CodStats-Setup-win-x64.exe` an; der Ordner
 
 Klappt beides nicht, die Datei von Hand aus dem GitHub-Release in `deploy/downloads/` legen. Solange keine Datei da ist, blendet die Webseite den Download-Knopf aus.
 
+Mit dem Installer holen die Skripte `CodStats-update.json` und `CodStats-update.json.sig`, wenn der Release sie hat und die Prüfsumme zum Installer passt. Daran erkennen die Clients die neue Version und bieten das Update an ([docs/updates.md](../docs/updates.md)). Die Clients aktualisieren also erst, nachdem `./update.sh` gelaufen ist.
+
 ## Zwei Profile eines Spielers zusammenlegen
 
 Passiert, wenn jemand den Client mit „lokale Daten löschen“ deinstalliert und neu installiert: Der PC meldet sich als neues Gerät an, sein bestätigter Name ist aber schon vergeben. Die IDs stehen in den Profil-Adressen (`/player/<ID>`).

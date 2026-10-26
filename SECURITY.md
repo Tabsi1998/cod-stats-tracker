@@ -23,6 +23,12 @@ Der Client nimmt das Spielfenster nur auf, wie es OBS oder Discord auch tun. Act
 - Der Geräteschlüssel beweist nicht, dass der erkannte CoD-Name dem Besitzer gehört. Deshalb gibt es keine Zusammenführung über Namen.
 - Wiederherstellungsschlüssel werden nur als SHA-256-Hash gespeichert.
 
+## Updates
+
+- Der Client installiert ein Update nur mit gültiger Signatur des Release-Schlüssels (ECDSA P-256). Der private Schlüssel liegt nur als GitHub-Secret vor; wer den Server übernimmt, kann damit keine fremden Programme verteilen.
+- Der heruntergeladene Installer muss den signierten SHA-256 haben, sonst wird er gelöscht.
+- Installiert wird nur auf Klick des Spielers. Details: [docs/updates.md](docs/updates.md).
+
 ## Grenzen
 
 Die Werte kommen aus der Bilderkennung auf dem PC der Spieler. Wer will, kann gefälschte Werte schicken. Der Server prüft Plausibilität und begrenzt Anfragen, die Webseite kennzeichnet alles als „Community-erfasst, nicht von Activision bestätigt“.
