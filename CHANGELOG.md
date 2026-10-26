@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Geändert
+- Windows-Client: läuft mit der Priorität „Niedriger als normal“. Er bekommt nur Rechenzeit, die das Spiel nicht braucht, und kann so auch bei Lastspitzen keine FPS kosten.
+
 ## [0.2.4] - 2026-10-25
 
 ### Behoben
