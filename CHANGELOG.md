@@ -4,6 +4,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-26
+
 ### Geändert
 - Windows-Client: läuft mit der Priorität „Niedriger als normal“. Er bekommt nur Rechenzeit, die das Spiel nicht braucht, und kann so auch bei Lastspitzen keine FPS kosten.
 
@@ -127,7 +129,8 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 - Betrieb hinter eigenem Reverse Proxy: `install.sh --behind-proxy`, nur HTTP, echte Besucher-IP nur von vertrauten Proxys (getrennte Ratenlimits je Besucher).
 - Server-Skripte: `install.sh` (einmalig, Domain + Zufallspasswort), `update.sh` (Backup, Pull, Bauen, Neustart, Rollback), `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`.
 
-[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Tabsi1998/cod-stats-tracker/compare/v0.2.1...v0.2.2
