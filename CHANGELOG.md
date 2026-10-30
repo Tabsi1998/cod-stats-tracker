@@ -7,7 +7,26 @@ Alle wichtigen Änderungen an diesem Projekt. Format nach [Keep a Changelog](htt
 ### Geändert
 - README beschreibt den aktuellen Stand: Funktionen, was erkannt wird (Tabelle) und was noch fehlt, Installation für Spieler.
 
+### Behoben
+- Erkennung: Zwei zusammengelesene Zellen („17 4“) oder eine Quote („1.67“) wurden zu 174 bzw. 167; jetzt bleiben sie leer. Leerzeichen, Punkt und Komma zählen nur noch als Tausendertrenner. Eine Platzierung wie „2/12“ wurde zu 212; jetzt braucht sie genau eine Zahl.
+- Erkennung: Ein verlassenes Match aus dem Tab-Scoreboard (noch ungeprüftes Profil) wurde als „sicher“ hochgeladen. Werte aus ungeprüften Profilen kommen jetzt immer zur Prüfung.
+- Erkennung: Wurde nach einem Match in der Lobby der Beginn des nächsten nicht erkannt, ging dieses Match ohne Spur verloren. Jetzt wird es erfasst und zur Prüfung abgelegt.
+- Erkennung: Ein falsch gelesener erster Name (z. B. „Tabsl98“) ließ den richtigen Banner bis zum Neustart als „anderen Spieler“ gelten; die eigene Zeile wurde dann nicht mehr gefunden.
+- Erkennung: Runden eines Matches (Kollateral) zählten für die Namensbestätigung als drei Matches.
+- Frei für alle: Ein eingerückter Name über dem eigenen wurde beim Platz nicht mitgezählt (Platz 2 statt 3).
+- Windows-Client stürzt nicht mehr ab, wenn statt des Servers eine fremde Seite antwortet (Hotel-WLAN, Proxy), die Datenbank oder das Log kurz nicht beschreibbar ist oder eine Geräteidentität von einem anderen Windows-Konto stammt (sie wird beiseitegelegt, der Client verweist auf den Wiederherstellungsschlüssel). Kam das Spiel zurück, während die Erkennung gerade stoppte, blieb sie aus.
+- API: Mit einer neuen, erfundenen Geräte-ID pro Anfrage ließ sich das Gerätelimit umgehen; ein Gesamtlimit je IP fängt das ab.
+- API: Unbestätigte Namen (OCR-Vermutungen) erschienen öffentlich als „früher bekannt als“. Jetzt nur noch bestätigte.
+- API: Anzeigenamen mit unsichtbaren Zeichen (Nullbreite, Richtungszeichen) wurden angenommen und sahen aus wie ein vergebener Name. Sie werden abgelehnt, Namen in Unicode-Normalform C gespeichert.
+- API: Ein leerer Eintrag im Match-Batch führte zu Fehler 500 statt 400.
+
+### Sicherheit
+- Container gehärtet: `no-new-privileges`, nur nötige Kernel-Fähigkeiten, API und Webserver mit schreibgeschütztem Dateisystem, Datenbank in einem internen Netz nur für die API.
+- Mit eigener Domain nimmt Caddy `X-Forwarded-For` nur noch vom Server selbst an (vorher von allen privaten Netzen, darüber ließ sich die IP fälschen und das Ratenlimit umgehen).
+- Zusätzliche Header: Content-Security-Policy mit `frame-ancestors`, `base-uri`, `form-action`, `object-src`; Permissions-Policy; Cross-Origin-Opener-Policy.
+
 ### Hinzugefügt
+- Tests der Erkennungslogik laufen jetzt auch unter Linux und in der CI (`tests/recognition`), nicht nur auf Windows.
 - Windows-Client: Selbst-Update. Der Client fragt den Server nach einer neueren Version und bietet sie im Dashboard und im Tray an; ein Klick lädt sie, prüft Signatur und Prüfsumme, installiert still und startet neu. Nie während Call of Duty läuft, abschaltbar in den Einstellungen. Aktiv ab der ersten Version mit eingetragenem Release-Schlüssel ([docs/updates.md](docs/updates.md)).
 - Release: signierte Update-Datei `CodStats-update.json` (+ `.sig`); `install.sh`/`update.sh` legen sie neben den Installer.
 

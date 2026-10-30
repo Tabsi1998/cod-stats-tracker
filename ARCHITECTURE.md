@@ -76,7 +76,7 @@ Fehlende Werte sind `null`, nie `0`.
 | Feld | Erlaubt |
 |---|---|
 | `kills`, `deaths`, `assists` | 0–200 |
-| `placement` | 1–150, nur Warzone |
+| `placement` | 1–150 (Warzone, MW4 Frei für alle) |
 | `score` | 0–100 000 |
 | `confidence` | 0–1 |
 | `played_at` | nicht mehr als 5 Minuten in der Zukunft, nicht älter als 180 Tage |
@@ -100,7 +100,10 @@ GameWatcher (Prozessname, alle 5 s) ──CoD läuft──▶ RecognitionLoop (a
 - **Ein Bild entscheidet nie:** ein Ergebnis wird 3× gelesen, Werte per Mehrheit bestimmt. „Sicher“ (≥ 0,85) nur, wenn Matchbeginn gesehen, Spiel bekannt, Lesungen einig und Plausibilitätsregeln erfüllt.
 - **Tab-Scoreboard mitten im Match zählt nicht.** Es wird nur gemerkt; endet ein Match ohne Ergebnisbildschirm, wird der letzte Stand als `pending` zur Prüfung abgelegt.
 - **Duplikate:** nach einem erfassten Match werden Ergebnisbildschirme ignoriert, bis ein neues Match beginnt; zusätzlich prüfen SQLite (gleiches Ergebnis ±3 Min.) und Server.
-- **Eigener Name:** gilt erst als bestätigt, wenn derselbe Name sauber in 3 verschiedenen Matches gelesen wurde und kein zweiter Name genauso oft vorkommt. Ein von Hand bestätigter Name bleibt.
+- **Eigener Name:** gilt erst als bestätigt, wenn derselbe Name sauber in 3 verschiedenen Matches gelesen wurde (Runden eines Matches zählen als eins) und kein zweiter Name genauso oft vorkommt. Ein von Hand bestätigter Name bleibt. Ein noch unbestätigter Name hilft nur beim Finden der eigenen Zeile; als „Banner eines anderen Spielers“ gilt ein Name erst gegen einen bestätigten. Auf dem Server landen nur bestätigte Namen im öffentlichen Namensverlauf.
+- **Ungeprüfte Profile** (`verified: false`, z. B. Tab-Scoreboard) liefern nie „sichere“ Matches, auch nicht für verlassene Matches.
+- **Match nach der Lobby:** Wird der Beginn eines Matches nicht erkannt, zählt ein Ergebnisbildschirm nach Lobby oder Menü trotzdem als neues Match, wenn er mindestens 3 Minuten nach dem letzten kommt und andere Werte zeigt. Es geht dann zur Prüfung statt verloren.
+- **Zahlen:** Leerzeichen, Punkt und Komma gelten nur als Tausendertrenner („1 024“, „12.410“). „17 4“ (zwei Zellen) oder „1.67“ (Quote) bleiben leer statt 174 oder 167; eine Platzierung braucht genau eine Zahl.
 - **Lobby-Vergleich:** Aus den ohnehin gelesenen Tabellen des End-Scoreboards zählt der Client die Zeilen (Name und Punkte nebeneinander) und wie viele mehr Punkte haben als er. Gespeichert werden nur Lobbygröße und eigener Platz, nie Namen oder Werte anderer. Jeder Zweifel (Zeile ohne Punkte, fehlende Überschrift, uneinige Bilder) lässt die Lobby leer und macht das Match nicht unsicher. Auswertung: Anteil der Mitspieler mit höchstens so vielen Punkten, über alle Matches summiert (wie K/D).
 - **Windows-OCR** liefert keine Wort-Konfidenz; die Qualität kommt aus sauberem Parsen (Ziffern-Verwechsler wie O/0 senken sie) und der Übereinstimmung mehrerer Bilder.
 
@@ -129,6 +132,7 @@ Die genaue Beschreibung liefert OpenAPI unter `/openapi/v1.json`.
 | `apps/desktop/CodStats.Desktop` | WPF-Client: `Identity/` (Geräteschlüssel), `Storage/` (SQLite), `Sync/` (signierte API, Sync-Schleife), `Capture/` (Fensteraufnahme, OCR), `Recognition/` (Profile, Zustandsautomat, Namensprüfung), `Ui/` (Tray, Dashboard, Fenster) |
 | `shared/contracts` | DTOs, Spiel-Enums, Request-Signatur, Statistikregeln |
 | `tests/api` | API-Tests gegen echtes PostgreSQL (Testcontainers) und Tests der gemeinsamen Regeln |
-| `tests/desktop` | Client-Tests: SQLite, Identität, Sync gegen nachgebauten Server |
+| `tests/desktop` | Client-Tests, die Windows brauchen: OCR, Fensteraufnahme, SQLite, Identität, Sync gegen nachgebauten Server, echte Spielbilder |
+| `tests/recognition` | Erkennungslogik des Clients ohne Windows (Parsen, Profile, Zustandsautomat, eigene Zeile, Lobby); kompiliert die Quellen aus `Recognition/` direkt und läuft überall, auch in der Linux-CI |
 | `tests/capture-fixtures` | Echte Spielbilder für Erkennungstests (nicht öffentlich) |
 | `deploy` | Docker Compose, Caddy, `.env.example` |
