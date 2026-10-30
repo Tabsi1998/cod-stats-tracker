@@ -90,6 +90,8 @@ fetch_installer() {
     yellow "  Kein signiertes Update im Release: Clients bieten diese Version nicht selbst an."
   fi
   rm -rf -- "$staging"
+  # Caddy reads these without the capability to bypass file permissions, so a strict umask must not hide them.
+  chmod -R a+rX -- "$target"
 }
 
 # Downloads one file of the latest release into a folder: with gh (also private repos), else anonymously.

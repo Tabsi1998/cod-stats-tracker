@@ -71,6 +71,12 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
                     // existing profile over.
                     notice = $"Der Name „{name}“ gehört schon einem anderen Profil. Ist es deins, übernimm es in den Einstellungen mit dem Wiederherstellungsschlüssel.";
                 }
+                catch (ApiException error) when (error.Status == HttpStatusCode.BadRequest)
+                {
+                    // A name the server refuses (e.g. with an invisible character, saved by an older version) must not
+                    // hold back the matches.
+                    notice = $"Der Name „{name}“ wird vom Server nicht angenommen ({error.Message}). Bitte in den Einstellungen korrigieren.";
+                }
             }
             if (me.IsPublic != wish.IsPublic)
             {

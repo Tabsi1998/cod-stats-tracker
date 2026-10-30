@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -28,7 +29,7 @@ public sealed class DeviceIdentity : IDisposable
     /// <summary>
     /// Loads the identity, or creates a new key when there is none yet. An identity that cannot be opened (copied
     /// from another Windows user or PC, where DPAPI cannot decrypt it, or damaged) is set aside as
-    /// <c>identity.json.unreadable</c> and a new key is created; <paramref name="replaced"/> says so, and the player
+    /// <c>identity.json.unreadable-&lt;time&gt;</c> (never over an earlier one) and a new key is created; <paramref name="replaced"/> says so, and the player
     /// takes the old profile over with the recovery key.
     /// </summary>
     public static DeviceIdentity LoadOrCreate(string path, out bool replaced)
@@ -40,7 +41,8 @@ public sealed class DeviceIdentity : IDisposable
         }
         catch (Exception error) when (error is CryptographicException or JsonException or FormatException or InvalidDataException)
         {
-            File.Move(path, path + ".unreadable", overwrite: true);
+            var aside = $"{path}.unreadable-{DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}-{Guid.NewGuid().ToString("N")[..6]}";
+            File.Move(path, aside, overwrite: false);
             replaced = true;
             return LoadOrCreate(path);
         }
