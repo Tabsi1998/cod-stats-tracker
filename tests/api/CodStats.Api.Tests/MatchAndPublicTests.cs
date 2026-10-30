@@ -20,6 +20,14 @@ public class MatchUploadTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task An_empty_batch_entry_is_a_bad_request()
+    {
+        using var device = await TestDevice.RegisterAsync(Api);
+        using var content = new StringContent("""{"matches":[null]}""", System.Text.Encoding.UTF8, "application/json");
+        Assert.Equal(HttpStatusCode.BadRequest, (await device.Http.PostAsync("/api/v1/me/matches/batch", content)).StatusCode);
+    }
+
+    [Fact]
     public async Task Same_id_with_other_values_is_rejected()
     {
         using var device = await TestDevice.RegisterAsync(Api);
@@ -173,6 +181,32 @@ public class PublicTests(ApiFixture fixture)
         Assert.Equal(newName, profile!.DisplayName);
         Assert.Equal([oldName], profile.PreviousNames);
         Assert.Equal(1, profile.Matches);
+    }
+
+    [Fact]
+    public async Task Uncertain_names_never_become_public_history()
+    {
+        var name = UniqueName("Real");
+        using var device = await TestDevice.PublicPlayerAsync(Api, name);
+        // The client sends its best guess as uncertain: an OCR misread, or a teammate read as the player.
+        (await device.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(UniqueName("Misread"), NameStatus.Uncertain)))
+            .EnsureSuccessStatusCode();
+        (await device.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(name, NameStatus.Confirmed)))
+            .EnsureSuccessStatusCode();
+
+        var profile = await Api.Anonymous().GetFromJsonAsync<PlayerProfile>($"/api/v1/public/players/{device.ProfileId}");
+        Assert.Equal(name, profile!.DisplayName);
+        Assert.Empty(profile.PreviousNames);
+    }
+
+    [Fact]
+    public async Task A_look_alike_name_with_an_invisible_character_is_refused()
+    {
+        var name = UniqueName("Twin");
+        using var owner = await TestDevice.PublicPlayerAsync(Api, name);
+        using var other = await TestDevice.RegisterAsync(Api);
+        var response = await other.Http.PutAsJsonAsync("/api/v1/me/display-name", new SetDisplayNameRequest(name + "\u200B", NameStatus.Confirmed));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

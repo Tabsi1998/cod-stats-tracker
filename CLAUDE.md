@@ -27,6 +27,7 @@ Statistik-Tracker für CoD MW4 Multiplayer und Warzone: Windows-Client (Bilderke
 ## Fallen
 
 - API-Tests brauchen laufendes Docker (Testcontainers startet PostgreSQL).
+- `tests/recognition` kompiliert Quellen des Clients direkt (`<Compile Include … Link>`). Eine neue Datei unter `Recognition/`, die ohne Windows auskommt, dort eintragen; Windows-Abhängigkeiten (WinRT, WPF, `Diagnostics`, `AppPaths`) gehören nicht in diese Dateien, sonst bricht der Linux-Build.
 - Der Client schreibt nach `%LOCALAPPDATA%\CodStats` und setzt `HKCU\...\Run\CodStats` (Autostart). Beim Testen daran denken.
 - WPF + WinForms (nur für das Tray-Symbol): `System.Windows.Forms`/`System.Drawing` sind als globale Usings entfernt.
 - Selbst-Update: `Updates/UpdateKey.cs` (öffentlich) muss zum GitHub-Secret `UPDATE_SIGNING_KEY` passen, sonst bricht der Release ab. Schlüssel nie ins Repo; Einrichtung in `docs/updates.md`.

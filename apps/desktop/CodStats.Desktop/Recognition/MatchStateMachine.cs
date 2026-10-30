@@ -17,7 +17,10 @@ public enum MatchPhase
     AwaitingEnd,
     /// <summary>MW4: the after-action report is up; readings are being collected.</summary>
     Reporting,
-    /// <summary>The match was recorded; result screens and reports are ignored until the next match starts.</summary>
+    /// <summary>
+    /// The match was recorded; result screens and reports are ignored until the next match starts. Once the lobby or
+    /// the menu was seen, a result screen is a new match whose start was missed.
+    /// </summary>
     Recorded,
 }
 
@@ -58,6 +61,19 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
     private readonly Func<string, ProfileWords> words = words ?? (_ => ProfileWords.None);
     private bool sawStart;
     private Game? playingGame;
+
+    /// <summary>
+    /// The lobby or the menu came after the recorded match. A result screen well after it with other values can then
+    /// only end a new match whose start was not recognised; it is collected (as unsure, for the player's review)
+    /// instead of being lost.
+    /// </summary>
+    private bool leftRecorded;
+
+    /// <summary>The recorded match's last reading and its kills and deaths, to tell its own screens from a new match's.</summary>
+    private (DateTimeOffset At, int? Kills, int? Deaths)? recorded;
+
+    /// <summary>No MW4 match, loading included, ends sooner than this after the one before.</summary>
+    private static readonly TimeSpan MinMatchGap = TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// The newest scoreboard of the running match: the Tab scoreboard, or the result screen of the last round. Never
@@ -104,11 +120,12 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
                 };
                 Phase = MatchPhase.Playing;
                 sawStart = true;
+                leftRecorded = false;
                 playingGame = observation.Game ?? playingGame;
                 Remember(observation);
                 return before;
 
-            case ScreenKind.Result when Phase == MatchPhase.Recorded:
+            case ScreenKind.Result when Phase == MatchPhase.Recorded && !IsNewMatch(observation):
                 return null;
 
             case ScreenKind.Result:
@@ -122,6 +139,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
                 {
                     results.Clear();
                     Phase = MatchPhase.Collecting;
+                    leftRecorded = false;
                 }
                 results.Add(observation);
                 if (IsWarzone && (results.Count >= ReadingsPerResult || observation.At - results[0].At > MaxCollecting))
@@ -197,12 +215,26 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
         };
         Phase = MatchPhase.Idle;
         sawStart = false;
+        leftRecorded = false;
+        recorded = null;
         playingGame = null;
         results.Clear();
         reports.Clear();
         lastScoreboard = null;
         matchContext = null;
         return left;
+    }
+
+    /// <summary>A result screen after the recorded match that cannot be that match's: lobby seen, much later, other values.</summary>
+    private bool IsNewMatch(Observation result)
+    {
+        if (!leftRecorded || recorded is not { } last || result.At - last.At < MinMatchGap)
+        {
+            return false;
+        }
+        var kills = TextParsing.Count(result.Fields.GetValueOrDefault(Fields.Kills)?.Text).Value;
+        var deaths = TextParsing.Count(result.Fields.GetValueOrDefault(Fields.Deaths)?.Text).Value;
+        return kills is not null && (kills != last.Kills || deaths != last.Deaths);
     }
 
     private bool IsWarzone => (results.Select(r => r.Game).FirstOrDefault(g => g is not null) ?? playingGame)?.IsWarzone() == true;
@@ -227,6 +259,10 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             Phase = MatchPhase.Idle;
             sawStart = false;
             playingGame = null;
+        }
+        else
+        {
+            leftRecorded = true;
         }
         results.Clear();
         reports.Clear();
@@ -368,8 +404,15 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             doubts.Add("Kills nicht lesbar");
         }
 
+        // Values from a profile not yet checked against real captures are never safe, even when nothing else is doubtful
+        // (a left match has no essentials, and its one scoreboard counts as three readings).
+        var profileQuality = all.SelectMany(o => o.Fields.Values).Select(f => f.Quality).DefaultIfEmpty(1.0).Min();
+        if (profileQuality < 1)
+        {
+            doubts.Add("Werte aus einem noch nicht geprüften Erkennungsprofil");
+        }
         var confidence = (essentials.Count > 0 ? essentials.Min() : 1) * (game is null ? 0.5 : gameAgreement) * (sawStart ? 1 : 0.7)
-            * (wellRead ? 1 : 0.8);
+            * (wellRead ? 1 : 0.8) * profileQuality;
         if (doubt is not null && status == MatchStatus.Completed)
         {
             confidence = Math.Min(confidence, SafeConfidence / 2);
@@ -393,12 +436,14 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
             Notes = notes,
         };
 
+        recorded = (all.Max(o => o.At), kills, deaths);
         results.Clear();
         reports.Clear();
         lastScoreboard = null;
         matchContext = null;
         Phase = MatchPhase.Recorded;
         sawStart = false;
+        leftRecorded = false;
         return candidate;
     }
 
@@ -465,7 +510,7 @@ public sealed class MatchStateMachine(Func<string, ProfileWords>? words = null)
     /// </summary>
     internal static int? Deaths(int? deaths, int? eliminations, double? ratio, List<string> doubts)
     {
-        if (eliminations is not { } e || ratio is not { } q || e == 0)
+        if (eliminations is not { } e || ratio is not { } q || e is 0 or > MatchRules.MaxCount)
         {
             return deaths;
         }

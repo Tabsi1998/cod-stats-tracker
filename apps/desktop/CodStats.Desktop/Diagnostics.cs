@@ -35,7 +35,7 @@ public static class Diagnostics
                 }
                 File.AppendAllText(path, $"{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} {message}{Environment.NewLine}");
             }
-            catch (IOException)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
                 // Logging must never break the client.
             }

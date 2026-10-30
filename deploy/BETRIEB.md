@@ -51,7 +51,7 @@ Neue Versionen danach immer mit `./update.sh`.
 
 - Der Stack liefert dann nur HTTP auf dem gewählten Port (Standard 8080) und öffnet keinen HTTPS-Port. `install.sh` prüft vorher, ob der Port schon belegt ist; auf einem Server mit anderen Diensten einfach einen freien wählen (`--port 8095`). Später ändern: `HTTP_PORT` in `deploy/.env`, dann `./update.sh --skip-pull`.
 - Im Proxy: `https://stats.deine-domain.at` → `http://<ip-dieses-servers>:8080`. Host und `X-Forwarded-For` weitergeben (macht Nginx Proxy Manager, Caddy und Traefik von selbst). Keine Websockets nötig.
-- `--proxy-ip` ist die Adresse, von der dein Proxy kommt (mehrere mit Leerzeichen in `deploy/.env` bei `TRUSTED_PROXIES`). Ohne Angabe gelten alle privaten Netze (10.x, 172.16–31.x, 192.168.x) als vertrauenswürdig.
+- `--proxy-ip` ist die Adresse, von der dein Proxy kommt (mehrere mit Leerzeichen in `deploy/.env` bei `TRUSTED_PROXIES`). Ohne Angabe gelten alle privaten Netze (10.x, 172.16–31.x, 192.168.x) als vertrauenswürdig. Mit eigener Domain (`--domain`, Caddy macht HTTPS selbst) gilt dagegen nur der Server selbst (`127.0.0.1`); steht dort doch ein CDN davor, dessen Netze in `TRUSTED_PROXIES` eintragen.
 - **Warum das wichtig ist:** Nur von dort wird die echte Besucher-IP aus `X-Forwarded-For` übernommen. Sonst hätten alle Besucher die IP des Proxys und teilten sich ein Ratenlimit (z. B. nur 10 Geräte-Registrierungen pro Stunde für alle zusammen).
 - Port 8080 in der Firewall nur für den Proxy öffnen, nicht für das ganze Internet. Sonst könnte jemand direkt mit gefälschtem `X-Forwarded-For` kommen, falls er aus einem vertrauten Netz anfragt.
 

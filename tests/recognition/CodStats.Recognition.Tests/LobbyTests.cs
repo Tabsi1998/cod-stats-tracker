@@ -2,7 +2,7 @@ using CodStats.Contracts;
 using CodStats.Desktop.Capture;
 using CodStats.Desktop.Recognition;
 
-namespace CodStats.Desktop.Tests;
+namespace CodStats.Recognition.Tests;
 
 /// <summary>
 /// The lobby from the final scoreboard: two tables as the OCR returns them (lines with positions), test data only.
@@ -111,6 +111,79 @@ public class LobbyTests
         Assert.Equal("3", fields[Fields.LobbySize].Text);
         Assert.Equal("3", fields[Fields.LobbyRank].Text);
         Assert.DoesNotContain(fields.Values, f => f.Text.Contains("Anna", StringComparison.Ordinal) || f.Text.Contains("Cleo", StringComparison.Ordinal));
+    }
+
+    private static readonly Region Banner = new(0.05, 0.1, 0.2, 0.05);
+
+    /// <summary>The scoreboard with a name banner, read with a confirmed name and with a mere guess.</summary>
+    private static Observation ReadWithBanner(string banner, List<TextLine> left, List<TextLine> right, string? known, string? candidate)
+    {
+        var profile = new RecognitionProfile
+        {
+            Id = "banner-test",
+            Game = Game.Mw4Multiplayer,
+            Screen = ScreenKind.Result,
+            Aspect = 16 / 9.0,
+            Anchors = [],
+            OwnName = new FieldSpec(Banner),
+            OwnRow = Row,
+        };
+        var reader = new Lines(region => region == Left.Region ? left : region == Right.Region ? right
+            : region == Banner ? [new TextLine(banner, Banner.X, Banner.Y, Banner.Width, Banner.Height)] : []);
+        using var frame = new Frame(16, 9);
+        return new ScreenReader([profile], reader, () => known, () => candidate).ReadAsync(frame, DateTimeOffset.UtcNow, CancellationToken.None)
+            .GetAwaiter().GetResult();
+    }
+
+    [Fact]
+    public void A_misread_first_guess_does_not_reject_the_right_banner()
+    {
+        var left = Table(Left, ("Anna", "3200"), ("Tabsi98", "2010"));
+        var right = Table(Right, ("Cleo", "2500"));
+
+        // "Tabsl98" was the first, misread guess; the banner now shows the real name.
+        var observation = ReadWithBanner("Tabsi98", left, right, known: null, candidate: "Tabsl98");
+
+        Assert.Equal("Tabsi98", observation.OwnName?.Text);
+        Assert.Equal("2010", observation.Fields[Fields.Score].Text);
+    }
+
+    [Fact]
+    public void A_banner_of_another_player_is_ignored_once_the_name_is_confirmed()
+    {
+        var left = Table(Left, ("Anna", "3200"), ("Tabsi98", "2010"));
+        var right = Table(Right, ("Cleo", "2500"));
+
+        var observation = ReadWithBanner("Anna", left, right, known: "Tabsi98", candidate: null);
+
+        Assert.Null(observation.OwnName);
+        Assert.Equal("2010", observation.Fields[Fields.Score].Text);
+    }
+
+    [Theory]
+    [InlineData(0.0, 3)]
+    [InlineData(0.02, 3)] // the second name drawn indented, behind an emblem
+    public async Task The_free_for_all_place_counts_every_row_above(double indent, int expected)
+    {
+        var table = Table(Left, ("Anna", "3200"), ("ZBK", "3000"), ("Tabsi98", "2010"));
+        table = table.Select(l => l.Text == "ZBK" ? l with { Left = l.Left + indent } : l).ToList();
+        var profile = new RecognitionProfile
+        {
+            Id = "ffa-test",
+            Game = Game.Mw4Multiplayer,
+            Screen = ScreenKind.Result,
+            Aspect = 16 / 9.0,
+            Anchors = [],
+            OwnRow = new OwnRowSpec([Left], RowHeight, new Dictionary<string, IReadOnlyList<string>> { [Fields.Kills] = ["ABSCHÜSSE"] })
+            {
+                RankField = Fields.Placement,
+            },
+        };
+        using var frame = new Frame(16, 9);
+        var fields = (await new ScreenReader([profile], new Lines(region => region == Left.Region ? table : []), () => "Tabsi98")
+            .ReadAsync(frame, DateTimeOffset.UtcNow, CancellationToken.None)).Fields;
+
+        Assert.Equal(expected.ToString(System.Globalization.CultureInfo.InvariantCulture), fields[Fields.Placement].Text);
     }
 
     private static IReadOnlyDictionary<string, FieldReading> Read(List<TextLine> left, List<TextLine> right)

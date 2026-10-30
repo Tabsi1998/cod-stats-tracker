@@ -214,6 +214,11 @@ public static class MatchRules
         {
             problems.Add($"{name} contains control characters");
         }
+        else if (value.Any(c => char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.Format))
+        {
+            // Zero-width and direction marks: they would split one map or mode into look-alike filter entries.
+            problems.Add($"{name} contains invisible characters");
+        }
     }
 }
 
@@ -238,13 +243,41 @@ public static class DisplayNames
         return trimmed;
     }
 
-    /// <summary>The trimmed name, or null when it cannot be a display name.</summary>
+    /// <summary>
+    /// The trimmed name in Unicode normal form C, or null when it cannot be a display name. Invisible characters
+    /// (zero-width, direction marks), private-use and broken surrogates are refused: "Tabsi98" with a zero-width space
+    /// looks exactly like "Tabsi98" and would get past the one-name-one-profile rule.
+    /// </summary>
     public static string? Normalise(string? name)
     {
         var trimmed = name?.Trim();
-        if (trimmed is null || trimmed.Length is < MinLength or > MaxLength || trimmed.Any(char.IsControl))
+        if (trimmed is null)
         {
             return null;
+        }
+        try
+        {
+            trimmed = trimmed.Normalize(System.Text.NormalizationForm.FormC);
+        }
+        catch (ArgumentException)
+        {
+            // Some platforms refuse to normalise a lone surrogate.
+            return null;
+        }
+        if (trimmed.Length is < MinLength or > MaxLength)
+        {
+            return null;
+        }
+        // A broken surrogate comes out of the enumeration as the replacement character, which is no name either.
+        foreach (var rune in trimmed.EnumerateRunes())
+        {
+            if (rune == System.Text.Rune.ReplacementChar || System.Text.Rune.GetUnicodeCategory(rune) is System.Globalization.UnicodeCategory.Control
+                or System.Globalization.UnicodeCategory.Format or System.Globalization.UnicodeCategory.PrivateUse
+                or System.Globalization.UnicodeCategory.Surrogate or System.Globalization.UnicodeCategory.LineSeparator
+                or System.Globalization.UnicodeCategory.ParagraphSeparator)
+            {
+                return null;
+            }
         }
         return trimmed;
     }

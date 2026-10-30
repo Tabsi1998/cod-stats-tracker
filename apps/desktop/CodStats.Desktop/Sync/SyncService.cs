@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using CodStats.Contracts;
 using CodStats.Desktop.Identity;
 using CodStats.Desktop.Storage;
@@ -70,6 +71,12 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
                     // existing profile over.
                     notice = $"Der Name „{name}“ gehört schon einem anderen Profil. Ist es deins, übernimm es in den Einstellungen mit dem Wiederherstellungsschlüssel.";
                 }
+                catch (ApiException error) when (error.Status == HttpStatusCode.BadRequest)
+                {
+                    // A name the server refuses (e.g. with an invisible character, saved by an older version) must not
+                    // hold back the matches.
+                    notice = $"Der Name „{name}“ wird vom Server nicht angenommen ({error.Message}). Bitte in den Einstellungen korrigieren.";
+                }
             }
             if (me.IsPublic != wish.IsPublic)
             {
@@ -91,6 +98,17 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
         }
         catch (ApiException error)
         {
+            return Report(SyncPhase.Failed, error.Message);
+        }
+        catch (Exception error) when (error is JsonException or NotSupportedException)
+        {
+            // Something answered that is not this server (a hotel or captive-portal page, a proxy error page).
+            return Report(SyncPhase.Offline, "Antwort des Servers nicht lesbar");
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // A sync error must never take the client down; the next attempt waits longer.
+            Diagnostics.Log($"sync error: {error.GetType().Name}: {error.Message}");
             return Report(SyncPhase.Failed, error.Message);
         }
         finally

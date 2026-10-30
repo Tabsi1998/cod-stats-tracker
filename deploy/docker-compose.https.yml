@@ -1,6 +1,11 @@
 # Added by the scripts only when deploy/.env sets HTTPS_PORT: this server terminates HTTPS itself (install.sh
 # --domain). Behind your own reverse proxy no HTTPS port is opened at all.
+# Caddy then faces the internet directly: no proxy in front may name the client, so X-Forwarded-For is trusted from
+# this host only (otherwise any client arriving from a private address, such as IPv6 through Docker's proxy, could
+# pick its own address and slip past the rate limits). Behind a CDN, set TRUSTED_PROXIES in .env to its ranges.
 services:
   web:
+    environment:
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1/32}
     ports:
       - "${HTTPS_BIND:-0.0.0.0}:${HTTPS_PORT:-443}:443"
