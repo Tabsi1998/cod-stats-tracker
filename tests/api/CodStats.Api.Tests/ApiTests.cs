@@ -113,6 +113,22 @@ public class DeviceIdentityTests(ApiFixture fixture)
         await Assert.ThrowsAsync<HttpRequestException>(() => TestDevice.RegisterAsync(strict));
     }
 
+    [Fact]
+    public async Task A_new_forged_device_id_per_request_does_not_escape_the_limit()
+    {
+        await using var strict = new ApiFactory(fixture.ConnectionString, registrationsPerHour: 10_000, requestsPerAddressPerMinute: 5);
+        using var http = strict.Anonymous();
+        var statuses = new List<HttpStatusCode>();
+        for (var i = 0; i < 8; i++)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/me");
+            request.Headers.Add(RequestSigning.DeviceIdHeader, Guid.NewGuid().ToString());
+            statuses.Add((await http.SendAsync(request)).StatusCode);
+        }
+        Assert.Equal(5, statuses.Count(s => s == HttpStatusCode.Unauthorized));
+        Assert.Equal(3, statuses.Count(s => s == HttpStatusCode.TooManyRequests));
+    }
+
     private sealed class RecordingHandler : DelegatingHandler
     {
         public HttpRequestMessage? Last { get; private set; }

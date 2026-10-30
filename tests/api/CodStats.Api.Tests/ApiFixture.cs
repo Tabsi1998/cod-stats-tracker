@@ -36,7 +36,8 @@ public sealed class ApiTestGroup : ICollectionFixture<ApiFixture>
     public const string Name = "api";
 }
 
-public sealed class ApiFactory(string connectionString, int registrationsPerHour) : WebApplicationFactory<Program>
+public sealed class ApiFactory(string connectionString, int registrationsPerHour, int requestsPerAddressPerMinute = 1_000_000)
+    : WebApplicationFactory<Program>
 {
     public const int LeaderboardMinMatches = 3;
 
@@ -50,6 +51,7 @@ public sealed class ApiFactory(string connectionString, int registrationsPerHour
             ["RateLimits:RegistrationsPerHour"] = registrationsPerHour.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["RateLimits:DeviceRequestsPerMinute"] = "100000",
             ["RateLimits:PublicRequestsPerMinute"] = "100000",
+            ["RateLimits:RequestsPerAddressPerMinute"] = requestsPerAddressPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture),
         }));
     }
 

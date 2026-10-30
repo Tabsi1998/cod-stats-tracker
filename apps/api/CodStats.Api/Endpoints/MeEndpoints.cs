@@ -72,14 +72,19 @@ public static class MeEndpoints
         profile.NameStatus = body.Status;
         profile.UpdatedAt = now;
 
-        var history = await db.NameHistory.SingleOrDefaultAsync(n => n.ProfileId == profile.Id && n.Name == name, cancel);
-        if (history is null)
+        // The history is public ("previously known as"), so it holds confirmed names only: an uncertain one may be an
+        // OCR misread or a teammate's name read as the player's own.
+        if (body.Status == NameStatus.Confirmed)
         {
-            db.NameHistory.Add(new NameHistory { ProfileId = profile.Id, Name = name, FirstSeenAt = now, LastSeenAt = now });
-        }
-        else
-        {
-            history.LastSeenAt = now;
+            var history = await db.NameHistory.SingleOrDefaultAsync(n => n.ProfileId == profile.Id && n.Name == name, cancel);
+            if (history is null)
+            {
+                db.NameHistory.Add(new NameHistory { ProfileId = profile.Id, Name = name, FirstSeenAt = now, LastSeenAt = now });
+            }
+            else
+            {
+                history.LastSeenAt = now;
+            }
         }
         try
         {
@@ -138,6 +143,10 @@ public static class MeEndpoints
         if (body.Matches is null || body.Matches.Count is 0 or > MaxBatch)
         {
             return Results.Problem(detail: $"send 1–{MaxBatch} matches per batch", statusCode: 400);
+        }
+        if (body.Matches.Any(m => m is null))
+        {
+            return Results.Problem(detail: "a batch entry is empty", statusCode: 400);
         }
 
         var now = clock.GetUtcNow();

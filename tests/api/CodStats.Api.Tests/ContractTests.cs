@@ -333,6 +333,13 @@ public class MatchRuleTests
     [InlineData("  ShadowPlayer  ", "ShadowPlayer")]
     [InlineData("A", null)]
     [InlineData("bad\tname", null)]
+    [InlineData("Tabsi98\u200B", null)]       // zero-width space: looks exactly like "Tabsi98"
+    [InlineData("\u202ETabsi98", null)]       // right-to-left override
+    [InlineData("Tab\u2066si98", null)]
+    [InlineData("Tabsi\uE00098", null)]       // private use
+    [InlineData("Tabsi\uD83D98", null)]       // lone surrogate
+    [InlineData("Tabsi98 \U0001F525", "Tabsi98 \U0001F525")] // an emoji is fine
+    [InlineData("Jose\u0301", "Jos\u00E9")]  // one way to write é
     public void Display_names_are_trimmed_and_checked(string input, string? expected) =>
         Assert.Equal(expected, DisplayNames.Normalise(input));
 }
