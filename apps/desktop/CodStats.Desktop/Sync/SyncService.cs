@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using CodStats.Contracts;
 using CodStats.Desktop.Identity;
 using CodStats.Desktop.Storage;
@@ -91,6 +92,17 @@ public sealed class SyncService(MatchStore store, DeviceIdentity identity, Func<
         }
         catch (ApiException error)
         {
+            return Report(SyncPhase.Failed, error.Message);
+        }
+        catch (Exception error) when (error is JsonException or NotSupportedException)
+        {
+            // Something answered that is not this server (a hotel or captive-portal page, a proxy error page).
+            return Report(SyncPhase.Offline, "Antwort des Servers nicht lesbar");
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // A sync error must never take the client down; the next attempt waits longer.
+            Diagnostics.Log($"sync error: {error.GetType().Name}: {error.Message}");
             return Report(SyncPhase.Failed, error.Message);
         }
         finally

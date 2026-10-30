@@ -23,10 +23,15 @@ public interface ITextReader
 /// nothing, so idle frames cost one OCR pass per anchor.
 /// </summary>
 /// <param name="knownName">
-/// The player's name as recognised so far, for screens without a name banner (the free-for-all result): the own
-/// table row is then found by this name.
+/// The player's confirmed or saved name, for screens without a name banner (the free-for-all result): the own table
+/// row is then found by this name, and a banner with another name shows another player.
 /// </param>
-public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITextReader reader, Func<string?>? knownName = null)
+/// <param name="candidateName">
+/// The best guess so far, not yet confirmed: used to find the own row when nothing better is known, but never to
+/// call a banner another player's. A misread first guess would otherwise reject the correct banner for good.
+/// </param>
+public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITextReader reader, Func<string?>? knownName = null,
+    Func<string?>? candidateName = null)
 {
     public IReadOnlyList<RecognitionProfile> Profiles { get; } = profiles;
 
@@ -75,7 +80,8 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
                 // neither the name nor the values under it are the player's then.
                 own = null;
             }
-            var rowName = own ?? known;
+            var rowName = own ?? known
+                ?? (candidateName?.Invoke() is { Length: > 0 } candidate ? new FieldReading(candidate, quality) : null);
             if (profile.OwnRow is { } row && rowName is not null
                 && await ReadOwnRowAsync(frame, row, rowName, fields, quality, cancel) is { } tableName && own is not null)
             {
@@ -145,8 +151,11 @@ public sealed class ScreenReader(IReadOnlyList<RecognitionProfile> profiles, ITe
         }
         if (row.RankField is { } rankField && !fields.ContainsKey(rankField))
         {
-            var above = cells.Count(c => Math.Abs(c.Left - name.Left) < 0.01 && c.Middle < name.Middle - row.RowHeight / 2
-                && c.Top >= ownTable.Region.Y + ownTable.HeaderHeight);
+            // Rows above the player's, whatever is in them: a name drawn indented or behind an emblem still is a row.
+            // A row counts when one of its lines reaches into the name column.
+            var above = Cluster(cells.Where(c => c.Middle < name.Middle - row.RowHeight / 2 && c.Top >= ownTable.Region.Y + ownTable.HeaderHeight),
+                    c => c.Middle, row.RowHeight / 2)
+                .Count(r => r.Any(c => c.Left < name.Left + name.Width && c.Left + c.Width > name.Left - 0.01));
             if (above <= 2)
             {
                 fields[rankField] = new FieldReading((above + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), quality);

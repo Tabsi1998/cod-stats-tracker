@@ -62,6 +62,17 @@ public partial class App : Application
         Paths.Ensure();
         Diagnostics.Initialise(Paths);
         Diagnostics.Log($"client {typeof(App).Assembly.GetName().Version} started");
+        // A tray app that dies takes the recording with it: an unexpected error is logged, and the client keeps running.
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Diagnostics.Log($"unhandled error: {args.Exception}");
+            args.Handled = true;
+        };
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Diagnostics.Log($"unobserved task error: {args.Exception}");
+            args.SetObserved();
+        };
         // The game comes first: below normal, the client only gets CPU time the game leaves unused, and still runs at
         // full speed when cores are free (the result screen stays only seconds, so the client must not be throttled).
         using (var self = System.Diagnostics.Process.GetCurrentProcess())
@@ -77,7 +88,14 @@ public partial class App : Application
         Settings.Save(Paths);
         Autostart.Apply(Settings.StartWithWindows);
 
-        Identity = DeviceIdentity.LoadOrCreate(Paths.Identity);
+        Identity = DeviceIdentity.LoadOrCreate(Paths.Identity, out var identityReplaced);
+        if (identityReplaced)
+        {
+            Diagnostics.Log("identity unreadable, set aside; new device key created");
+            MessageBox.Show("Die Geräteidentität dieses PCs ließ sich nicht öffnen (z. B. von einem anderen Windows-Konto kopiert) und wurde neu erstellt. " +
+                "Dein bisheriges Profil übernimmst du in den Einstellungen mit dem Wiederherstellungsschlüssel.",
+                "COD Stats", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         Store = new MatchStore(Paths.Database);
         Store.Initialise();
         Sync = new SyncService(Store, Identity, CreateClient, Paths.Identity);
@@ -114,6 +132,11 @@ public partial class App : Application
             else
             {
                 await Recognition.StopAsync();
+                // The game may have come back while the loop was stopping; Start ignored that, so start it now.
+                if (Watcher.State == TrackerState.GameRunning)
+                {
+                    Recognition.Start();
+                }
             }
         });
         Sync.StatusChanged += status => Dispatcher.BeginInvoke(() => tray.ShowSync(status));
@@ -157,7 +180,20 @@ public partial class App : Application
             return;
         }
         syncTimer.Stop();
-        var status = await Sync.RunAsync(new ProfileWish(Settings.DisplayName, Settings.NameConfirmed, Settings.PublishProfile), CancellationToken.None);
+        SyncStatus status;
+        try
+        {
+            status = await Sync.RunAsync(new ProfileWish(Settings.DisplayName, Settings.NameConfirmed, Settings.PublishProfile), CancellationToken.None);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // Never leave the timer stopped: one odd error would end syncing until the next start.
+            Diagnostics.Log($"sync failed: {error.GetType().Name}: {error.Message}");
+            failures++;
+            syncTimer.Interval = TimeSpan.FromSeconds(Math.Min(MaxBackoff.TotalSeconds, 30 * Math.Pow(2, failures - 1)));
+            syncTimer.Start();
+            return;
+        }
         failures = status.Phase is SyncPhase.Done ? 0 : failures + 1;
         syncTimer.Interval = failures == 0 ? SyncInterval : TimeSpan.FromSeconds(Math.Min(MaxBackoff.TotalSeconds, 30 * Math.Pow(2, failures - 1)));
         if (status.Phase != SyncPhase.DeviceInvalid)

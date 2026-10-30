@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The recognition logic of the Windows client (parsing, profiles, state machine, own row, lobby) needs neither
+    Windows nor a game. Its sources are compiled in here directly, so these tests run on every system, the Linux CI
+    runner included; the client's own tests keep what needs Windows (OCR, capture, WPF).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Capture\Frame.cs" Link="Client\Capture\Frame.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\MatchStateMachine.cs" Link="Client\Recognition\MatchStateMachine.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\NameTracker.cs" Link="Client\Recognition\NameTracker.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\Observation.cs" Link="Client\Recognition\Observation.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\RecognitionLoop.Rules.cs" Link="Client\Recognition\RecognitionLoop.Rules.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\RecognitionProfile.cs" Link="Client\Recognition\RecognitionProfile.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\ScreenReader.cs" Link="Client\Recognition\ScreenReader.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Recognition\TextParsing.cs" Link="Client\Recognition\TextParsing.cs" />
+    <Compile Include="..\..\..\apps\desktop\CodStats.Desktop\Storage\MatchStore.cs" Link="Client\Storage\MatchStore.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\contracts\CodStats.Contracts\CodStats.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

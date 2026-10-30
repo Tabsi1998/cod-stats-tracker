@@ -61,11 +61,14 @@ GITLEAKS_BUILDS = {
     ),
 }
 
-# Fewer tests than this means tests silently stopped being discovered. The Windows client's tests run on
-# Windows only, so Linux (the CI runner with Docker) runs the API and contract tests alone.
-MIN_DOTNET_TESTS = 70
-MIN_DOTNET_TESTS_LINUX = 62
-API_TESTS = "tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj"
+# Fewer tests than this means tests silently stopped being discovered. The Windows client's own tests (OCR, capture,
+# WPF) run on Windows only, so Linux (the CI runner with Docker) runs the API, contract and recognition tests.
+MIN_DOTNET_TESTS = 200
+MIN_DOTNET_TESTS_LINUX = 190
+LINUX_TESTS = (
+    "tests/api/CodStats.Api.Tests/CodStats.Api.Tests.csproj",
+    "tests/recognition/CodStats.Recognition.Tests/CodStats.Recognition.Tests.csproj",
+)
 
 GROUPS = ("repository", "dotnet", "web", "desktop", "release")
 DEFAULT_GROUPS = ("repository", "dotnet", "web", "desktop")
@@ -320,9 +323,10 @@ def dotnet_tests(context: Context) -> str:
     shutil.rmtree(results, ignore_errors=True)
     windows = platform.system() == "Windows"
     minimum = MIN_DOTNET_TESTS if windows else MIN_DOTNET_TESTS_LINUX
-    context.require([binary, "test", SOLUTION if windows else API_TESTS, "--no-build", "--configuration", "Release",
-                     "--logger", "trx", "--results-directory", results],
-                    what="tests failed; the output above names them")
+    for target in [SOLUTION] if windows else LINUX_TESTS:
+        context.require([binary, "test", target, "--no-build", "--configuration", "Release",
+                         "--logger", "trx", "--results-directory", results],
+                        what="tests failed; the output above names them")
     executed = failed = 0
     for trx in results.rglob("*.trx"):
         run, broken = trx_counts(trx.read_text(encoding="utf-8"))

@@ -24,19 +24,35 @@ public static class TextParsing
         ['B'] = '8',
     };
 
-    /// <summary>A whole number, with how much it had to be repaired (1 = clean, lower = lookalikes replaced).</summary>
+    /// <summary>
+    /// A whole number, with how much it had to be repaired (1 = clean, lower = lookalikes replaced). Spaces, dots and
+    /// commas count only as thousands separators ("1 024", "12.410"): "17 4" is two cells run together and "1.67" a
+    /// ratio, and neither becomes a number.
+    /// </summary>
     public static (int? Value, double Quality) Count(string? text)
     {
-        var trimmed = (text ?? "").Trim().Replace(" ", "", StringComparison.Ordinal)
-            .Replace(".", "", StringComparison.Ordinal).Replace(",", "", StringComparison.Ordinal);
-        if (trimmed.Length is 0 or > 7)
+        var trimmed = (text ?? "").Trim();
+        if (trimmed.Length is 0 or > 11)
         {
             return (null, 0);
         }
         var digits = new StringBuilder(trimmed.Length);
         var repaired = 0;
+        var groupLength = 0;
+        var separated = false;
         foreach (var c in trimmed)
         {
+            if (c is ' ' or '.' or ',')
+            {
+                // A separator after the first group, or after a full group of three, and never two in a row.
+                if (groupLength == 0 || (separated && groupLength != 3) || (!separated && groupLength > 3))
+                {
+                    return (null, 0);
+                }
+                separated = true;
+                groupLength = 0;
+                continue;
+            }
             if (char.IsAsciiDigit(c))
             {
                 digits.Append(c);
@@ -50,6 +66,11 @@ public static class TextParsing
             {
                 return (null, 0);
             }
+            groupLength++;
+        }
+        if (digits.Length is 0 or > 7 || (separated && groupLength != 3))
+        {
+            return (null, 0);
         }
         // More repaired than read: that was not a number.
         if (repaired * 2 > digits.Length)
@@ -84,15 +105,18 @@ public static class TextParsing
         return count == 1 ? [numbers[0]] : numbers[^count..];
     }
 
-    /// <summary>Placement texts like "#3", "3rd", "3." or "PLATZ 3".</summary>
+    /// <summary>
+    /// Placement texts like "#3", "3rd", "3." or "PLATZ 3": exactly one run of digits. "2/12" or "#3 / 15" hold two
+    /// numbers, and which one is the place is not certain.
+    /// </summary>
     public static (int? Value, double Quality) Placement(string? text)
     {
-        var digits = new string((text ?? "").Where(char.IsAsciiDigit).ToArray());
-        if (digits.Length is 0 or > 3)
+        var runs = System.Text.RegularExpressions.Regex.Matches(text ?? "", "[0-9]+");
+        if (runs.Count != 1 || runs[0].Length > 3)
         {
             return (null, 0);
         }
-        return (int.Parse(digits, CultureInfo.InvariantCulture), 0.95);
+        return (int.Parse(runs[0].Value, CultureInfo.InvariantCulture), 0.95);
     }
 
     /// <summary>The result from the words a profile lists for win, loss and draw.</summary>

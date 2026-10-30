@@ -25,6 +25,27 @@ public sealed class DeviceIdentity : IDisposable
     public bool IsRegistered => DeviceId is not null;
     public string PublicKey => Convert.ToBase64String(Key.ExportSubjectPublicKeyInfo());
 
+    /// <summary>
+    /// Loads the identity, or creates a new key when there is none yet. An identity that cannot be opened (copied
+    /// from another Windows user or PC, where DPAPI cannot decrypt it, or damaged) is set aside as
+    /// <c>identity.json.unreadable</c> and a new key is created; <paramref name="replaced"/> says so, and the player
+    /// takes the old profile over with the recovery key.
+    /// </summary>
+    public static DeviceIdentity LoadOrCreate(string path, out bool replaced)
+    {
+        replaced = false;
+        try
+        {
+            return LoadOrCreate(path);
+        }
+        catch (Exception error) when (error is CryptographicException or JsonException or FormatException or InvalidDataException)
+        {
+            File.Move(path, path + ".unreadable", overwrite: true);
+            replaced = true;
+            return LoadOrCreate(path);
+        }
+    }
+
     /// <summary>Loads the identity, or creates a new key when there is none yet.</summary>
     public static DeviceIdentity LoadOrCreate(string path)
     {

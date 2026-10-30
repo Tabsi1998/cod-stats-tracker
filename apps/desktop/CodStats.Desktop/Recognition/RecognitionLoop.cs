@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using CodStats.Contracts;
 using CodStats.Desktop.Capture;
 using CodStats.Desktop.Storage;
@@ -10,7 +11,7 @@ namespace CodStats.Desktop.Recognition;
 /// state machine and stores finished matches. Safe matches go up automatically; doubtful ones wait for the player.
 /// </summary>
 /// <param name="savedName">The name the player confirmed earlier, for finding the own row on screens without a name banner.</param>
-public sealed class RecognitionLoop(
+public sealed partial class RecognitionLoop(
     IReadOnlyList<RecognitionProfile> profiles,
     MatchStore store,
     Action<TrackerState> report,
@@ -18,7 +19,6 @@ public sealed class RecognitionLoop(
     Action<string> nameConfirmed,
     Func<string?>? savedName = null) : IDisposable
 {
-    public const string RecognizerVersion = "ocr-0.2";
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
 
     /// <summary>
@@ -46,7 +46,7 @@ public sealed class RecognitionLoop(
             return;
         }
         stop = new CancellationTokenSource();
-        running = Task.Run(() => RunAsync(new ScreenReader(profiles, ocr, () => names.Confirmed ?? savedName?.Invoke() ?? names.Candidate), stop.Token));
+        running = Task.Run(() => RunAsync(new ScreenReader(profiles, ocr, () => names.Confirmed ?? savedName?.Invoke(), () => names.Candidate), stop.Token));
     }
 
     public async Task StopAsync()
@@ -146,7 +146,7 @@ public sealed class RecognitionLoop(
     {
         var before = machine.Phase;
         var candidate = machine.Observe(observation);
-        if (before != MatchPhase.Playing && machine.Phase == MatchPhase.Playing)
+        if (StartsNewMatch(before, machine.Phase, observation.Screen, candidate is not null))
         {
             names.NextMatch();
         }
@@ -181,42 +181,22 @@ public sealed class RecognitionLoop(
             report(TrackerState.Uncertain);
             return;
         }
-        if (store.Add(match))
+        try
         {
-            recorded(candidate, match);
+            if (store.Add(match))
+            {
+                recorded(candidate, match);
+            }
+        }
+        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or IOException or UnauthorizedAccessException)
+        {
+            // The match is in the log line above; the loop must keep running (the state machine already moved on).
+            Diagnostics.Log($"match not stored: {error.GetType().Name}: {error.Message}");
+            report(TrackerState.Uncertain);
+            return;
         }
         report(match.ReviewStatus == ReviewStatus.Pending ? TrackerState.Uncertain : TrackerState.GameRunning);
     }
-
-    /// <summary>The match to store, "auto" only when everything is certain; null when not even the game is known.</summary>
-    public static LocalMatch? ToLocal(MatchCandidate candidate)
-    {
-        ArgumentNullException.ThrowIfNull(candidate);
-        if (candidate.Game is not { } game)
-        {
-            return null;
-        }
-        var match = new LocalMatch(Guid.NewGuid(), game, candidate.Mode, candidate.PlayedAt, candidate.Kills, candidate.Deaths,
-            candidate.Assists, candidate.Result, candidate.Placement, candidate.Map, candidate.Score,
-            Math.Clamp(candidate.Confidence, 0, 1), ReviewStatus.Pending, RecognizerVersion, SyncState.Waiting, null, candidate.Status,
-            new MatchDetails(candidate.Eliminations, candidate.TeamScore, candidate.EnemyScore, candidate.Xp, candidate.Level,
-                candidate.ModeStats.Count > 0 ? candidate.ModeStats : null, candidate.LobbySize, candidate.LobbyRank,
-                candidate.Weapon, candidate.WeaponClass));
-        var safe = candidate.Confidence >= MatchStateMachine.SafeConfidence && candidate.Doubts.Count == 0
-            && MatchRules.Validate(match.ToUpload() with { ReviewStatus = ReviewStatus.Auto }, DateTimeOffset.Now).Count == 0;
-        return safe ? match with { ReviewStatus = ReviewStatus.Auto } : match;
-    }
-
-    /// <summary>Seconds without any frame after which the capture starts over, even on the same window.</summary>
-    internal const int MaxMissedFrames = 10;
-
-    /// <summary>
-    /// Whether to capture anew: the game shows another main window than the one captured (it starts with a small splash
-    /// window and then opens the real one; the old capture then delivers nothing, without an error), or no frame came for
-    /// <see cref="MaxMissedFrames"/> tries in a row.
-    /// </summary>
-    internal static bool NeedsNewCapture(IntPtr captured, IntPtr current, int missed) =>
-        (current != IntPtr.Zero && current != captured) || missed >= MaxMissedFrames;
 
     public void Dispose() => stop?.Dispose();
 }
