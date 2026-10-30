@@ -41,6 +41,9 @@ Die Werte kommen aus der Bilderkennung auf dem PC der Spieler. Wer will, kann ge
 
 ## Betrieb
 
-- Nur HTTPS (Caddy mit automatischen Zertifikaten).
-- Rate Limiting je Gerät und je IP.
+- Nur HTTPS (Caddy mit automatischen Zertifikaten), dazu Content-Security-Policy, Permissions-Policy und Schutz vor Einbetten in fremde Seiten.
+- Rate Limiting je Gerät und je IP, darüber ein Gesamtlimit je IP (eine erfundene Geräte-ID pro Anfrage umgeht es nicht).
+- Container gehärtet: keine Rechteausweitung (`no-new-privileges`), nur nötige Kernel-Fähigkeiten, API und Webserver mit schreibgeschütztem Dateisystem, die API ohne Root. Die Datenbank hängt in einem internen Netz und ist nur für die API erreichbar.
+- Mit eigener Domain (Caddy holt das Zertifikat selbst) wird `X-Forwarded-For` nur von diesem Server selbst angenommen, sonst könnte ein Besucher aus einem privaten Netz seine IP frei wählen.
+- Öffentlich als „früher bekannt als“ erscheinen nur bestätigte Namen; Anzeigenamen mit unsichtbaren Zeichen (z. B. Nullbreite) werden abgelehnt.
 - Secrets nur in `deploy/.env`, nie im Repo. Gitleaks läuft in der lokalen Prüfung.
